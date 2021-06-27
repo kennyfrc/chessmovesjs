@@ -5,20 +5,41 @@ import { INPUT_EVENT_TYPE, COLOR, Chessboard, MARKER_TYPE } from "cm-chessboard"
 // COLOR is just 'w' and 'b'
 // MARKER_TYPE covers frame, square, dot, and circle
 
-const chess = new Chess()
-
-const board = new Chessboard(document.getElementById("board"), {
+const CHESS = new Chess()
+const BOARD = new Chessboard(document.getElementById("board"), {
     position: "start"
 })
+const USER_COLOR = COLOR.white
 
 // calculates a random move
-function randomMove(game) {
-    let new_game_moves = game.moves({ verbose: true });
+function randomMove() {
+    let new_game_moves = CHESS.moves({ verbose: true })
 	let game_move = new_game_moves[Math.floor(Math.random() * new_game_moves.length)]
-   	
-	game_move.promotion = 'q'
 
 	return game_move
+}
+
+function getBestMove() {
+	let move = randomMove()
+	return move
+}
+
+function userMove(event) {
+	return { from: event.squareFrom, to: event.squareTo, promotion: 'q' }
+}
+
+function makeMove(event, player={ cpu: false }) {
+	let move
+
+	if (player.cpu) {
+		move = getBestMove()
+	} else {
+		move = userMove(event) 
+	}
+
+	CHESS.move(move)
+
+	return move
 }
 
 function inputHandler(event) {
@@ -29,7 +50,7 @@ function inputHandler(event) {
 
 	// if the user picks up a piece, then show the moves
 	if (event.type === INPUT_EVENT_TYPE.moveStart) {
-		const moves = chess.moves({ square: event.square, verbose: true })
+		const moves = CHESS.moves({ square: event.square, verbose: true })
 		for (const move of moves) {
 			event.chessboard.addMarker(move.to, MARKER_TYPE.dot)
 		}
@@ -37,24 +58,21 @@ function inputHandler(event) {
 	// once the user drops the piece, then record the move then 
 	// the cpu calculates the next move 
 	} else if (event.type === INPUT_EVENT_TYPE.moveDone) {
-		const move = { from: event.squareFrom, to: event.squareTo, promotion: 'q' }
-		const result = chess.move(move)
-		if (result && !chess.game_over()) {
+		let result = makeMove(event)
+		if (result && !CHESS.game_over()) {
 			event.chessboard.disableMoveInput()
-			event.chessboard.setPosition(chess.fen())
-			const random_move = randomMove(chess)
+			event.chessboard.setPosition(CHESS.fen())
+			makeMove(event, { cpu: true })
 			setTimeout(() => {
-				chess.move({from: random_move.from, to: random_move.to})
-				event.chessboard.enableMoveInput(inputHandler, player)
-				event.chessboard.setPosition(chess.fen())
-			}, 500)
-		} else if (chess.game_over()) {
+				event.chessboard.enableMoveInput(inputHandler, USER_COLOR)
+				event.chessboard.setPosition(CHESS.fen()) }, 500)
+		} else if (CHESS.game_over()) {
 			event.chessboard.disableMoveInput()
-			event.chessboard.setPosition(chess.fen())
+			event.chessboard.setPosition(CHESS.fen())
 			
-			if (chess.in_checkmate()) {
+			if (CHESS.in_checkmate()) {
 				alert('Checkmate!')
-			} else if (chess.in_draw() || chess.in_stalemate() || chess.in_threefold_repetition() ) {
+			} else if (CHESS.in_draw() || CHESS.in_stalemate() || CHESS.in_threefold_repetition() ) {
 				alert('Draw!')
 			}
 		}
@@ -62,7 +80,5 @@ function inputHandler(event) {
 
 }
 
-const player = COLOR.white
-
-board.enableMoveInput(inputHandler, player)
+BOARD.enableMoveInput(inputHandler, USER_COLOR)
 

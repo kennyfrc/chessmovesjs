@@ -36,10 +36,11 @@ function makeMove(event, player={ cpu: false }) {
 	} else {
 		move = userMove(event) 
 	}
-
-	CHESS.move(move)
-
-	return move
+	
+	if (move) {
+		CHESS.move(move)
+		return move
+	}
 }
 
 function inputHandler(event) {
@@ -63,21 +64,34 @@ function inputHandler(event) {
 			event.chessboard.disableMoveInput()
 			event.chessboard.setPosition(CHESS.fen())
 			makeMove(event, { cpu: true })
+			renderHistory(CHESS.history())
+
 			setTimeout(() => {
 				event.chessboard.enableMoveInput(inputHandler, USER_COLOR)
-				event.chessboard.setPosition(CHESS.fen()) }, 500)
-		} else if (CHESS.game_over()) {
+				event.chessboard.setPosition(CHESS.fen()) 
+			}, 500)
+		} else if (result && CHESS.game_over()) {
 			event.chessboard.disableMoveInput()
 			event.chessboard.setPosition(CHESS.fen())
-			
+			renderHistory(CHESS.history())
+
 			if (CHESS.in_checkmate()) {
 				alert('Checkmate!')
 			} else if (CHESS.in_draw() || CHESS.in_stalemate() || CHESS.in_threefold_repetition() ) {
 				alert('Draw!')
 			}
-		}
+		} 
 	}
 
+}
+
+function renderHistory(moves) {
+    let historyElement = document.getElementById('pgn')
+	historyElement.innerHTML = ""
+
+    for (let i = 0; i < moves.length; i = i + 2) {
+        historyElement.append(' ' + moves[i] + ' ' + ( moves[i + 1] ? moves[i + 1] : ' '))
+    }
 }
 
 BOARD.enableMoveInput(inputHandler, USER_COLOR)

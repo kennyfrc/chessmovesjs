@@ -1,0 +1,6 @@
+# Ignore these folders
+node_modules/**
+dist/**
+
+# Ignore these files
+.DS_Store

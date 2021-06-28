@@ -1,8 +1,8 @@
 import { Chess } from "chess.js"
 import { INPUT_EVENT_TYPE, COLOR, Chessboard, MARKER_TYPE } from "cm-chessboard"
+import { assert } from "chai"
 
-// INPUT_EVENT_TYPE covers moveStart (user started move input), moveEnd (ended move input), and moveCanceled (user canceled by clicking outside of the board)
-// COLOR is just 'w' and 'b'
+// INPUT_EVENT_TYPE covers moveStart (user started move input), moveEnd (ended move input), and moveCanceled (user canceled by clicking outside of the board) // COLOR is just 'w' and 'b'
 // MARKER_TYPE covers frame, square, dot, and circle
 
 const CHESS = new Chess()
@@ -11,6 +11,10 @@ const BOARD = new Chessboard(document.getElementById("board"), {
 })
 const USER_COLOR = COLOR.white
 var NODES = 0
+
+const ASSERT = assert
+
+
 // calculates a random move
 function randomMove() {
     let new_game_moves = CHESS.moves({ verbose: true })
@@ -72,6 +76,8 @@ function negaMaxRoot(depth) {
 function negaMax(depth, alpha, beta) {
 	NODES += 1
 
+	let foundPv = false
+
 	if (depth === 0) {
 		return -evaluate(CHESS.board())
 	}
@@ -80,10 +86,24 @@ function negaMax(depth, alpha, beta) {
 
 	for (let i = 0; i < game_moves.length; i++) {
 		let move = game_moves[i]
-		CHESS.move(move)
-			
-		let value = -negaMax(depth - 1, -beta, -alpha)
+		var value = null
 
+		CHESS.move(move)
+		
+		// if PV found, then it's assumed that you won't find a better one
+		// this relies on good move ordering
+		if (foundPv) {
+			value = -negaMax(depth -1, -alpha - 1, -alpha)
+
+			if ((value > alpha) && (value < beta)) {
+				value = -negaMax(depth - 1, -beta, -alpha)
+			}
+		} else {
+			value = -negaMax(depth - 1, -beta, -alpha)
+		}
+
+		ASSERT(value != null, `value: ${value}`)
+	
 		CHESS.undo()
 
 		if (value >= beta) {
@@ -92,7 +112,8 @@ function negaMax(depth, alpha, beta) {
 
 		if (value > alpha) {
 			alpha = value 
-		}
+			foundPv = true
+		}	
 	}
 	return alpha
 }

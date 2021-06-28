@@ -13,6 +13,7 @@
     "webpack-cli": "^4.7.2"
   },
   "dependencies": {
+    "chai": "^4.3.4",
     "chess.js": "^0.12.0",
     "cm-chessboard": "^3.12.14",
     "webpack-dev-server": "^3.11.2"

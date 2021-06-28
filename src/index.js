@@ -42,7 +42,7 @@ function userMove(event) {
 }
 
 function makeMove(event, player) {
-	let move
+	let move = null
 
 	if (player.cpu) {
 		move = getBestMove()
@@ -50,15 +50,15 @@ function makeMove(event, player) {
 		move = userMove(event) 
 	}
 
-	if (move) {
-		return CHESS.move(move)
-	}
+	ASSERT(move != null)
+
+	return CHESS.move(move)
 }
 
 function negaMaxRoot(depth) {
 	let new_moves = CHESS.moves()
 	let best_move = -Infinity
-	let best_move_found
+	let best_move_found = null
 
 	for (let i = 0; i < new_moves.length; i++) {
 		let new_move = new_moves[i]
@@ -70,6 +70,9 @@ function negaMaxRoot(depth) {
 			best_move_found = new_move
 		}
 	}
+
+	ASSERT(best_move_found != null)
+
 	return best_move_found
 }
 
@@ -102,7 +105,7 @@ function negaMax(depth, alpha, beta) {
 			value = -negaMax(depth - 1, -beta, -alpha)
 		}
 
-		ASSERT(value != null, `value: ${value}`)
+		ASSERT(value != null)
 	
 		CHESS.undo()
 
@@ -184,11 +187,14 @@ function quiescence(alpha, beta) {
 }
 
 function evaluate(board) {
-    let total_evaluation = 0; for (let i = 0; i < 8; i++) {
+    let total_evaluation = 0
+
+	for (let i = 0; i < 8; i++) {
         for (let j = 0; j < 8; j++) {
             total_evaluation = total_evaluation + getPieceValue(board[i][j], i ,j);
         }
     }
+
     return total_evaluation;
 }
 
@@ -210,8 +216,9 @@ function getPieceValue(piece, file, rank) {
             return 1000
         } else if (piece.type === 'k') {
             return 32000
-        }
-        throw "Unknown piece type: " + piece.type
+        } else {
+			ASSERT('prnbqk'.includes(piece.type))
+		}
 	}
 
 	let absValue = getAbsValue(piece)

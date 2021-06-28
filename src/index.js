@@ -20,7 +20,7 @@ function randomMove() {
 }
 
 function getBestMove() {
-	let depth = 2
+	let depth = 3
 	let start_time = new Date().getTime()
 	let best_move = alphaBetaRoot(depth, true)
 	let end_time = new Date().getTime()

@@ -20,9 +20,9 @@ function randomMove() {
 }
 
 function getBestMove() {
-	let depth = 3
+	let depth = 2
 	let start_time = new Date().getTime()
-	let best_move = negaMaxRoot(depth, true)
+	let best_move = alphaBetaRoot(depth, true)
 	let end_time = new Date().getTime()
 	let move_time = end_time - start_time
 	let nps = (NODES * 1000) / move_time
@@ -45,14 +45,13 @@ function makeMove(event, player) {
 	} else {
 		move = userMove(event) 
 	}
-	
+
 	if (move) {
-		CHESS.move(move)
-		return move
+		return CHESS.move(move)
 	}
 }
 
-function negaMaxRoot(depth, isMaximizingPlayer) {
+function alphaBetaRoot(depth, isMaximizingPlayer) {
 	let new_moves = CHESS.moves()
 	let best_move = -Infinity
 	let best_move_found
@@ -60,7 +59,7 @@ function negaMaxRoot(depth, isMaximizingPlayer) {
 	for (let i = 0; i < new_moves.length; i++) {
 		let new_move = new_moves[i]
 		CHESS.move(new_move)
-		let value = negaMax(depth - 1, -Infinity, Infinity, !isMaximizingPlayer)
+		let value = alphaBeta(depth - 1, -Infinity, Infinity, !isMaximizingPlayer)
 		CHESS.undo()
 		if (value >= best_move) {
 			best_move = value
@@ -71,34 +70,51 @@ function negaMaxRoot(depth, isMaximizingPlayer) {
 	return best_move_found
 }
 
-function negaMax(depth, alpha, beta, isMaximizingPlayer) {
+function alphaBeta(depth, alpha, beta, isMaximizingPlayer) {
 	NODES += 1
 
 	if (depth === 0) {
-		return quiescence(alpha, beta, isMaximizingPlayer)
+		return -quiescence(alpha, beta)
 	}
 
 	let game_moves = CHESS.moves()
 
-	while (game_moves.length > 0) {
-		let move = game_moves.pop()
+	if (isMaximizingPlayer) {
+		let best_move = -Infinity
 
-		CHESS.move(move)
+		for (let i = 0; i < game_moves.length; i++) {
+			let move = game_moves[i]
+			CHESS.move(move)
+			
+			best_move = Math.max(best_move, alphaBeta(depth - 1, alpha, beta, !isMaximizingPlayer))
 
-		let value = -negaMax(depth - 1, -beta, -alpha, !isMaximizingPlayer)
+			CHESS.undo()
 
-		CHESS.undo()
+			alpha = Math.max(alpha, best_move)
 
-		if (value >= beta) {
-			return beta
+			if (beta <= alpha) {
+				return best_move
+			}
 		}
 
-		if (value > alpha) {
-			alpha = value
+		return best_move
+	} else {
+		let best_move = Infinity
+		
+		for (let i = 0; i < game_moves.length; i++) {
+			let move = game_moves[i]
+			CHESS.move(move)
+
+			best_move = Math.min(best_move, alphaBeta(depth - 1, alpha, beta, !isMaximizingPlayer))
+
+			CHESS.undo(move)
+
+			if (beta <= alpha) {
+				return best_move
+			}
 		}
+		return best_move
 	}
-
-	return alpha
 }
 
 
@@ -130,10 +146,10 @@ function favorableCapture(capture) {
 }
 
 
-function quiescence(alpha, beta, isMaximizingPlayer) {
+function quiescence(alpha, beta) {
 	NODES += 1
 
-	let value = evaluate(CHESS.board(), isMaximizingPlayer)
+	let value = evaluate(CHESS.board())
 
 	if (value >= beta) {
 		return beta
@@ -145,12 +161,12 @@ function quiescence(alpha, beta, isMaximizingPlayer) {
 
 	let good_captures = generateCaptures()
 
-	while (good_captures.length > 0) {
-		let capture = good_captures.pop()
+	for (let i = 0; i < good_captures.length; i++) {
+		let capture = good_captures[i]
 
 		CHESS.move(capture)
-
-		value = -quiescence(-beta, -alpha, !isMaximizingPlayer)
+		
+		value = -quiescence(-beta, -alpha)
 
 		CHESS.undo()
 
@@ -166,16 +182,16 @@ function quiescence(alpha, beta, isMaximizingPlayer) {
 	return alpha
 }
 
-function evaluate(board, isMaximizingPlayer) {
+function evaluate(board) {
     let total_evaluation = 0; for (let i = 0; i < 8; i++) {
         for (let j = 0; j < 8; j++) {
-            total_evaluation = total_evaluation + getPieceValue(board[i][j], i ,j, isMaximizingPlayer);
+            total_evaluation = total_evaluation + getPieceValue(board[i][j], i ,j);
         }
     }
     return total_evaluation;
 }
 
-function getPieceValue(piece, file, rank, isMaximizingPlayer) {
+function getPieceValue(piece, file, rank) {
 	if (piece === null) {
         return 0;
     }
@@ -199,7 +215,7 @@ function getPieceValue(piece, file, rank, isMaximizingPlayer) {
 
 	let absValue = getAbsValue(piece)
 
-	if (isMaximizingPlayer) {
+	if (piece.color === 'w') {
 		return absValue
 	} else {
 		return -absValue

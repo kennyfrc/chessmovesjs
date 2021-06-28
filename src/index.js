@@ -14,15 +14,6 @@ var NODES = 0
 
 const ASSERT = assert
 
-
-// calculates a random move
-function randomMove() {
-    let new_game_moves = CHESS.moves({ verbose: true })
-	let game_move = new_game_moves[Math.floor(Math.random() * new_game_moves.length)]
-
-	return game_move
-}
-
 function getBestMove() {
 	let depth = 3
 	let start_time = new Date().getTime()
@@ -124,7 +115,6 @@ function negaMax(depth, alpha, beta) {
 
 function generateCaptures() {
 	let moves = CHESS.moves({ verbose: true })
-	// no en passant captures
 	let captures = moves.filter(move => { return (move.flags === 'c') })
 	let good_captures = captures.filter(capture => { return favorableCapture(capture) })
 

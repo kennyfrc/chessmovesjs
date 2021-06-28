@@ -74,7 +74,7 @@ function alphaBeta(depth, alpha, beta, isMaximizingPlayer) {
 	NODES += 1
 
 	if (depth === 0) {
-		return -quiescence(alpha, beta)
+		return -evaluate(CHESS.board())
 	}
 
 	let game_moves = CHESS.moves()

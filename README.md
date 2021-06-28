@@ -1,4 +1,4 @@
-# torchess.js (v0.1)
+# torchess.js (v0.2)
 
 This is a chess engine under development which aims to be a simple chess engine that uses neural networks.
 
@@ -23,9 +23,8 @@ npx webpack serve
 You can then play the engine at localhost:8080
 
 ### TODO:
-* DONE: Random mover & UI
-* Minimax with Handcrafted Eval
-* Alpha Beta with Handcrafted Eval
+* DONE: Random mover & UI 
+* DONE: Alpha Beta with Handcrafted Eval
 * Alpha Beta with Neural Network Eval
 
 ### Credits:

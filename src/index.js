@@ -22,7 +22,7 @@ function randomMove() {
 function getBestMove() {
 	let depth = 3
 	let start_time = new Date().getTime()
-	let best_move = alphaBetaRoot(depth, true)
+	let best_move = negaMaxRoot(depth)
 	let end_time = new Date().getTime()
 	let move_time = end_time - start_time
 	let nps = (NODES * 1000) / move_time
@@ -51,7 +51,7 @@ function makeMove(event, player) {
 	}
 }
 
-function alphaBetaRoot(depth, isMaximizingPlayer) {
+function negaMaxRoot(depth) {
 	let new_moves = CHESS.moves()
 	let best_move = -Infinity
 	let best_move_found
@@ -59,18 +59,17 @@ function alphaBetaRoot(depth, isMaximizingPlayer) {
 	for (let i = 0; i < new_moves.length; i++) {
 		let new_move = new_moves[i]
 		CHESS.move(new_move)
-		let value = alphaBeta(depth - 1, -Infinity, Infinity, !isMaximizingPlayer)
+		let value = negaMax(depth - 1, -Infinity, Infinity)
 		CHESS.undo()
 		if (value >= best_move) {
 			best_move = value
 			best_move_found = new_move
 		}
 	}
-
 	return best_move_found
 }
 
-function alphaBeta(depth, alpha, beta, isMaximizingPlayer) {
+function negaMax(depth, alpha, beta) {
 	NODES += 1
 
 	if (depth === 0) {
@@ -79,42 +78,23 @@ function alphaBeta(depth, alpha, beta, isMaximizingPlayer) {
 
 	let game_moves = CHESS.moves()
 
-	if (isMaximizingPlayer) {
-		let best_move = -Infinity
-
-		for (let i = 0; i < game_moves.length; i++) {
-			let move = game_moves[i]
-			CHESS.move(move)
+	for (let i = 0; i < game_moves.length; i++) {
+		let move = game_moves[i]
+		CHESS.move(move)
 			
-			best_move = Math.max(best_move, alphaBeta(depth - 1, alpha, beta, !isMaximizingPlayer))
+		let value = -negaMax(depth - 1, -beta, -alpha)
 
-			CHESS.undo()
+		CHESS.undo()
 
-			alpha = Math.max(alpha, best_move)
-
-			if (beta <= alpha) {
-				return best_move
-			}
+		if (value >= beta) {
+			return beta
 		}
 
-		return best_move
-	} else {
-		let best_move = Infinity
-		
-		for (let i = 0; i < game_moves.length; i++) {
-			let move = game_moves[i]
-			CHESS.move(move)
-
-			best_move = Math.min(best_move, alphaBeta(depth - 1, alpha, beta, !isMaximizingPlayer))
-
-			CHESS.undo(move)
-
-			if (beta <= alpha) {
-				return best_move
-			}
+		if (value > alpha) {
+			alpha = value 
 		}
-		return best_move
 	}
+	return alpha
 }
 
 

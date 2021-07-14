@@ -25,8 +25,10 @@ You can then play the engine at localhost:8080
 ### TODO:
 * DONE: Random mover & UI 
 * DONE: Alpha Beta with Handcrafted Eval
+* IN PROGRESS: Create new move generator that allows various input planes for the neural network
 * Alpha Beta with Neural Network Eval
 
-### Credits:
+### Acknowledgements:
 * chess.js by Jeff Hlywa
 * cm-chessboard by Stefan Haack
+* chessprogramming website maintained by Gerd Isenberg

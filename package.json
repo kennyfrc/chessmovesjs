@@ -8,7 +8,8 @@
     "dev": "webpack --mode development",
     "build": "webpack --mode production",
     "test": "mocha test",
-    "lint": "eslint src"
+    "lint": "eslint src",
+    "reload": "webpack --mode development && npx webpack serve"
   },
   "devDependencies": {
     "@babel/cli": "^7.14.5",

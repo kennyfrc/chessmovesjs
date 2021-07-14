@@ -1,9 +1,9 @@
 const BitHelper = require('./helpers.js').BitHelper;
 
 class Square {
-  /* eslint-disable */
   static for(rankFile) {
     // Little-Endian Rank-File Mapping
+    /* eslint-disable key-spacing */
     const indexMap = {
       A8: 56, B8: 57, C8: 58, D8: 59, E8: 60, F8: 61, G8: 62, H8: 63,
       A7: 48, B7: 49, C7: 50, D7: 51, E7: 52, F7: 53, G7: 54, H7: 55,
@@ -13,11 +13,10 @@ class Square {
       A3: 16, B3: 17, C3: 18, D3: 19, E3: 20, F3: 21, G3: 22, H3: 23,
       A2:  8, B2:  9, C2: 10, D2: 11, E2: 12, F2: 13, G2: 14, H2: 15,
       A1:  0, B1:  1, C1:  2, D1:  3, E1:  4, F1:  5, G1:  6, H1:  7,
-    }
-
-    return indexMap[rankFile]
+    };
+    /* eslint-enable key-spacing */
+    return indexMap[rankFile];
   }
-  /* eslint-enable */
 
   static indicesFor(piece, pieceBoards) {
     let board = pieceBoards[piece];

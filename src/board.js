@@ -60,8 +60,10 @@ class Board {
     });
   }
 
-  // A8 = 56 thus, that's where we do the exclusive xor (where you flip)
-  // you might need to flip the main boards first
+  /**
+   * A8 = 56 thus, that's where we do the exclusive xor (where you flip)
+   * you might need to flip the main boards first
+   */
   flipBoard() {
     for (let sq = 0; sq < 32; sq++) {
       for (let [piece, board] of Object.entries(this.pieceBoards)) {
@@ -106,7 +108,6 @@ class Board {
 //             /  |  \
 //         -9    -8    -7
 // soWe         sout         soEa
-
 
 module.exports = {
   Board: Board,

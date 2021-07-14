@@ -4,7 +4,7 @@ const BoardView = require('../src/boardview.js').BoardView;
 const Square = require('../src/square.js').Square;
 
 const board = new Board();
-board.parseFenToBoard('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1');
+board.parseFenToBoard('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'); // eslint-disable-line
 
 describe('Board', function() {
   describe('#parseFenToBoard()', function() {
@@ -22,7 +22,7 @@ describe('Board', function() {
   describe('#flipBoard()', function() {
     it('flips the board', function() {
       const flippedBoard = new Board();
-      flippedBoard.parseFenToBoard('r1bqk1nr/pppp1ppp/2n5/2b1p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq ');
+      flippedBoard.parseFenToBoard('r1bqk1nr/pppp1ppp/2n5/2b1p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq '); // eslint-disable-line
       flippedBoard.flipBoard();
 
       assert.equal(flippedBoard.bb, 15992005286099480479n);
@@ -47,6 +47,7 @@ describe('Board', function() {
   });
 });
 
+/* eslint-disable max-len */
 describe('BoardView', function() {
   // in binary, you have to read from right to left
   // so you need to imagine going through the FEN in reverse order of rank and file
@@ -79,3 +80,4 @@ describe('BoardView', function() {
     });
   });
 });
+/* eslint-enable max-len */

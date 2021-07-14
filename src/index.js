@@ -1,12 +1,17 @@
-import {Chess} from 'chess.js';
-import {INPUT_EVENT_TYPE, COLOR, Chessboard, MARKER_TYPE} from 'cm-chessboard';
-import {assert} from 'chai';
+const Chess = require('../node_modules/chess.js/chess.js').Chess;
+const CmChessboard = require('../node_modules/cm-chessboard/src/cm-chessboard/Chessboard.js'); // eslint-disable-line
+const assert = require('../node_modules/chai/chai.js').assert;
+const INPUT_EVENT_TYPE = CmChessboard.INPUT_EVENT_TYPE;
+const COLOR = CmChessboard.COLOR;
+const Chessboard = CmChessboard.Chessboard;
+const MARKER_TYPE = CmChessboard.MARKER_TYPE;
 
-/*  INPUT_EVENT_TYPE covers moveStart (user started move input),
-    moveEnd (ended move input), and moveCanceled
-    (user canceled by clicking outside of the board)
-    COLOR is just 'w' and 'b' MARKER_TYPE covers frame, square, dot, and circle
-*/
+/**
+ * INPUT_EVENT_TYPE covers moveStart (user started move input),
+ * moveEnd (ended move input), and moveCanceled
+ * (user canceled by clicking outside of the board)
+ * COLOR is just 'w' and 'b' MARKER_TYPE covers frame, square, dot, and circle
+ */
 const CHESS = new Chess();
 const BOARD = new Chessboard(document.getElementById('board'), {
   position: 'start',

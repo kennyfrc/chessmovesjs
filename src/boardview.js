@@ -5,16 +5,33 @@ const Square = require('../src/square.js').Square;
 class BoardView extends Board {
   constructor(pieceBoards) {
     super();
-    this.userView = [];
     this.pieceBoards = pieceBoards;
+    this.bb = this.parsePbToBb(pieceBoards, this.bb);
+    this.userView = this.parseToUserView();
+  }
 
-    Object.keys(pieceBoards).forEach((piece) => {
-      this.bb |= pieceBoards[piece];
-    });
-
+  static displayBb(bb) {
+    this.userView = [];
     for (let i = 0; i < 64; i++) {
       this.userView[i] = BitHelper.getBit(this.bb, i);
     }
+    return this.display();
+  }
+
+  parsePbToBb(pieceBoards, bb) {
+    Object.keys(pieceBoards).forEach((piece) => {
+      bb |= pieceBoards[piece].bb;
+    });
+
+    return bb;
+  }
+
+  parseToUserView() {
+    const userView = [];
+    for (let i = 0; i < 64; i++) {
+      userView[i] = BitHelper.getBit(this.bb, i);
+    }
+    return userView;
   }
 
   display() {

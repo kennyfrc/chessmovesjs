@@ -1,8 +1,7 @@
 class BitHelper {
   static getBit(board, bitPosition) {
     return (board & (BigInt(1) << BigInt(bitPosition))) === BigInt(0) ?
-      BigInt(0) :
-      BigInt(1);
+      BigInt(0) : BigInt(1);
   }
 
   static setBit(board, bitPosition) {

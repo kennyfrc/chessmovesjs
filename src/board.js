@@ -1,14 +1,11 @@
 const BitHelper = require('./helpers.js').BitHelper;
+const PieceBoard = require('./pieceboard.js').PieceBoard;
 
 class Board {
   constructor() {
     this.start_fen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
     this.bb = BigInt(0);
-    this.pieceBoards = {'k': BigInt(0), 'q': BigInt(0), 'r': BigInt(0),
-      'b': BigInt(0), 'n': BigInt(0), 'p': BigInt(0), 'K': BigInt(0),
-      'Q': BigInt(0), 'R': BigInt(0), 'B': BigInt(0), 'N': BigInt(0),
-      'P': BigInt(0),
-    };
+    this.pieceBoards = this.initializeBoards();
 
     this.castleStatus = 0;
     this.castleBit = {'K': 1, 'Q': 2, 'k': 4, 'q': 8};
@@ -35,8 +32,8 @@ class Board {
         }
       } else {
         if ('kqrbnpKQRBNP'.includes(fen[i])) {
-          this.pieceBoards[fen[i]] = BitHelper.setBit(this.pieceBoards[fen[i]],
-              fenIndex);
+          this.pieceBoards[fen[i]] = new PieceBoard(BitHelper.setBit(this.pieceBoards[fen[i]].bb,
+              fenIndex));
           fenIndex += 1;
         }
 
@@ -56,8 +53,20 @@ class Board {
     }
 
     Object.keys(this.pieceBoards).forEach((piece) => {
-      this.bb |= this.pieceBoards[piece];
+      this.bb |= this.pieceBoards[piece].bb;
     });
+  }
+
+  initializeBoards() {
+    return {'k': new PieceBoard(), 'q': new PieceBoard(), 'r': new PieceBoard(),
+      'b': new PieceBoard(), 'n': new PieceBoard(), 'p': new PieceBoard(),
+      'K': new PieceBoard(), 'Q': new PieceBoard(), 'R': new PieceBoard(),
+      'B': new PieceBoard(), 'N': new PieceBoard(), 'P': new PieceBoard(),
+    };
+  }
+
+  resetBoard() {
+    this.pieceBoards = this.initializeBoards();
   }
 
   /**
@@ -66,23 +75,16 @@ class Board {
    */
   flipBoard() {
     for (let sq = 0; sq < 32; sq++) {
-      for (let [piece, board] of Object.entries(this.pieceBoards)) {
-        const bit = BitHelper.getBit(board, sq);
-        const invertedBit = BitHelper.getBit(board, sq ^ 56);
+      for (const [piece, pboard] of Object.entries(this.pieceBoards)) {
+        const bit = BitHelper.getBit(pboard.bb, sq);
+        const invertedBit = BitHelper.getBit(pboard.bb, sq ^ 56);
 
-        board = BitHelper.updateBit(board, sq, invertedBit);
-        board = BitHelper.updateBit(board, sq ^ 56, bit);
+        pboard.bb = BitHelper.updateBit(pboard.bb, sq, invertedBit);
+        pboard.bb = BitHelper.updateBit(pboard.bb, sq ^ 56, bit);
 
-        this.pieceBoards[piece] = board;
+        this.pieceBoards[piece] = pboard;
       }
     }
-  }
-
-  resetBoard() {
-    this.pieceBoards = {'k': BigInt(0), 'q': BigInt(0), 'r': BigInt(0),
-      'b': BigInt(0), 'n': BigInt(0), 'p': BigInt(0), 'K': BigInt(0),
-      'Q': BigInt(0), 'R': BigInt(0), 'B': BigInt(0), 'N': BigInt(0),
-      'P': BigInt(0)};
   }
 }
 

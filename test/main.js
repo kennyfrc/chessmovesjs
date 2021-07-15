@@ -2,10 +2,12 @@ const assert = require('assert');
 const Board = require('../src/board.js').Board;
 const BoardView = require('../src/boardview.js').BoardView;
 const Square = require('../src/square.js').Square;
+const PieceBoard = require('../src/pieceboard.js').PieceBoard;
 
 const board = new Board();
 board.parseFenToBoard('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'); // eslint-disable-line
 
+// Boards should return BigInts
 describe('Board', function() {
   describe('#parseFenToBoard()', function() {
     it('returns a bitboard for a given fen', function() {
@@ -28,25 +30,32 @@ describe('Board', function() {
       assert.equal(flippedBoard.bb, 15992005286099480479n);
     });
   });
+});
 
-  describe('#indicesFor', function() {
-    const pieceBoards = board.pieceBoards;
+// PieceBoard should return BigInts
+describe('PieceBoard', function() {
+  describe('#bb', function() {
+    it('returns the correct bigint', function() {
+      const rook = new PieceBoard();
+      rook.setPos(55);
 
-    it('shows indices of black rook', function() {
-      assert.equal(Square.indicesFor('r', pieceBoards)[0], 56);
-      assert.equal(Square.indicesFor('r', pieceBoards)[1], 63);
+      assert.equal(rook.bb, 36028797018963968n);
     });
+  });
 
-    it('shows indices of black king', function() {
-      assert.equal(Square.indicesFor('k', pieceBoards)[0], 60);
-    });
+  describe.skip('#pawnMoves', function() {
+    it('returns pawn moves', function() {
+      const pawn = new PieceBoard();
+      pawn.setPos(10);
+      pawn.pMoves();
 
-    it('shows indices of white king', function() {
-      assert.equal(Square.indicesFor('K', pieceBoards)[0], 4);
+      // assert.equal(new BoardView())
+      assert.equal(BoardView.displayBb(pawn.bb), 1241334n);
     });
   });
 });
 
+// BoardView should return Strings
 /* eslint-disable max-len */
 describe('BoardView', function() {
   // in binary, you have to read from right to left
@@ -65,6 +74,12 @@ describe('BoardView', function() {
 
       assert.equal(new BoardView(flippedBoard.pieceBoards).display(), '11111001\n11110111\n00000100\n00101000\n00101000\n00100000\n11110111\n10111011');
     });
+
+    it('handles arbitrary pieceboards', function() {
+      const rook = new PieceBoard();
+      rook.setPos(55);
+      assert.equal(new BoardView({'r': rook}).display(), '00000000\n00000001\n00000000\n00000000\n00000000\n00000000\n00000000\n00000000');
+    });
   });
 
   describe('#displayPiece()', function() {
@@ -81,3 +96,24 @@ describe('BoardView', function() {
   });
 });
 /* eslint-enable max-len */
+
+// Square should return integer indices
+describe('Square', function() {
+  describe('#indicesFor', function() {
+    const pieceBoards = board.pieceBoards;
+
+    it('shows indices of black rook', function() {
+      assert.equal(Square.indicesFor('r', pieceBoards)[0], 56);
+      assert.equal(Square.indicesFor('r', pieceBoards)[1], 63);
+    });
+
+    it('shows indices of black king', function() {
+      assert.equal(Square.indicesFor('k', pieceBoards)[0], 60);
+    });
+
+    it('shows indices of white king', function() {
+      assert.equal(Square.indicesFor('K', pieceBoards)[0], 4);
+    });
+  });
+});
+

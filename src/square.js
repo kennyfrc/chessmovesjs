@@ -19,7 +19,7 @@ class Square {
   }
 
   static indicesFor(piece, pieceBoards) {
-    let board = pieceBoards[piece];
+    let board = pieceBoards[piece].bb;
     const someList = [];
     if (board != BigInt(0)) {
       do {

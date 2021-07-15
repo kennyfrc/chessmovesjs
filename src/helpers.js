@@ -27,34 +27,35 @@ class BitHelper {
     * Thus, we have to split the BigInt into two, get their complements,
     * then combine them into a BigInt.
     */
-  static bigIntComplement(board) {
-    const top32bitNot = ( ~parseInt(board >> BigInt(32)) >>> 0 );
-    const bottom32bitNot = ( ~parseInt(board & BigInt('0xffffffff', 16)) >>>
+  static bigIntComplement(bb) {
+    const top32bitNot = ( ~parseInt(bb >> BigInt(32)) >>> 0 );
+    const bottom32bitNot = ( ~parseInt(bb & BigInt('0xffffffff', 16)) >>>
       0 );
 
     return ((BigInt(top32bitNot) << BigInt(32)) | BigInt(bottom32bitNot));
   }
 
-  static bigIntNegation(board) {
-    return BigInt.asUintN(64, ~(board) + BigInt(1));
+  static bigIntNegation(bb) {
+    return BigInt.asUintN(64, ~(bb) + BigInt(1));
   }
 
   /**
-    * Counts trailing zeroes after subtracting one (board & -board) extracts
+    * Counts trailing zeroes after subtracting one (bb & -bb) extracts
     * the least significant bit BigInt(1) then removes it
     */
-  static bitScanFwd(board) {
-    return BitHelper.popCount( (board & BitHelper.bigIntNegation(board)) -
+  static bitScanFwd(bb) {
+    return BitHelper.popCount( (bb & BitHelper.bigIntNegation(bb)) -
       BigInt(1) );
   }
 
-  // counting bits: http://www-graphics.stanford.edu/~seander/bithacks.html#CountBitsSetKernighan
-  static popCount(board) {
+  // counting bits: 
+  // www-graphics.stanford.edu/~seander/bithacks.html#CountBitsSetKernighan
+  static popCount(bb) {
     let count = 0;
 
-    while (board > 0) {
+    while (bb > 0) {
       count++;
-      board &= board - BigInt(1); // reset LS1B
+      bb &= bb - BigInt(1); // reset LS1B
     }
 
     return count;

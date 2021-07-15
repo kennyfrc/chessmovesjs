@@ -1,11 +1,12 @@
 const BitHelper = require('./helpers.js').BitHelper;
 const PieceBoard = require('./pieceboard.js').PieceBoard;
+const PieceBoardList = require('./pieceboard.js').PieceBoardList;
 
 class Board {
   constructor() {
     this.start_fen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
     this.bb = BigInt(0);
-    this.pieceBoards = this.initializeBoards();
+    this.pieceBoardList = new PieceBoardList();
 
     this.castleStatus = 0;
     this.castleBit = {'K': 1, 'Q': 2, 'k': 4, 'q': 8};
@@ -32,9 +33,9 @@ class Board {
         }
       } else {
         if ('kqrbnpKQRBNP'.includes(fen[i])) {
-          const pieceBit = BitHelper.setBit(this.pieceBoards[fen[i]].bb,
+          const pieceBit = BitHelper.setBit(this.pieceBoardList.get(fen[i]).bb,
               fenIndex);
-          this.pieceBoards[fen[i]] = new PieceBoard(pieceBit);
+          this.pieceBoardList.set(fen[i], new PieceBoard(pieceBit));
           fenIndex += 1;
         }
 
@@ -53,12 +54,12 @@ class Board {
       }
     }
 
-    Object.keys(this.pieceBoards).forEach((piece) => {
-      this.bb |= this.pieceBoards[piece].bb;
+    Object.keys(this.pieceBoardList).forEach((piece) => {
+      this.bb |= this.pieceBoardList[piece].bb;
     });
   }
 
-  initializeBoards() {
+  initializePairs() {
     return {'k': new PieceBoard(), 'q': new PieceBoard(), 'r': new PieceBoard(),
       'b': new PieceBoard(), 'n': new PieceBoard(), 'p': new PieceBoard(),
       'K': new PieceBoard(), 'Q': new PieceBoard(), 'R': new PieceBoard(),
@@ -67,7 +68,7 @@ class Board {
   }
 
   resetBoard() {
-    this.pieceBoards = this.initializeBoards();
+    this.pieceBoardList = new PieceBoardList();
   }
 
   /**
@@ -76,33 +77,23 @@ class Board {
    */
   flipBoard() {
     for (let sq = 0; sq < 32; sq++) {
-      for (const [piece, pboard] of Object.entries(this.pieceBoards)) {
+      for (const [piece, pboard] of Object.entries(this.pieceBoardList)) {
         const bit = BitHelper.getBit(pboard.bb, sq);
         const invertedBit = BitHelper.getBit(pboard.bb, sq ^ 56);
 
         pboard.bb = BitHelper.updateBit(pboard.bb, sq, invertedBit);
         pboard.bb = BitHelper.updateBit(pboard.bb, sq ^ 56, bit);
 
-        this.pieceBoards[piece] = pboard;
+        this.pieceBoardList.set(piece, pboard);
       }
     }
   }
 }
-
+  
 // Least Significant File Mapping
 // function squareIdx(rank_idx, file_idx) {
 //   return ( 8 * rank_idx + file_idx );
 // }
-
-// LERF-mapping constants
-// const A_FILE = BigInt('0x0101010101010101');
-// const H_FILE = BigInt('0x8080808080808080');
-// const FIRST_RANK = BigInt('0x00000000000000FF');
-// const EIGHTH_RANK = BigInt('0xFF00000000000000');
-// const A1_H8_DIAGONAL = BigInt('0x8040201008040201');
-// const H1_A8_DIAGONAL = BigInt('0x0102040810204080');
-// const LIGHT_SQ = BigInt('0x55AA55AA55AA55AA');
-// const DARK_SQ = BigInt('0xAA55AA55AA55AA55');
 
 // noWe         nort         noEa
 //         +7    +8    +9
@@ -114,4 +105,5 @@ class Board {
 
 module.exports = {
   Board: Board,
+  PieceBoardList: PieceBoardList,
 };

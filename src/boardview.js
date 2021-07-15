@@ -1,28 +1,20 @@
 const Board = require('./board.js').Board;
 const BitHelper = require('./helpers.js').BitHelper;
 const Square = require('../src/square.js').Square;
+const PieceBoardList = require('../src/pieceboard.js').PieceBoardList;
 
 class BoardView extends Board {
-  constructor(pieceBoards) {
+  constructor(pieceBoardList) {
     super();
-    this.pieceBoards = pieceBoards;
-    this.bb = this.parsePbToBb(pieceBoards, this.bb);
+    this.pieceBoardList = pieceBoardList;
+    this.bb = this.parsePlToBb(pieceBoardList, this.bb);
     this.userView = this.parseToUserView();
   }
 
-  static displayBb(bb) {
-    this.userView = [];
-    for (let i = 0; i < 64; i++) {
-      this.userView[i] = BitHelper.getBit(this.bb, i);
-    }
-    return this.display();
-  }
-
-  parsePbToBb(pieceBoards, bb) {
-    Object.keys(pieceBoards).forEach((piece) => {
-      bb |= pieceBoards[piece].bb;
+  parsePlToBb(pieceBoardList, bb) {
+    Object.keys(pieceBoardList).forEach((piece) => {
+      bb |= pieceBoardList.get(piece).bb;
     });
-
     return bb;
   }
 
@@ -71,19 +63,10 @@ class BoardView extends Board {
   }
 
   displayPiece(fenChar) {
-    const filteredPieceBoards = this.#filter(fenChar);
+    let pieceBoardList = new PieceBoardList();
+    pieceBoardList.set(fenChar, this.pieceBoardList.get(fenChar))
 
-    return new BoardView(filteredPieceBoards).display();
-  }
-
-  #filter(fenChar) {
-    const filteredPieceboard = {};
-    Object.entries(this.pieceBoards).forEach((pieceBoard) => {
-      if (pieceBoard[0] == fenChar) {
-        filteredPieceboard[pieceBoard[0]] = pieceBoard[1];
-      }
-    });
-    return filteredPieceboard;
+    return new BoardView(pieceBoardList).display();
   }
 }
 

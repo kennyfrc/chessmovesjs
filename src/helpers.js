@@ -1,22 +1,22 @@
 class BitHelper {
-  static getBit(board, bitPosition) {
-    return (board & (BigInt(1) << BigInt(bitPosition))) === BigInt(0) ?
+  static getBit(bb, bitPosition) {
+    return (bb & (BigInt(1) << BigInt(bitPosition))) === BigInt(0) ?
       BigInt(0) : BigInt(1);
   }
 
-  static setBit(board, bitPosition) {
-    return board | BigInt(1) << BigInt(bitPosition);
+  static setBit(bb, bitPosition) {
+    return bb | BigInt(1) << BigInt(bitPosition);
   }
 
-  static clearBit(board, bitPosition) {
+  static clearBit(bb, bitPosition) {
     const mask = ~(BigInt(1) << BigInt(bitPosition));
-    return board & mask;
+    return bb & mask;
   }
 
-  static updateBit(board, bitPosition, bitValue) {
+  static updateBit(bb, bitPosition, bitValue) {
     const bitValueNormalized = BigInt(bitValue) ? BigInt(1) : BigInt(0);
     const clearMask = ~(BigInt(1) << BigInt(bitPosition));
-    return (board & clearMask) | (bitValueNormalized << BigInt(bitPosition));
+    return (bb & clearMask) | (bitValueNormalized << BigInt(bitPosition));
   }
 
   /**

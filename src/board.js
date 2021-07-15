@@ -32,8 +32,9 @@ class Board {
         }
       } else {
         if ('kqrbnpKQRBNP'.includes(fen[i])) {
-          this.pieceBoards[fen[i]] = new PieceBoard(BitHelper.setBit(this.pieceBoards[fen[i]].bb,
-              fenIndex));
+          const pieceBit = BitHelper.setBit(this.pieceBoards[fen[i]].bb,
+              fenIndex);
+          this.pieceBoards[fen[i]] = new PieceBoard(pieceBit);
           fenIndex += 1;
         }
 

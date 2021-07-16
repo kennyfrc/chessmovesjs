@@ -110,19 +110,21 @@ describe('BoardView', function() {
 // Square should return integer indices
 describe('Square', function() {
   describe('#indicesFor', function() {
-    const pieceBoardList = board.pieceBoardList;
+    const rookBoard = board.pieceBoardList.r;
+    const bKingBoard = board.pieceBoardList.k;
+    const wKingBoard = board.pieceBoardList.K;
 
     it('shows indices of black rook', function() {
-      assert.equal(Square.indicesFor('r', pieceBoardList)[0], 56);
-      assert.equal(Square.indicesFor('r', pieceBoardList)[1], 63);
+      assert.equal(Square.indicesFor(rookBoard)[0], 56);
+      assert.equal(Square.indicesFor(rookBoard)[1], 63);
     });
 
     it('shows indices of black king', function() {
-      assert.equal(Square.indicesFor('k', pieceBoardList)[0], 60);
+      assert.equal(Square.indicesFor(bKingBoard)[0], 60);
     });
 
     it('shows indices of white king', function() {
-      assert.equal(Square.indicesFor('K', pieceBoardList)[0], 4);
+      assert.equal(Square.indicesFor(wKingBoard)[0], 4);
     });
   });
 });

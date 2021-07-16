@@ -13,7 +13,7 @@ class BoardView extends Board {
 
   parsePlToBb(pieceBoardList, bb) {
     Object.keys(pieceBoardList).forEach((piece) => {
-      bb |= pieceBoardList.get(piece).bb;
+      bb |= pieceBoardList[piece].bb;
     });
     return bb;
   }
@@ -64,7 +64,7 @@ class BoardView extends Board {
 
   displayPiece(fenChar) {
     let pieceBoardList = new PieceBoardList();
-    pieceBoardList.set(fenChar, this.pieceBoardList.get(fenChar))
+    pieceBoardList[fenChar] = this.pieceBoardList[fenChar];
 
     return new BoardView(pieceBoardList).display();
   }

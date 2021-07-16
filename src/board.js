@@ -33,9 +33,9 @@ class Board {
         }
       } else {
         if ('kqrbnpKQRBNP'.includes(fen[i])) {
-          const pieceBit = BitHelper.setBit(this.pieceBoardList.get(fen[i]).bb,
+          const pieceBit = BitHelper.setBit(this.pieceBoardList[fen[i]].bb,
               fenIndex);
-          this.pieceBoardList.set(fen[i], new PieceBoard(pieceBit));
+          this.pieceBoardList[fen[i]] = new PieceBoard(pieceBit);
           fenIndex += 1;
         }
 
@@ -84,7 +84,7 @@ class Board {
         pboard.bb = BitHelper.updateBit(pboard.bb, sq, invertedBit);
         pboard.bb = BitHelper.updateBit(pboard.bb, sq ^ 56, bit);
 
-        this.pieceBoardList.set(piece, pboard);
+        this.pieceBoardList[piece] = pboard;
       }
     }
   }

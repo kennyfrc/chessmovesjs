@@ -13,7 +13,7 @@ describe('Board', function() {
     it('returns a bitboard for a given fen', function() {
       assert.equal(board.bb, 18446462598732906495n);
     });
-  });
+  }); 
 
   describe('#displayCastleStatus', function() {
     it('returns the integer representing the castling status', function() {
@@ -78,7 +78,7 @@ describe('BoardView', function() {
     it('handles arbitrary pieceBoardList', function() {
       let rookBoard = new Board();
       const rook = PieceBoard.for('r', 55);
-      rookBoard.pieceBoardList.set('r', rook);
+      rookBoard.pieceBoardList['r'] = rook;
       assert.equal(new BoardView(rookBoard.pieceBoardList).display(), '00000000\n00000001\n00000000\n00000000\n00000000\n00000000\n00000000\n00000000');
     });
   });

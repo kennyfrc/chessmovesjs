@@ -13,6 +13,8 @@ describe('Board', function() {
   describe('#parseFenToBoard()', function() {
     it('returns a bitboard for a given fen', function() {
       assert.equal(board.bb, 18446462598732906495n);
+      assert.equal(board.whiteBb, 65535n);
+      assert.equal(board.blackBb, 18446462598732840960n);
     });
   }); 
 
@@ -47,6 +49,8 @@ describe('PieceBoard', function() {
       let pawnBoard = new Board();
       const pawn2ndRank = PieceBoard.for('P', 10).on(pawnBoard.bb);
       const pawn3rdRank = PieceBoard.for('P', 21).on(pawnBoard.bb);
+      const pawn7thRank = PieceBoard.for('P', 54).on(pawnBoard.bb);
+      const pawn8thRank = PieceBoard.for('P', 61).on(pawnBoard.bb);
       // pawnBoard.pieceBoardList['p'] = pawn2ndRank;
       // console.log(pawn);
       // console.log(pawn.moves())
@@ -60,6 +64,10 @@ describe('PieceBoard', function() {
       assert.equal(new PieceBoardView(pawn2ndRank).displayMoves(), '00000000\n00000000\n00000000\n00000000\n00100000\n00100000\n00000000\n00000000')
       assert.equal(new PieceBoardView(pawn3rdRank).display(),  '00000000\n00000000\n00000000\n00000000\n00000000\n00000100\n00000000\n00000000');
       assert.equal(new PieceBoardView(pawn3rdRank).displayMoves(), '00000000\n00000000\n00000000\n00000000\n00000100\n00000000\n00000000\n00000000')
+      assert.equal(new PieceBoardView(pawn7thRank).display(),  '00000000\n00000010\n00000000\n00000000\n00000000\n00000000\n00000000\n00000000');
+      assert.equal(new PieceBoardView(pawn7thRank).displayMoves(), '00000010\n00000000\n00000000\n00000000\n00000000\n00000000\n00000000\n00000000')
+      assert.equal(new PieceBoardView(pawn8thRank).display(),  '00000100\n00000000\n00000000\n00000000\n00000000\n00000000\n00000000\n00000000');
+      assert.equal(new PieceBoardView(pawn8thRank).displayMoves(), '00000000\n00000000\n00000000\n00000000\n00000000\n00000000\n00000000\n00000000')
     });
   });
 });

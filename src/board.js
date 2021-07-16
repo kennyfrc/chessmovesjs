@@ -4,9 +4,13 @@ const PieceBoardList = require('./pieceboard.js').PieceBoardList;
 
 class Board {
   constructor() {
-    this.start_fen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
+    this.startFen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
     this.bb = BigInt(0);
+    this.whiteBb = BigInt(0);
+    this.blackBb = BigInt(0);
     this.pieceBoardList = new PieceBoardList();
+    this.whitePieceBoardList = new PieceBoardList();
+    this.blackPieceBoardList = new PieceBoardList();
 
     this.castleStatus = 0;
     this.castleBit = {'K': 1, 'Q': 2, 'k': 4, 'q': 8};
@@ -32,10 +36,19 @@ class Board {
           this.castleStatus |= this.castleBit[fen[i]];
         }
       } else {
-        if ('kqrbnpKQRBNP'.includes(fen[i])) {
-          const pieceBit = BitHelper.setBit(this.pieceBoardList[fen[i]].bb,
+        if ('KQRBNP'.includes(fen[i])) {
+          const pieceBit = BitHelper.setBit(this.whitePieceBoardList[fen[i]].bb,
               fenIndex);
-          this.pieceBoardList[fen[i]] = new PieceBoard(pieceBit);
+          this.whitePieceBoardList[fen[i]] = new PieceBoard(pieceBit);
+          this.whiteBb |= pieceBit;
+          fenIndex += 1;
+        }
+
+        if ('kqrbnp'.includes(fen[i])) {
+          const pieceBit = BitHelper.setBit(this.blackPieceBoardList[fen[i]].bb,
+              fenIndex);
+          this.blackPieceBoardList[fen[i]] = new PieceBoard(pieceBit);
+          this.blackBb |= pieceBit;
           fenIndex += 1;
         }
 
@@ -54,9 +67,12 @@ class Board {
       }
     }
 
+    this.pieceBoardList = PieceBoardList.merge(this.whitePieceBoardList, this.blackPieceBoardList);
+
     Object.keys(this.pieceBoardList).forEach((piece) => {
       this.bb |= this.pieceBoardList[piece].bb;
     });
+
   }
 
   initializePairs() {

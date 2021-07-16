@@ -62,6 +62,21 @@ class BitHelper {
   }
 }
 
+// LERF-mapping constants
+class BoardHelper {
+  static aFile() { return BigInt('0x0101010101010101') }
+  static hFile() { return BigInt('0x8080808080808080') }
+  static firstRank() { return BigInt('0x00000000000000FF') }
+  static secondRank() { return BigInt('0x000000000000FF00')}
+  static fourthRank() { return BigInt('0x00000000FF000000')}
+  static eighthRank() { return BigInt('0xFF00000000000000') }
+  static a1H8Diagonal() { return BigInt('0x8040201008040201') }
+  static h1A8Diagonal() { return BigInt('0x0102040810204080') }
+  static lightSq() { return BigInt('0x55AA55AA55AA55AA') }
+  static darkSq() { return BigInt('0xAA55AA55AA55AA55')}
+}
+
 module.exports = {
   BitHelper: BitHelper,
+  BoardHelper: BoardHelper,
 };

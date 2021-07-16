@@ -1,4 +1,5 @@
 const BitHelper = require('./helpers.js').BitHelper;
+const BoardHelper = require('./helpers.js').BoardHelper;
 const Board = require('./board.js').Board;
 
 class PieceBoard {
@@ -19,10 +20,10 @@ class PieceBoard {
     return new PieceClass(BigInt(0), fenIndex);
   }
 
-  // on(board) {
-  //   this.mainBoard = board;
-  //   return this
-  // }
+  on(board) {
+    this.mainBoard = board;
+    return this
+  }
 }
 
 class RookBoard extends PieceBoard {
@@ -32,29 +33,38 @@ class RookBoard extends PieceBoard {
   }
 }
 
-// class PawnBoard extends PieceBoard {
-//   constructor(bb, fenIndex, fenChar) {
-//     super();
-//     this.bb = BitHelper.setBit(bb, fenIndex);
-//     this.fenChar = fenChar;
-//   }
+class PawnBoard extends PieceBoard {
+  constructor(bb, fenIndex, fenChar) {
+    super();
+    this.bb = BitHelper.setBit(bb, fenIndex);
+    this.fenChar = fenChar;
+  }
 
-//   moves() {
-//     if (!(this.bb & BigInt('0x8080808080808080'))) {
-//       return Attacks.wSinglePush(this);
-//     }
-//   }
-// }
+  moves() {
+    if (!(this.bb & BoardHelper.hFile())) {
+      if (this.bb & BoardHelper.secondRank()) {
+        return Attacks.wSinglePush(this) | Attacks.wDoublePUsh(this)
+      } else {
+        return Attacks.wSinglePush(this)
+      }
+    }
+  }
+}
 
-// class Attacks {
-//   static wSinglePush(pawnBoard) {
-//     return Attacks.northOne(pawnBoard.bb) & ~pawnBoard.mainBoard;
-//   }
+class Attacks {
+  static wSinglePush(pawnBoard) {
+    return Attacks.northOne(pawnBoard.bb) & ~pawnBoard.mainBoard;
+  }
 
-//   static northOne(bb) {
-//     return bb << BigInt(8);
-//   }
-// }
+  static wDoublePUsh(pawnBoard) {
+    const singlePushBb = this.wSinglePush(pawnBoard);
+    return Attacks.northOne(singlePushBb) & ~pawnBoard.mainBoard & BoardHelper.fourthRank();
+  }
+
+  static northOne(bb) {
+    return bb << BigInt(8);
+  }
+}
 
 class PieceBoardList {
   constructor() {
@@ -72,16 +82,6 @@ class PieceBoardList {
     this.p = new PieceBoard()
   }
 }
-
-// LERF-mapping constants
-// const A_FILE = BigInt('0x0101010101010101');
-// const H_FILE = BigInt('0x8080808080808080');
-// const FIRST_RANK = BigInt('0x00000000000000FF');
-// const EIGHTH_RANK = BigInt('0xFF00000000000000');
-// const A1_H8_DIAGONAL = BigInt('0x8040201008040201');
-// const H1_A8_DIAGONAL = BigInt('0x0102040810204080');
-// const LIGHT_SQ = BigInt('0x55AA55AA55AA55AA');
-// const DARK_SQ = BigInt('0xAA55AA55AA55AA55');
 
 // class RookBoard {
 //   constructor(fenIndex) {

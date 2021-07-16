@@ -3,6 +3,7 @@ const Board = require('../src/board.js').Board;
 const BoardView = require('../src/boardview.js').BoardView;
 const Square = require('../src/square.js').Square;
 const PieceBoard = require('../src/pieceboard.js').PieceBoard;
+const PieceBoardView = require('../src/boardview.js').PieceBoardView;
 
 const board = new Board();
 board.parseFenToBoard('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'); // eslint-disable-line
@@ -41,16 +42,24 @@ describe('PieceBoard', function() {
     });
   });
 
-  describe.skip('#pawnMoves', function() {
+  describe('#pawnMoves', function() {
     it('returns pawn moves', function() {
-      const pawn = PieceBoard.for('p', 10).on(board.bb);
+      let pawnBoard = new Board();
+      const pawn2ndRank = PieceBoard.for('P', 10).on(pawnBoard.bb);
+      const pawn3rdRank = PieceBoard.for('P', 21).on(pawnBoard.bb);
+      // pawnBoard.pieceBoardList['p'] = pawn2ndRank;
       // console.log(pawn);
-      console.log(pawn.moves())
+      // console.log(pawn.moves())
       // console.log(new MoveView(pawn.moves()).display())
 
       // assert.equal(new BoardView())
       // new BoardView(pieceBoardList.get('k').moves())
-      assert.equal(new BoardView({'p': pawn.moves()}).display(), 1241334n);
+      // TODO: add attacks
+      // TODO: add black pieces
+      assert.equal(new PieceBoardView(pawn2ndRank).display(),  '00000000\n00000000\n00000000\n00000000\n00000000\n00000000\n00100000\n00000000');
+      assert.equal(new PieceBoardView(pawn2ndRank).displayMoves(), '00000000\n00000000\n00000000\n00000000\n00100000\n00100000\n00000000\n00000000')
+      assert.equal(new PieceBoardView(pawn3rdRank).display(),  '00000000\n00000000\n00000000\n00000000\n00000000\n00000100\n00000000\n00000000');
+      assert.equal(new PieceBoardView(pawn3rdRank).displayMoves(), '00000000\n00000000\n00000000\n00000000\n00000100\n00000000\n00000000\n00000000')
     });
   });
 });

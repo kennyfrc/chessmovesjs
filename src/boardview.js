@@ -12,16 +12,19 @@ class BoardView extends Board {
   }
 
   parsePlToBb(pieceBoardList, bb) {
-    Object.keys(pieceBoardList).forEach((piece) => {
-      bb |= pieceBoardList[piece].bb;
-    });
+    if (pieceBoardList) {
+      Object.keys(pieceBoardList).forEach((piece) => {
+        bb |= pieceBoardList[piece].bb;
+      });
+    }
     return bb;
   }
 
-  parseToUserView() {
+  parseToUserView(bb) {
+    const bbToView = bb || this.bb;
     const userView = [];
     for (let i = 0; i < 64; i++) {
-      userView[i] = BitHelper.getBit(this.bb, i);
+      userView[i] = BitHelper.getBit(bbToView, i);
     }
     return userView;
   }
@@ -70,6 +73,21 @@ class BoardView extends Board {
   }
 }
 
+class PieceBoardView extends BoardView {
+  constructor(pieceBoard) {
+    super();
+    this.pieceBoard = pieceBoard;
+    this.bb = pieceBoard.bb;
+    this.userView = this.parseToUserView();
+  }
+
+  displayMoves() {
+    this.userView = this.parseToUserView(this.pieceBoard.moves());
+    return this.display();
+  }
+}
+
 module.exports = {
   BoardView: BoardView,
+  PieceBoardView: PieceBoardView,
 };

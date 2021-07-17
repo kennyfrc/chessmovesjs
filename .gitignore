@@ -5,3 +5,4 @@ dist/**
 # Ignore these files
 .DS_Store
 *.log
+TODO.md

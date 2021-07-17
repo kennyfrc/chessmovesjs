@@ -19,6 +19,14 @@ class BitHelper {
     return (bb & clearMask) | (bitValueNormalized << BigInt(bitPosition));
   }
 
+  static bitFor(indices) {
+    let parsedBit = BigInt(0);
+    indices.forEach((index) => {
+      parsedBit |= BitHelper.setBit(parsedBit, idx);
+    });
+    return parsedBit;
+  }
+
   /**
     * Gets the complement of a BigInt
     * Because of the two's complement format, doing ~bigIntValue will
@@ -48,8 +56,9 @@ class BitHelper {
       BigInt(1) );
   }
 
-  // counting bits: 
-  // www-graphics.stanford.edu/~seander/bithacks.html#CountBitsSetKernighan
+  /** counting bits:
+   *  www-graphics.stanford.edu/~seander/bithacks.html#CountBitsSetKernighan
+   **/
   static popCount(bb) {
     let count = 0;
 
@@ -64,17 +73,62 @@ class BitHelper {
 
 // LERF-mapping constants
 class BoardHelper {
-  static aFile() { return BigInt('0x0101010101010101') }
-  static hFile() { return BigInt('0x8080808080808080') }
-  static firstRank() { return BigInt('0x00000000000000FF') }
-  static secondRank() { return BigInt('0x000000000000FF00')}
-  static fourthRank() { return BigInt('0x00000000FF000000')}
-  static eighthRank() { return BigInt('0xFF00000000000000') }
-  static a1H8Diagonal() { return BigInt('0x8040201008040201') }
-  static h1A8Diagonal() { return BigInt('0x0102040810204080') }
-  static lightSq() { return BigInt('0x55AA55AA55AA55AA') }
-  static darkSq() { return BigInt('0xAA55AA55AA55AA55')}
+  static aFile() {
+    return BigInt('0x0101010101010101');
+  }
+  static hFile() {
+    return BigInt('0x8080808080808080');
+  }
+  static firstRank() {
+    return BigInt('0x00000000000000FF');
+  }
+  static secondRank() {
+    return BigInt('0x000000000000FF00');
+  }
+  static thirdRank() {
+    return BigInt('0x0000000000FF0000');
+  }
+  static fourthRank() {
+    return BigInt('0x00000000FF000000');
+  }
+  static fifthRank() {
+    return BigInt('0x000000FF00000000');
+  }
+  static sixthRank() {
+    return BigInt('0x0000FF0000000000');
+  }
+  static seventhRank() {
+    return BigInt('0x00FF000000000000');
+  }
+  static eighthRank() {
+    return BigInt('0xFF00000000000000');
+  }
+  static a1H8Diagonal() {
+    return BigInt('0x8040201008040201');
+  }
+  static h1A8Diagonal() {
+    return BigInt('0x0102040810204080');
+  }
+  static lightSq() {
+    return BigInt('0x55AA55AA55AA55AA');
+  }
+  static darkSq() {
+    return BigInt('0xAA55AA55AA55AA55');
+  }
 }
+
+// Least Significant File Mapping
+// function squareIdx(rank_idx, file_idx) {
+//   return ( 8 * rank_idx + file_idx );
+// }
+
+// noWe         nort         noEa
+//         +7    +8    +9
+//             \  |  /
+// west    -1 <-  0 -> +1    east
+//             /  |  \
+//         -9    -8    -7
+// soWe         sout         soEa
 
 module.exports = {
   BitHelper: BitHelper,

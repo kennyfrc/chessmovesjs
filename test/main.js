@@ -2,11 +2,12 @@ const assert = require('assert');
 const Board = require('../src/board.js').Board;
 const BoardView = require('../src/boardview.js').BoardView;
 const Square = require('../src/square.js').Square;
-const PieceBoard = require('../src/pieceboard.js').PieceBoard;
-const PieceBoardView = require('../src/boardview.js').PieceBoardView;
+// const PieceBoard = require('../src/board.js').PieceBoard;
+// const ViewHelper = require('../src/pieceboard.js').ViewHelper;
 
 const board = new Board();
 board.parseFenToBoard('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'); // eslint-disable-line
+
 
 // Boards should return BigInts
 describe('Board', function() {
@@ -15,12 +16,6 @@ describe('Board', function() {
       assert.equal(board.bb, 18446462598732906495n);
       assert.equal(board.whiteBb, 65535n);
       assert.equal(board.blackBb, 18446462598732840960n);
-    });
-  }); 
-
-  describe('#displayCastleStatus', function() {
-    it('returns the integer representing the castling status', function() {
-      assert.equal(board.castleStatus, 15);
     });
   });
 
@@ -33,41 +28,36 @@ describe('Board', function() {
       assert.equal(flippedBoard.bb, 15992005286099480479n);
     });
   });
+
+  describe('.displayCastleStatus', function() {
+    it('returns the integer representing the castling status', function() {
+      assert.equal(board.castleStatus, 15);
+    });
+  });
 });
 
 // PieceBoard should return BigInts
+// Not sure if this is good as it relies on the parent class
 describe('PieceBoard', function() {
-  describe('#bb', function() {
+  describe('.bb', function() {
     it('returns the correct bigint', function() {
-      const rook = PieceBoard.for('r', 55); 
-      assert.equal(rook.bb, 36028797018963968n);
+      const boardWRooksAtCorner = new Board();
+      boardWRooksAtCorner.parseFenToBoard('r1bqk1nr/pppp1ppp/2n5/2b1p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq ');
+      assert.equal(boardWRooksAtCorner.pieceBoardList.r.bb, 9295429630892703744n);
+      assert.equal(boardWRooksAtCorner.pieceBoardList.R.bb, 129n);
     });
   });
+});
 
-  describe('#pawnMoves', function() {
-    it('returns pawn moves', function() {
-      let pawnBoard = new Board();
-      const pawn2ndRank = PieceBoard.for('P', 10).on(pawnBoard.bb);
-      const pawn3rdRank = PieceBoard.for('P', 21).on(pawnBoard.bb);
-      const pawn7thRank = PieceBoard.for('P', 54).on(pawnBoard.bb);
-      const pawn8thRank = PieceBoard.for('P', 61).on(pawnBoard.bb);
-      // pawnBoard.pieceBoardList['p'] = pawn2ndRank;
-      // console.log(pawn);
-      // console.log(pawn.moves())
-      // console.log(new MoveView(pawn.moves()).display())
+// PawnBoards, RookBoards, etc are children of PieceBoard
+describe('PawnBoard', function() {
+  describe('#moves()', function() {
+    it('returns pseudo-legal pawn moves', function() {
+      const boardWManyPawnAttacks = new Board();
+      boardWManyPawnAttacks.parseFenToBoard('rnbqkbnr/1p2pp1p/8/p1pp2p1/1P2PP1P/8/P1PP2P1/RNBQKBNR w KQkq - 0 5');
 
-      // assert.equal(new BoardView())
-      // new BoardView(pieceBoardList.get('k').moves())
-      // TODO: add attacks
-      // TODO: add black pieces
-      assert.equal(new PieceBoardView(pawn2ndRank).display(),  '00000000\n00000000\n00000000\n00000000\n00000000\n00000000\n00100000\n00000000');
-      assert.equal(new PieceBoardView(pawn2ndRank).displayMoves(), '00000000\n00000000\n00000000\n00000000\n00100000\n00100000\n00000000\n00000000')
-      assert.equal(new PieceBoardView(pawn3rdRank).display(),  '00000000\n00000000\n00000000\n00000000\n00000000\n00000100\n00000000\n00000000');
-      assert.equal(new PieceBoardView(pawn3rdRank).displayMoves(), '00000000\n00000000\n00000000\n00000000\n00000100\n00000000\n00000000\n00000000')
-      assert.equal(new PieceBoardView(pawn7thRank).display(),  '00000000\n00000010\n00000000\n00000000\n00000000\n00000000\n00000000\n00000000');
-      assert.equal(new PieceBoardView(pawn7thRank).displayMoves(), '00000010\n00000000\n00000000\n00000000\n00000000\n00000000\n00000000\n00000000')
-      assert.equal(new PieceBoardView(pawn8thRank).display(),  '00000100\n00000000\n00000000\n00000000\n00000000\n00000000\n00000000\n00000000');
-      assert.equal(new PieceBoardView(pawn8thRank).displayMoves(), '00000000\n00000000\n00000000\n00000000\n00000000\n00000000\n00000000\n00000000')
+      assert.equal(boardWManyPawnAttacks.pieceBoardList.P.moves(), 1096513552384n);
+      assert.equal(boardWManyPawnAttacks.pieceBoardList.p.moves(), 196481852112896n);
     });
   });
 });
@@ -90,26 +80,6 @@ describe('BoardView', function() {
       flippedBoard.flipBoard();
 
       assert.equal(new BoardView(flippedBoard.pieceBoardList).display(), '11111001\n11110111\n00000100\n00101000\n00101000\n00100000\n11110111\n10111011');
-    });
-
-    it('handles arbitrary pieceBoardList', function() {
-      let rookBoard = new Board();
-      const rook = PieceBoard.for('r', 55);
-      rookBoard.pieceBoardList['r'] = rook;
-      assert.equal(new BoardView(rookBoard.pieceBoardList).display(), '00000000\n00000001\n00000000\n00000000\n00000000\n00000000\n00000000\n00000000');
-    });
-  });
-
-  describe('#displayPiece()', function() {
-    it('shows the correct initial pawn & piece placements', function() {
-      const pieceBoardList = board.pieceBoardList;
-
-      assert.equal(new BoardView(pieceBoardList).displayPiece('P'), '00000000\n00000000\n00000000\n00000000\n00000000\n00000000\n11111111\n00000000');
-      assert.equal(new BoardView(pieceBoardList).displayPiece('N'), '00000000\n00000000\n00000000\n00000000\n00000000\n00000000\n00000000\n01000010');
-      assert.equal(new BoardView(pieceBoardList).displayPiece('B'), '00000000\n00000000\n00000000\n00000000\n00000000\n00000000\n00000000\n00100100');
-      assert.equal(new BoardView(pieceBoardList).displayPiece('R'), '00000000\n00000000\n00000000\n00000000\n00000000\n00000000\n00000000\n10000001');
-      assert.equal(new BoardView(pieceBoardList).displayPiece('Q'), '00000000\n00000000\n00000000\n00000000\n00000000\n00000000\n00000000\n00010000');
-      assert.equal(new BoardView(pieceBoardList).displayPiece('K'), '00000000\n00000000\n00000000\n00000000\n00000000\n00000000\n00000000\n00001000');
     });
   });
 });

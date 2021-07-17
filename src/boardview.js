@@ -1,7 +1,6 @@
 const Board = require('./board.js').Board;
 const BitHelper = require('./helpers.js').BitHelper;
 const Square = require('../src/square.js').Square;
-const PieceBoardList = require('../src/pieceboard.js').PieceBoardList;
 
 class BoardView extends Board {
   constructor(pieceBoardList) {
@@ -64,30 +63,8 @@ class BoardView extends Board {
       this.userView[Square.for('E1')] + this.userView[Square.for('F1')] +
       this.userView[Square.for('G1')] + this.userView[Square.for('H1')];
   }
-
-  displayPiece(fenChar) {
-    let pieceBoardList = new PieceBoardList();
-    pieceBoardList[fenChar] = this.pieceBoardList[fenChar];
-
-    return new BoardView(pieceBoardList).display();
-  }
-}
-
-class PieceBoardView extends BoardView {
-  constructor(pieceBoard) {
-    super();
-    this.pieceBoard = pieceBoard;
-    this.bb = pieceBoard.bb;
-    this.userView = this.parseToUserView();
-  }
-
-  displayMoves() {
-    this.userView = this.parseToUserView(this.pieceBoard.moves());
-    return this.display();
-  }
 }
 
 module.exports = {
   BoardView: BoardView,
-  PieceBoardView: PieceBoardView,
 };

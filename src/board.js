@@ -39,7 +39,7 @@ class Board {
         if ('KQRBNP'.includes(fen[i])) {
           const pieceBit = BitHelper.setBit(this.whitePieceBoardList[fen[i]].bb,
               fenIndex);
-          this.whitePieceBoardList[fen[i]] = new PieceBoard(pieceBit);
+          this.whitePieceBoardList[fen[i]] = PieceBoard.for(fen[i], pieceBit);
           this.whiteBb |= pieceBit;
           fenIndex += 1;
         }
@@ -47,7 +47,7 @@ class Board {
         if ('kqrbnp'.includes(fen[i])) {
           const pieceBit = BitHelper.setBit(this.blackPieceBoardList[fen[i]].bb,
               fenIndex);
-          this.blackPieceBoardList[fen[i]] = new PieceBoard(pieceBit);
+          this.blackPieceBoardList[fen[i]] = PieceBoard.for(fen[i], pieceBit);
           this.blackBb |= pieceBit;
           fenIndex += 1;
         }
@@ -69,18 +69,12 @@ class Board {
 
     this.pieceBoardList = PieceBoardList.merge(this.whitePieceBoardList, this.blackPieceBoardList);
 
-    Object.keys(this.pieceBoardList).forEach((piece) => {
-      this.bb |= this.pieceBoardList[piece].bb;
+    Object.keys(this.pieceBoardList).forEach((pieceKey) => {
+      this.pieceBoardList[pieceKey].whiteBbContext = this.whiteBb;
+      this.pieceBoardList[pieceKey].blackBbContext = this.blackBb;
+      this.pieceBoardList[pieceKey].mainBb = this.whiteBb | this.blackBb;
+      this.bb |= this.pieceBoardList[pieceKey].bb;
     });
-
-  }
-
-  initializePairs() {
-    return {'k': new PieceBoard(), 'q': new PieceBoard(), 'r': new PieceBoard(),
-      'b': new PieceBoard(), 'n': new PieceBoard(), 'p': new PieceBoard(),
-      'K': new PieceBoard(), 'Q': new PieceBoard(), 'R': new PieceBoard(),
-      'B': new PieceBoard(), 'N': new PieceBoard(), 'P': new PieceBoard(),
-    };
   }
 
   resetBoard() {
@@ -105,21 +99,7 @@ class Board {
     }
   }
 }
-  
-// Least Significant File Mapping
-// function squareIdx(rank_idx, file_idx) {
-//   return ( 8 * rank_idx + file_idx );
-// }
-
-// noWe         nort         noEa
-//         +7    +8    +9
-//             \  |  /
-// west    -1 <-  0 -> +1    east
-//             /  |  \
-//         -9    -8    -7
-// soWe         sout         soEa
 
 module.exports = {
   Board: Board,
-  PieceBoardList: PieceBoardList,
 };

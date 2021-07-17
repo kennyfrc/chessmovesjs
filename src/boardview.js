@@ -3,33 +3,27 @@ const BitHelper = require('./helpers.js').BitHelper;
 const Square = require('../src/square.js').Square;
 
 class BoardView extends Board {
-  constructor(pieceBoards) {
+  constructor(pieceBoardList) {
     super();
-    this.pieceBoards = pieceBoards;
-    this.bb = this.parsePbToBb(pieceBoards, this.bb);
+    this.pieceBoardList = pieceBoardList;
+    this.bb = this.parsePlToBb(pieceBoardList, this.bb);
     this.userView = this.parseToUserView();
   }
 
-  static displayBb(bb) {
-    this.userView = [];
-    for (let i = 0; i < 64; i++) {
-      this.userView[i] = BitHelper.getBit(this.bb, i);
+  parsePlToBb(pieceBoardList, bb) {
+    if (pieceBoardList) {
+      Object.keys(pieceBoardList).forEach((piece) => {
+        bb |= pieceBoardList[piece].bb;
+      });
     }
-    return this.display();
-  }
-
-  parsePbToBb(pieceBoards, bb) {
-    Object.keys(pieceBoards).forEach((piece) => {
-      bb |= pieceBoards[piece].bb;
-    });
-
     return bb;
   }
 
-  parseToUserView() {
+  parseToUserView(bb) {
+    const bbToView = bb || this.bb;
     const userView = [];
     for (let i = 0; i < 64; i++) {
-      userView[i] = BitHelper.getBit(this.bb, i);
+      userView[i] = BitHelper.getBit(bbToView, i);
     }
     return userView;
   }
@@ -68,22 +62,6 @@ class BoardView extends Board {
       this.userView[Square.for('C1')] + this.userView[Square.for('D1')] +
       this.userView[Square.for('E1')] + this.userView[Square.for('F1')] +
       this.userView[Square.for('G1')] + this.userView[Square.for('H1')];
-  }
-
-  displayPiece(fenChar) {
-    const filteredPieceBoards = this.#filter(fenChar);
-
-    return new BoardView(filteredPieceBoards).display();
-  }
-
-  #filter(fenChar) {
-    const filteredPieceboard = {};
-    Object.entries(this.pieceBoards).forEach((pieceBoard) => {
-      if (pieceBoard[0] == fenChar) {
-        filteredPieceboard[pieceBoard[0]] = pieceBoard[1];
-      }
-    });
-    return filteredPieceboard;
   }
 }
 

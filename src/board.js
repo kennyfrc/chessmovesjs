@@ -1,11 +1,16 @@
 const BitHelper = require('./helpers.js').BitHelper;
 const PieceBoard = require('./pieceboard.js').PieceBoard;
+const PieceBoardList = require('./pieceboard.js').PieceBoardList;
 
 class Board {
   constructor() {
-    this.start_fen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
+    this.startFen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
     this.bb = BigInt(0);
-    this.pieceBoards = this.initializeBoards();
+    this.whiteBb = BigInt(0);
+    this.blackBb = BigInt(0);
+    this.pieceBoardList = new PieceBoardList();
+    this.whitePieceBoardList = new PieceBoardList();
+    this.blackPieceBoardList = new PieceBoardList();
 
     this.castleStatus = 0;
     this.castleBit = {'K': 1, 'Q': 2, 'k': 4, 'q': 8};
@@ -31,10 +36,19 @@ class Board {
           this.castleStatus |= this.castleBit[fen[i]];
         }
       } else {
-        if ('kqrbnpKQRBNP'.includes(fen[i])) {
-          const pieceBit = BitHelper.setBit(this.pieceBoards[fen[i]].bb,
+        if ('KQRBNP'.includes(fen[i])) {
+          const pieceBit = BitHelper.setBit(this.whitePieceBoardList[fen[i]].bb,
               fenIndex);
-          this.pieceBoards[fen[i]] = new PieceBoard(pieceBit);
+          this.whitePieceBoardList[fen[i]] = PieceBoard.for(fen[i], pieceBit);
+          this.whiteBb |= pieceBit;
+          fenIndex += 1;
+        }
+
+        if ('kqrbnp'.includes(fen[i])) {
+          const pieceBit = BitHelper.setBit(this.blackPieceBoardList[fen[i]].bb,
+              fenIndex);
+          this.blackPieceBoardList[fen[i]] = PieceBoard.for(fen[i], pieceBit);
+          this.blackBb |= pieceBit;
           fenIndex += 1;
         }
 
@@ -53,21 +67,18 @@ class Board {
       }
     }
 
-    Object.keys(this.pieceBoards).forEach((piece) => {
-      this.bb |= this.pieceBoards[piece].bb;
+    this.pieceBoardList = PieceBoardList.merge(this.whitePieceBoardList, this.blackPieceBoardList);
+
+    Object.keys(this.pieceBoardList).forEach((pieceKey) => {
+      this.pieceBoardList[pieceKey].whiteBbContext = this.whiteBb;
+      this.pieceBoardList[pieceKey].blackBbContext = this.blackBb;
+      this.pieceBoardList[pieceKey].mainBb = this.whiteBb | this.blackBb;
+      this.bb |= this.pieceBoardList[pieceKey].bb;
     });
   }
 
-  initializeBoards() {
-    return {'k': new PieceBoard(), 'q': new PieceBoard(), 'r': new PieceBoard(),
-      'b': new PieceBoard(), 'n': new PieceBoard(), 'p': new PieceBoard(),
-      'K': new PieceBoard(), 'Q': new PieceBoard(), 'R': new PieceBoard(),
-      'B': new PieceBoard(), 'N': new PieceBoard(), 'P': new PieceBoard(),
-    };
-  }
-
   resetBoard() {
-    this.pieceBoards = this.initializeBoards();
+    this.pieceBoardList = new PieceBoardList();
   }
 
   /**
@@ -76,41 +87,18 @@ class Board {
    */
   flipBoard() {
     for (let sq = 0; sq < 32; sq++) {
-      for (const [piece, pboard] of Object.entries(this.pieceBoards)) {
+      for (const [piece, pboard] of Object.entries(this.pieceBoardList)) {
         const bit = BitHelper.getBit(pboard.bb, sq);
         const invertedBit = BitHelper.getBit(pboard.bb, sq ^ 56);
 
         pboard.bb = BitHelper.updateBit(pboard.bb, sq, invertedBit);
         pboard.bb = BitHelper.updateBit(pboard.bb, sq ^ 56, bit);
 
-        this.pieceBoards[piece] = pboard;
+        this.pieceBoardList[piece] = pboard;
       }
     }
   }
 }
-
-// Least Significant File Mapping
-// function squareIdx(rank_idx, file_idx) {
-//   return ( 8 * rank_idx + file_idx );
-// }
-
-// LERF-mapping constants
-// const A_FILE = BigInt('0x0101010101010101');
-// const H_FILE = BigInt('0x8080808080808080');
-// const FIRST_RANK = BigInt('0x00000000000000FF');
-// const EIGHTH_RANK = BigInt('0xFF00000000000000');
-// const A1_H8_DIAGONAL = BigInt('0x8040201008040201');
-// const H1_A8_DIAGONAL = BigInt('0x0102040810204080');
-// const LIGHT_SQ = BigInt('0x55AA55AA55AA55AA');
-// const DARK_SQ = BigInt('0xAA55AA55AA55AA55');
-
-// noWe         nort         noEa
-//         +7    +8    +9
-//             \  |  /
-// west    -1 <-  0 -> +1    east
-//             /  |  \
-//         -9    -8    -7
-// soWe         sout         soEa
 
 module.exports = {
   Board: Board,

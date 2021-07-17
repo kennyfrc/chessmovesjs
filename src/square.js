@@ -18,8 +18,8 @@ class Square {
     return indexMap[rankFile];
   }
 
-  static indicesFor(piece, pieceBoards) {
-    let board = pieceBoards[piece].bb;
+  static indicesFor(pieceBoard) {
+    let board = pieceBoard.bb;
     const someList = [];
     if (board != BigInt(0)) {
       do {

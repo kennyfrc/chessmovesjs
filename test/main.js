@@ -14,8 +14,6 @@ describe('Board', function() {
   describe('#parseFenToBoard()', function() {
     it('returns a bitboard for a given fen', function() {
       assert.equal(board.bb, 18446462598732906495n);
-      assert.equal(board.whiteBb, 65535n);
-      assert.equal(board.blackBb, 18446462598732840960n);
     });
   });
 
@@ -54,10 +52,28 @@ describe('PawnBoard', function() {
   describe('#moves()', function() {
     it('returns pseudo-legal pawn moves', function() {
       const boardWManyPawnAttacks = new Board();
-      boardWManyPawnAttacks.parseFenToBoard('rnbqkbnr/1p2pp1p/8/p1pp2p1/1P2PP1P/8/P1PP2P1/RNBQKBNR w KQkq - 0 5');
+      boardWManyPawnAttacks.parseFenToBoard('rnbqkbnr/1p2pp1p/8/p1pp2p1/1P2PP1P/8/P1PP2P1/RNBQKBNR');
 
-      assert.equal(boardWManyPawnAttacks.pieceBoardList.P.moves(), 1096513552384n);
-      assert.equal(boardWManyPawnAttacks.pieceBoardList.p.moves(), 196481852112896n);
+      assert.equal(boardWManyPawnAttacks.pieceBoardList.P.moves()[0].from, 8)
+      assert.equal(boardWManyPawnAttacks.pieceBoardList.P.moves()[0].to, 16)
+      assert.equal(boardWManyPawnAttacks.pieceBoardList.P.moves()[1].from, 8)
+      assert.equal(boardWManyPawnAttacks.pieceBoardList.P.moves()[1].to, 24)
+      assert.equal(boardWManyPawnAttacks.pieceBoardList.P.moves()[2].from, 10)
+      assert.equal(boardWManyPawnAttacks.pieceBoardList.P.moves()[2].to, 18)
+      assert.equal(boardWManyPawnAttacks.pieceBoardList.P.moves()[3].from, 10)
+      assert.equal(boardWManyPawnAttacks.pieceBoardList.P.moves()[3].to, 26)
+      assert.equal(boardWManyPawnAttacks.pieceBoardList.P.moves()[4].from, 11)
+      assert.equal(boardWManyPawnAttacks.pieceBoardList.P.moves()[4].to, 19)
+      assert.equal(boardWManyPawnAttacks.pieceBoardList.p.moves()[0].from, 32)
+      assert.equal(boardWManyPawnAttacks.pieceBoardList.p.moves()[0].to, 24)
+      assert.equal(boardWManyPawnAttacks.pieceBoardList.p.moves()[1].from, 32)
+      assert.equal(boardWManyPawnAttacks.pieceBoardList.p.moves()[1].to, 25)
+      assert.equal(boardWManyPawnAttacks.pieceBoardList.p.moves()[2].from, 34)
+      assert.equal(boardWManyPawnAttacks.pieceBoardList.p.moves()[2].to, 25)
+      assert.equal(boardWManyPawnAttacks.pieceBoardList.p.moves()[3].from, 34)
+      assert.equal(boardWManyPawnAttacks.pieceBoardList.p.moves()[3].to, 26)
+      assert.equal(boardWManyPawnAttacks.pieceBoardList.p.moves()[4].from, 35)
+      assert.equal(boardWManyPawnAttacks.pieceBoardList.p.moves()[4].to, 27)
     });
   });
 });

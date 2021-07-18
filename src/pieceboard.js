@@ -1,15 +1,10 @@
+const Board = require('./board.js').Board;
 const BitHelper = require('./helpers.js').BitHelper;
 const BoardHelper = require('./helpers.js').BoardHelper;
 const Square = require('./square.js').Square;
 
 class PieceBoard {
-  constructor() {
-    this.mainBb;
-    this.whiteBbContext;
-    this.blackBbContext;
-  }
-
-  static for(fenChar, pieceBit) {
+  static for(fenChar, pieceBit, parent) {
     let PieceClass;
     switch (fenChar) {
       case 'k':
@@ -49,27 +44,175 @@ class PieceBoard {
         PieceClass = WhitePawnBoard;
         break;
     }
-    return new PieceClass(pieceBit);
+    return new PieceClass(pieceBit, parent);
+  }
+
+  getBlackBb() {
+    let blackBb = BigInt(0)
+    for (const [key, pieceBoard] of Object.entries(this.mainBoard.pieceBoardList)) {
+      if ('kqrbnp'.includes(key)) {
+        blackBb |= pieceBoard.bb;
+      }
+    }
+    return blackBb;
+  }
+
+  getWhiteBb() {
+    let whiteBb = BigInt(0)
+    for (const [key, pieceBoard] of Object.entries(this.mainBoard.pieceBoardList)) {
+      if ('KQRBNP'.includes(key)) {
+        whiteBb |= pieceBoard.bb;
+      }
+    }
+    return whiteBb;
+  }
+
+  getBlackKingBb() {
+    return this.mainBoard.pieceBoardList.k.bb
+  }
+
+  getWhiteKingBb() {
+    return this.mainBoard.pieceBoardList.K.bb
   }
 }
 
+class MoveList {
+  static for(fenChar, fromIdx, toIdxs, pieceBoard) {
+    const moveList = [];
+    toIdxs.forEach((toIdx) => {
+      moveList.push(Move.for(fenChar, fromIdx, toIdx, pieceBoard));
+    });
+    return moveList;
+  }
+}
+
+class Move {
+  static for(fenChar, fromIdx, toIdx, pieceBoard) {
+    let MoveClass;
+    switch(fenChar) {
+      case 'P':
+        MoveClass = WhitePawnMove;
+        break;
+      case 'p':
+        MoveClass = BlackPawnMove;
+        break;
+    }
+    return new MoveClass(fromIdx, toIdx, pieceBoard);
+  }
+}
+
+class WhitePawnMove {
+  constructor(fromIdx, toIdx, pieceBoard) {
+    this.from = fromIdx;
+    this.to = toIdx;
+    this.pieceBoard = pieceBoard;
+    this.check = this.isCheck(toIdx);
+    this.capture = this.isCapture(toIdx);
+    this.pieceBoard = BigInt(0); // reset it for memory?
+  }
+
+  isCheck(toIdx) {
+    let pieceBb = BitHelper.setBit(BigInt(0), BigInt(toIdx));
+    return ((Direction.wPawnAttacks(pieceBb) & this.pieceBoard.getBlackKingBb()) == BigInt(0) ? false : true);
+  }
+
+  isCapture(toIdx) {
+    let pieceBb = BitHelper.setBit(BigInt(0), BigInt(toIdx));
+    return ((pieceBb & this.pieceBoard.getBlackBb()) == BigInt(0) ? false : true );
+  }
+}
+
+class BlackPawnMove {
+  constructor(fromIdx, toIdx, pieceBoard) {
+    this.from = fromIdx;
+    this.to = toIdx;
+    this.pieceBoard = pieceBoard;
+    this.check = this.isCheck(toIdx);
+    this.capture = this.isCapture(toIdx);
+    this.pieceBoard = BigInt(0); // reset it for memory?
+  }
+
+  isCheck(toIdx) {
+    let pieceBb = BitHelper.setBit(BigInt(0), BigInt(toIdx));
+    return ((Direction.bPawnAttacks(pieceBb) & this.pieceBoard.getWhiteKingBb()) == BigInt(0) ? false : true);
+  }
+
+  isCapture(toIdx) {
+    let pieceBb = BitHelper.setBit(BigInt(0), BigInt(toIdx));
+    return ((pieceBb & this.pieceBoard.getWhiteBb()) == BigInt(0) ? false : true );
+  }
+}
+
+
+// TODO: movegen for pawn using MoveClass
+// en passant, king in check, etc
 class WhitePawnBoard extends PieceBoard {
-  constructor(bb) {
+  constructor(bb, parent) {
     super();
     this.bb = bb;
+    this.moveList = [];
+    this.mainBoard = parent;
+    this.moveBb;
+  }
+
+  generateMoves(pieceBb) {
+    let pawnMoves = BigInt(0);
+    const emptySq = ~this.mainBoard.bb;
+    // start pos parsing
+    if (pieceBb & BoardHelper.secondRank()) {
+      pawnMoves |= Direction.wSinglePush(pieceBb, emptySq) | 
+        Direction.wDoublePush(pieceBb, emptySq);
+    } else {
+      pawnMoves |= Direction.wSinglePush(pieceBb, emptySq);
+    }
+    // attack parsing
+    pawnMoves |= (Direction.wPawnAttacks(pieceBb) & this.getBlackBb());
+    return pawnMoves;
   }
 
   moves() {
+    Square.indicesFor(this.bb).forEach((fromIdx) => {
+      let pieceBb = BitHelper.setBit(BigInt(0), fromIdx);
+      const toIdxs = Square.indicesFor(this.generateMoves(pieceBb));
+      this.moveList.push(MoveList.for('P', fromIdx, toIdxs, this));
+    });
+
+    return this.moveList.flat();
+  }
+}
+
+class BlackPawnBoard extends PieceBoard {
+  constructor(bb, parent) {
+    super();
+    this.bb = bb;
+    this.moveList = [];
+    this.mainBoard = parent;
+    this.moveBb;
+  }
+
+  generateMoves(pieceBb) {
     let pawnMoves = BigInt(0);
+    const emptySq = ~this.mainBoard.bb;
     // start pos parsing
-    if (this.bb & BoardHelper.secondRank()) {
-      pawnMoves |= Moves.wSinglePush(this) | Moves.wDoublePush(this);
+    if (pieceBb & BoardHelper.secondRank()) {
+      pawnMoves |= Direction.bSinglePush(pieceBb, emptySq) | 
+        Direction.wDoublePush(pieceBb, emptySq);
     } else {
-      pawnMoves |= Moves.wSinglePush(this);
+      pawnMoves |= Direction.bSinglePush(pieceBb, emptySq);
     }
     // attack parsing
-    pawnMoves |= (Moves.wPawnAttacks(this.bb) & this.blackBbContext);
+    pawnMoves |= (Direction.bPawnAttacks(pieceBb) & this.getWhiteBb());
     return pawnMoves;
+  }
+
+  moves() {
+    Square.indicesFor(this.bb).forEach((fromIdx) => {
+      let pieceBb = BitHelper.setBit(BigInt(0), fromIdx);
+      const toIdxs = Square.indicesFor(this.generateMoves(pieceBb));
+      this.moveList.push(MoveList.for('p', fromIdx, toIdxs, this));
+    });
+
+    return this.moveList.flat();
   }
 }
 
@@ -77,6 +220,7 @@ class WhiteKnightBoard extends PieceBoard {
   constructor(bb) {
     super();
     this.bb = bb;
+    this.pbList;
   }
 }
 
@@ -84,6 +228,7 @@ class WhiteBishopBoard extends PieceBoard {
   constructor(bb) {
     super();
     this.bb = bb;
+    this.pbList;
   }
 }
 
@@ -91,6 +236,7 @@ class WhiteRookBoard extends PieceBoard {
   constructor(bb) {
     super();
     this.bb = bb;
+    this.pbList;
   }
 }
 
@@ -98,6 +244,7 @@ class WhiteQueenBoard extends PieceBoard {
   constructor(bb) {
     super();
     this.bb = bb;
+    this.pbList;
   }
 }
 
@@ -105,26 +252,7 @@ class WhiteKingBoard extends PieceBoard {
   constructor(bb) {
     super();
     this.bb = bb;
-  }
-}
-
-class BlackPawnBoard extends PieceBoard {
-  constructor(bb) {
-    super();
-    this.bb = bb;
-  }
-
-  moves() {
-    let pawnMoves = BigInt(0);
-    // start pos parsing
-    if (this.bb & BoardHelper.seventhRank()) {
-      pawnMoves |= Moves.bSinglePush(this) | Moves.bDoublePush(this);
-    } else {
-      pawnMoves |= Moves.bSinglePush(this);
-    }
-    // attack parsing
-    pawnMoves |= (Moves.bPawnAttacks(this.bb) & this.whiteBbContext);
-    return pawnMoves;
+    this.pbList;
   }
 }
 
@@ -132,6 +260,7 @@ class BlackKnightBoard extends PieceBoard {
   constructor(bb) {
     super();
     this.bb = bb;
+    this.pbList;
   }
 }
 
@@ -139,6 +268,7 @@ class BlackBishopBoard extends PieceBoard {
   constructor(bb) {
     super();
     this.bb = bb;
+    this.pbList;
   }
 }
 
@@ -146,6 +276,7 @@ class BlackRookBoard extends PieceBoard {
   constructor(bb) {
     super();
     this.bb = bb;
+    this.pbList;
   }
 }
 
@@ -153,6 +284,7 @@ class BlackQueenBoard extends PieceBoard {
   constructor(bb) {
     super();
     this.bb = bb;
+    this.pbList;
   }
 }
 
@@ -160,36 +292,37 @@ class BlackKingBoard extends PieceBoard {
   constructor(bb) {
     super();
     this.bb = bb;
+    this.pbList;
   }
 }
 
-class Moves {
-  static wSinglePush(pawnBoard) {
-    return Compass.northOne(pawnBoard.bb) & ~pawnBoard.mainBb;
+class Direction {
+  static wSinglePush(bb, emptySq) {
+    return Compass.northOne(bb) & emptySq;
   }
 
-  static wDoublePush(pawnBoard) {
-    const singlePushBb = this.wSinglePush(pawnBoard);
-    return Compass.northOne(singlePushBb) & ~pawnBoard.mainBb & BoardHelper.fourthRank();
+  static wDoublePush(bb, emptySq) {
+    const singlePushBb = this.wSinglePush(bb, emptySq);
+    return Compass.northOne(singlePushBb) & emptySq & BoardHelper.fourthRank();
   }
 
-  static bSinglePush(pawnBoard) {
-    return Compass.southOne(pawnBoard.bb) & ~pawnBoard.mainBb;
+  static bSinglePush(bb, emptySq) {
+    return Compass.southOne(bb) & emptySq;
   }
 
-  static bDoublePush(pawnBoard) {
-    const singlePushBb = this.bSinglePush(pawnBoard);
-    return Compass.southOne(singlePushBb) & ~pawnBoard.mainBb & BoardHelper.fifthRank();
+  static bDoublePush(bb, emptySq) {
+    const singlePushBb = this.bSinglePush(bb, emptySq);
+    return Compass.southOne(singlePushBb) & emptySq & BoardHelper.fifthRank();
   }
 
-  static wPawnAttacks(pawnBoard) {
-    return ( Compass.northWestOne(pawnBoard & ~BoardHelper.aFile()) |
-     Compass.northEastOne(pawnBoard & ~BoardHelper.hFile()) );
+  static wPawnAttacks(bb) {
+    return ( Compass.northWestOne(bb & ~BoardHelper.aFile()) |
+     Compass.northEastOne(bb & ~BoardHelper.hFile()) );
   }
 
-  static bPawnAttacks(pawnBoard) {
-    return ( Compass.southWestOne(pawnBoard & ~BoardHelper.aFile()) |
-     Compass.southEastOne(pawnBoard & ~BoardHelper.hFile()) );
+  static bPawnAttacks(bb) {
+    return ( Compass.southWestOne(bb & ~BoardHelper.aFile()) |
+     Compass.southEastOne(bb & ~BoardHelper.hFile()) );
   }
 }
 
@@ -242,21 +375,6 @@ class PieceBoardList {
     this.n = PieceBoard.for('n', BigInt(0));
     this.p = PieceBoard.for('p', BigInt(0));
   }
-
-  static merge(whitePieceBoardList, blackPieceBoardList) {
-    const pieceBoardList = new PieceBoardList();
-    const whiteKeys = ['K', 'Q', 'R', 'B', 'N', 'P'];
-    const blackKeys = ['k', 'q', 'r', 'b', 'n', 'p'];
-
-    whiteKeys.forEach((wKey) => {
-      pieceBoardList[wKey] = whitePieceBoardList[wKey];
-    });
-    blackKeys.forEach((bKey) => {
-      pieceBoardList[bKey] = blackPieceBoardList[bKey];
-    });
-
-    return pieceBoardList;
-  }
 }
 
 class ViewHelper {
@@ -303,23 +421,6 @@ class ViewHelper {
       '=END');
   }
 }
-
-// class RookBoard {
-//   constructor(fenIndex) {
-//     this.fenIndex = fenIndex;
-//   }
-// }
-
-// class Attack {
-//   static northFill(bb) {
-//     bb |= (bb << BigInt(8));
-//     bb |= (bb << BigInt(16));
-//     bb |= (bb << BigInt(32));
-//     return bb;
-//   }
-// }
-
-// Pawn.moves(idx)
 
 module.exports = {
   PieceBoard: PieceBoard,

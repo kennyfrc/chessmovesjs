@@ -1,4 +1,6 @@
 const BitHelper = require('./helpers.js').BitHelper;
+const BoardHelper = require('./helpers.js').BoardHelper;
+const Square = require('./square.js').Square;
 const PieceBoard = require('./pieceboard.js').PieceBoard;
 const PieceBoardList = require('./pieceboard.js').PieceBoardList;
 
@@ -6,11 +8,7 @@ class Board {
   constructor() {
     this.startFen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
     this.bb = BigInt(0);
-    this.whiteBb = BigInt(0);
-    this.blackBb = BigInt(0);
     this.pieceBoardList = new PieceBoardList();
-    this.whitePieceBoardList = new PieceBoardList();
-    this.blackPieceBoardList = new PieceBoardList();
 
     this.castleStatus = 0;
     this.castleBit = {'K': 1, 'Q': 2, 'k': 4, 'q': 8};
@@ -37,18 +35,14 @@ class Board {
         }
       } else {
         if ('KQRBNP'.includes(fen[i])) {
-          const pieceBit = BitHelper.setBit(this.whitePieceBoardList[fen[i]].bb,
-              fenIndex);
-          this.whitePieceBoardList[fen[i]] = PieceBoard.for(fen[i], pieceBit);
-          this.whiteBb |= pieceBit;
+          const pieceBit = BitHelper.setBit(this.pieceBoardList[fen[i]].bb, fenIndex);
+          this.pieceBoardList[fen[i]] = PieceBoard.for(fen[i], pieceBit, this);
           fenIndex += 1;
         }
 
         if ('kqrbnp'.includes(fen[i])) {
-          const pieceBit = BitHelper.setBit(this.blackPieceBoardList[fen[i]].bb,
-              fenIndex);
-          this.blackPieceBoardList[fen[i]] = PieceBoard.for(fen[i], pieceBit);
-          this.blackBb |= pieceBit;
+          const pieceBit = BitHelper.setBit(this.pieceBoardList[fen[i]].bb, fenIndex);
+          this.pieceBoardList[fen[i]] = PieceBoard.for(fen[i], pieceBit, this);
           fenIndex += 1;
         }
 
@@ -67,12 +61,7 @@ class Board {
       }
     }
 
-    this.pieceBoardList = PieceBoardList.merge(this.whitePieceBoardList, this.blackPieceBoardList);
-
     Object.keys(this.pieceBoardList).forEach((pieceKey) => {
-      this.pieceBoardList[pieceKey].whiteBbContext = this.whiteBb;
-      this.pieceBoardList[pieceKey].blackBbContext = this.blackBb;
-      this.pieceBoardList[pieceKey].mainBb = this.whiteBb | this.blackBb;
       this.bb |= this.pieceBoardList[pieceKey].bb;
     });
   }

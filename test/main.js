@@ -93,16 +93,16 @@ describe('Square', function() {
     const wKingBoard = board.pieceBoardList.K;
 
     it('shows indices of black rook', function() {
-      assert.equal(Square.indicesFor(rookBoard)[0], 56);
-      assert.equal(Square.indicesFor(rookBoard)[1], 63);
+      assert.equal(Square.indicesFor(rookBoard.bb)[0], 56);
+      assert.equal(Square.indicesFor(rookBoard.bb)[1], 63);
     });
 
     it('shows indices of black king', function() {
-      assert.equal(Square.indicesFor(bKingBoard)[0], 60);
+      assert.equal(Square.indicesFor(bKingBoard.bb)[0], 60);
     });
 
     it('shows indices of white king', function() {
-      assert.equal(Square.indicesFor(wKingBoard)[0], 4);
+      assert.equal(Square.indicesFor(wKingBoard.bb)[0], 4);
     });
   });
 });

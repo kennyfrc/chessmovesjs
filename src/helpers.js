@@ -22,7 +22,7 @@ class BitHelper {
   static bitFor(indices) {
     let parsedBit = BigInt(0);
     indices.forEach((index) => {
-      parsedBit |= BitHelper.setBit(parsedBit, idx);
+      parsedBit |= this.setBit(parsedBit, idx);
     });
     return parsedBit;
   }
@@ -47,13 +47,54 @@ class BitHelper {
     return BigInt.asUintN(64, ~(bb) + BigInt(1));
   }
 
+  static deBruijnMagicNum() {
+    return BigInt("0x6c04f118e9966f6b");
+  }
+
+  static deBruijnTable() {
+    return [ 0, 48, -1, -1, 31, -1, 15, 51, -1, 63, 
+             5, -1, -1, -1, 19, -1, 23, 28, -1, -1, 
+            -1, 40, 36, 46, -1, 13, -1, -1, -1, 34,
+            -1, 58, -1, 60, 2, 43, 55, -1, -1, -1, 
+            50, 62, 4, -1, 18, 27, -1, 39, 45, -1, 
+            -1, 33, 57, -1, 1, 54, -1, 49, -1, 17, 
+            -1, -1, 32, -1, 53, -1, 16, -1, -1, 52, 
+            -1, -1, -1, 64, 6, 7, 8, -1, 9, -1, -1,
+            -1, 20, 10, -1, -1, 24, -1, 29, -1, -1,
+            21, -1, 11, -1, -1, 41, -1, 25, 37, -1,
+            47, -1, 30, 14, -1, -1, -1, -1, 22, -1,
+            -1, 35, 12, -1, -1, -1, 59, 42, -1, -1,
+            61, 3, 26, 38, 44, -1, 56 ];
+  }
+
   /**
-    * Counts trailing zeroes after subtracting one (bb & -bb) extracts
-    * the least significant bit BigInt(1) then removes it
+    * De Bruijn Multiplication
     */
   static bitScanFwd(bb) {
-    return BitHelper.popCount( (bb & BitHelper.bigIntNegation(bb)) -
-      BigInt(1) );
+    bb = -bb | bb;
+    return this.deBruijnTable()[
+      BigInt.asUintN(
+        64,
+        (BigInt.asUintN(
+          64,
+          (~(bb) * this.deBruijnMagicNum()))) >> BigInt(57))
+    ];
+  }
+
+  static bigScanRev(bb) {
+    bb |= bb >> BigInt(1);
+    bb |= bb >> BigInt(2);
+    bb |= bb >> BigInt(4);
+    bb |= bb >> BigInt(8);
+    bb |= bb >> BigInt(16);
+    bb |= bb >> BigInt(32);
+    return this.deBruijnTable()[
+      BigInt.asUintN(
+        64,
+        (BigInt.asUintN(
+          64,
+          (bb * this.deBruijnMagicNum()))) >> BigInt(57))
+    ];
   }
 
   /** counting bits:

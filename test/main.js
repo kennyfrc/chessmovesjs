@@ -114,6 +114,79 @@ describe('PawnBoard', function() {
   });
 });
 
+describe('KnightBoard', function() {
+  describe('#moves()', function() {
+    it('returns pseudo-legal moves', function() {
+      const boardWToughKnightPositions = new Board();
+      boardWToughKnightPositions.parseFenToBoard('rnbqkb1r/ppppp1pp/n7/5p2/3P1PN1/2P5/PP2P1PP/RNBQKB1R b KQkq - 1 6');
+      const whiteKnight = boardWToughKnightPositions.pieceBoardList.N;
+      const blackKnight = boardWToughKnightPositions.pieceBoardList.n;
+      whiteKnight.on(boardWToughKnightPositions);
+      blackKnight.on(boardWToughKnightPositions);
+
+      assert.equal(whiteKnight.moves()[0].from, 1);
+      assert.equal(whiteKnight.moves()[0].to, 11);
+      assert.equal(whiteKnight.moves()[1].from, 1);
+      assert.equal(whiteKnight.moves()[1].to, 16);
+      assert.equal(whiteKnight.moves()[2].from, 30);
+      assert.equal(whiteKnight.moves()[2].to, 13);
+      assert.equal(whiteKnight.moves()[3].from, 30);
+      assert.equal(whiteKnight.moves()[3].to, 20);
+      assert.equal(whiteKnight.moves()[4].from, 30);
+      assert.equal(whiteKnight.moves()[4].to, 36);
+      assert.equal(blackKnight.moves()[0].from, 40);
+      assert.equal(blackKnight.moves()[0].to, 25);
+      assert.equal(blackKnight.moves()[1].from, 40);
+      assert.equal(blackKnight.moves()[1].to, 34);
+      assert.equal(blackKnight.moves()[2].from, 57);
+      assert.equal(blackKnight.moves()[2].to, 42);
+    });
+
+    it('shows attacks', function() {
+      const boardWManyKnightAttacks = new Board();
+      boardWManyKnightAttacks.parseFenToBoard('1nb1kb1r/1ppp1ppp/2n3q1/pQ1rp3/P3P1P1/1PN2N1P/2PP1P2/R1B1KB1R w KQk - 5 10');
+      const whiteKnight = boardWManyKnightAttacks.pieceBoardList.N;
+      const blackKnight = boardWManyKnightAttacks.pieceBoardList.n;
+      whiteKnight.on(boardWManyKnightAttacks);
+      blackKnight.on(boardWManyKnightAttacks);
+
+      assert.equal(whiteKnight.moves()[8].attack, true);
+      assert.equal(blackKnight.moves()[1].attack, true);
+
+    });
+
+    it('shows checks', function() {
+      const boardWKnightChecks = new Board();
+      boardWKnightChecks.parseFenToBoard('r1bqkb1r/pppp1ppp/5n2/3Np3/3nP3/5N2/PPPP1PPP/R1BQKB1R w KQkq - 6 5');
+      const whiteKnight = boardWKnightChecks.pieceBoardList.N;
+      const blackKnight = boardWKnightChecks.pieceBoardList.n;
+      whiteKnight.on(boardWKnightChecks);
+      blackKnight.on(boardWKnightChecks);
+
+      assert.equal(whiteKnight.moves()[10].check, true);
+      assert.equal(whiteKnight.moves()[11].check, true);
+      assert.equal(blackKnight.moves()[0].check, true);
+      assert.equal(blackKnight.moves()[3].check, true);
+    });
+  });
+});
+
+// describe('NullPieceBoard', function() {
+//   describe('#moves()', function() {
+//     it('returns pseudo-legal moves', function() {
+
+//     });
+
+//     it('shows attacks', function() {
+
+//     });
+
+//     it('shows checks', function() {
+
+//     });
+//   });
+// });
+
 // BoardView should return Strings
 /* eslint-disable max-len */
 describe('BoardView', function() {

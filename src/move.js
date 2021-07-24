@@ -89,35 +89,61 @@ class BlackPawnMove {
       pieceBoard.whiteMajorBb)) == U64(0) ? false : true;
   }
 }
+
+class WhiteKnightMove {
+  constructor(fromIdx, toIdx, pieceBoard) {
+    this.from = fromIdx;
+    this.to = toIdx;
+    this.check = this.isCheck(toIdx, pieceBoard);
+    this.capture = this.isCapture(toIdx, pieceBoard);
+    this.attack = this.isAttack(toIdx, pieceBoard);
+  }
+
+  isCheck(toIdx, pieceBoard) {
+    const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
+    return ((Direction.knightAttacks(pieceBb) & pieceBoard.blackKingBb) ==
+      U64(0) ? false : true);
+  }
+
+  isCapture(toIdx, pieceBoard) {
+    const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
+    return ((pieceBb & pieceBoard.blackBb) == U64(0) ? false : true );
+  }
+
+  isAttack(toIdx, pieceBoard) {
+    const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
+    return (Direction.knightAttacks(pieceBb) & pieceBoard.blackMajorBb) ==
+      U64(0) ? false : true;
   }
 }
 
-// class WhiteKnightMove {
-//   constructor(fromIdx, toIdx, pieceBoard) {
-//     this.from = fromIdx;
-//     this.to = toIdx;
-//     this.check = this.isCheck(toIdx, pieceBoard);
-//     this.capture = this.isCapture(toIdx, pieceBoard);
-//     this.attack = this.isAttack(toIdx, pieceBoard);
-//   }
+class BlackKnightMove {
+  constructor(fromIdx, toIdx, pieceBoard) {
+    this.from = fromIdx;
+    this.to = toIdx;
+    this.check = this.isCheck(toIdx, pieceBoard);
+    this.capture = this.isCapture(toIdx, pieceBoard);
+    this.attack = this.isAttack(toIdx, pieceBoard);
+  }
 
-//   isCheck(toIdx, pieceBoard) {
-//     const pieceBb = BitHelper.setBit(BigInt(0), BigInt(toIdx));
-//     return ((Direction.wKnightAttacks(pieceBb) & pieceBoard.blackKingBb) ==
-//       BigInt(0) ? false : true);
-//   }
+  isCheck(toIdx, pieceBoard) {
+    const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
+    return ((Direction.knightAttacks(pieceBb) & pieceBoard.whiteKingBb) ==
+      U64(0) ? false : true);
+  }
 
-//   isCapture(toIdx, pieceBoard) {
-//     const pieceBb = BitHelper.setBit(BigInt(0), BigInt(toIdx));
-//     return ((pieceBb & pieceBoard.blackBb) == BigInt(0) ? false : true );
-//   }
+  isCapture(toIdx, pieceBoard) {
+    const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
+    return ((pieceBb & pieceBoard.whiteBb) == U64(0) ? false : true );
+  }
 
-//   isAttack(toIdx, pieceBoard) {
-//     const pieceBb = BitHelper.setBit(BigInt(0), BigInt(toIdx));
-//     return (Direction.wKnightAttacks(pieceBb) & (pieceBoard.blackMinorBb |
-//       pieceBoard.blackMajorBb)) == BigInt(0) ? false : true;
-//   }
-// }
+  isAttack(toIdx, pieceBoard) {
+    const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
+    return (Direction.knightAttacks(pieceBb) & pieceBoard.whiteMajorBb) ==
+      U64(0) ? false : true;
+  }
+}
+
 
 class Direction {
   static wSinglePush(bb, emptySq) {
@@ -147,6 +173,16 @@ class Direction {
     return ( Compass.southWestOne(bb & U64Comp(BoardHelper.aFile())) |
      Compass.southEastOne(bb & U64Comp(BoardHelper.hFile())) );
   }
+
+  static knightAttacks(bb) {
+    return Compass.noNoEast(bb & U64Comp((BoardHelper.hFile()) | BoardHelper.seventhRank() | BoardHelper.eighthRank())) |
+      Compass.noEaEast(bb & U64Comp((BoardHelper.gFile()) | BoardHelper.hFile() | BoardHelper.eighthRank())) |
+      Compass.soEaEast(bb & U64Comp((BoardHelper.gFile()) | BoardHelper.hFile() | BoardHelper.firstRank())) |
+      Compass.soSoEast(bb & U64Comp((BoardHelper.hFile()) | BoardHelper.firstRank() | BoardHelper.secondRank())) |
+      Compass.noNoWest(bb & U64Comp((BoardHelper.aFile()) | BoardHelper.seventhRank() | BoardHelper.eighthRank())) |
+      Compass.noWeWest(bb & U64Comp((BoardHelper.aFile()) | BoardHelper.bFile() | BoardHelper.eighthRank())) |
+      Compass.soWeWest(bb & U64Comp((BoardHelper.aFile()) | BoardHelper.bFile() | BoardHelper.firstRank())) |
+      Compass.soSoWest(bb & U64Comp((BoardHelper.aFile()) | BoardHelper.firstRank() | BoardHelper.secondRank()))
   }
 }
 
@@ -194,6 +230,31 @@ class Compass {
   static northWestOne(bb) {
     return bb << U64(7);
   }
+
+  // knight moves
+  static noNoEast(bb) {
+    return bb << U64(17);
+  }
+  static noEaEast(bb) {
+    return bb << U64(10);
+  }
+  static soEaEast(bb) {
+    return bb >> U64(6);
+  }
+  static soSoEast(bb) {
+    return bb >> U64(15);
+  }
+  static noNoWest(bb) {
+    return bb << U64(15);
+  }
+  static noWeWest(bb) {
+    return bb << U64(6);
+  }
+  static soWeWest(bb) {
+    return bb >> U64(10);
+  }
+  static soSoWest(bb) {
+    return bb >> U64(17);
   }
 }
 

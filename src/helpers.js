@@ -1,71 +1,59 @@
+function U64(int) {
+  return BigInt.asUintN(64, BigInt(int));
+}
+
+function U64Comp(int) {
+  return BigInt.asUintN(64, ~BigInt(int));
+}
+
+function U64Neg(int) {
+  return BigInt.asUintN(64, -BigInt(int));
+}
+
+
 class BitHelper {
   static getBit(bb, bitPosition) {
-    return (bb & (BigInt(1) << BigInt(bitPosition))) === BigInt(0) ?
-      BigInt(0) : BigInt(1);
+    return (bb & (U64(1) << U64(bitPosition))) === U64(0) ?
+      U64(0) : U64(1);
   }
 
   static setBit(bb, bitPosition) {
-    return bb | BigInt(1) << BigInt(bitPosition);
+    return bb | U64(1) << U64(bitPosition);
   }
 
   static clearBit(bb, bitPosition) {
-    const mask = ~(BigInt(1) << BigInt(bitPosition));
+    const mask = U64Comp(U64(1) << U64(bitPosition));
     return bb & mask;
   }
 
   static updateBit(bb, bitPosition, bitValue) {
-    const bitValueNormalized = BigInt(bitValue) ? BigInt(1) : BigInt(0);
-    const clearMask = ~(BigInt(1) << BigInt(bitPosition));
-    return (bb & clearMask) | (bitValueNormalized << BigInt(bitPosition));
+    const bitValueNormalized = U64(bitValue) ? U64(1) : U64(0);
+    const clearMask = U64Comp(U64(1) << U64(bitPosition));
+    return (bb & clearMask) | (bitValueNormalized << U64(bitPosition));
   }
 
   static bitFor(indices) {
-    let parsedBit = BigInt(0);
+    let parsedBit = U64(0);
     indices.forEach((index) => {
       parsedBit |= this.setBit(parsedBit, idx);
     });
     return parsedBit;
   }
 
-  /**
-    * Gets the complement of a BigInt
-    * Because of the two's complement format, doing ~bigIntValue will
-    * return a negative number. Doing fake shift right (>>> 0) on the
-    * bigIntValue also doesn't work because BigInts are always signed.
-    * Thus, we have to split the BigInt into two, get their complements,
-    * then combine them into a BigInt.
-    */
-  static bigIntComplement(bb) {
-    const top32bitNot = ( ~parseInt(bb >> BigInt(32)) >>> 0 );
-    const bottom32bitNot = ( ~parseInt(bb & BigInt('0xffffffff', 16)) >>>
-      0 );
-
-    return ((BigInt(top32bitNot) << BigInt(32)) | BigInt(bottom32bitNot));
-  }
-
-  static bigIntNegation(bb) {
-    return BigInt.asUintN(64, ~(bb) + BigInt(1));
-  }
-
   static deBruijnMagicNum() {
-    return BigInt('0x6c04f118e9966f6b');
+    return U64('0x025467169baf21fb');
   }
 
   /* eslint-disable */
   static deBruijnTable() {
-    return [ 0, 48, -1, -1, 31, -1, 15, 51, -1, 63, 
-             5, -1, -1, -1, 19, -1, 23, 28, -1, -1, 
-            -1, 40, 36, 46, -1, 13, -1, -1, -1, 34,
-            -1, 58, -1, 60, 2, 43, 55, -1, -1, -1, 
-            50, 62, 4, -1, 18, 27, -1, 39, 45, -1, 
-            -1, 33, 57, -1, 1, 54, -1, 49, -1, 17, 
-            -1, -1, 32, -1, 53, -1, 16, -1, -1, 52, 
-            -1, -1, -1, 64, 6, 7, 8, -1, 9, -1, -1,
-            -1, 20, 10, -1, -1, 24, -1, 29, -1, -1,
-            21, -1, 11, -1, -1, 41, -1, 25, 37, -1,
-            47, -1, 30, 14, -1, -1, -1, -1, 22, -1,
-            -1, 35, 12, -1, -1, -1, 59, 42, -1, -1,
-            61, 3, 26, 38, 44, -1, 56 ];
+    return [  0,  1,  2, 51,  3, 24, 14, 52,
+             48,  4,  7, 25, 15, 33, 19, 53,
+             49, 12,  5, 31, 10,  8, 26, 41,
+             61, 16, 28, 34, 20, 37, 43, 54,
+             63, 50, 23, 13, 47,  6, 32, 18,
+             11, 30,  9, 40, 60, 27, 36, 42,
+             62, 22, 46, 17, 29, 39, 59, 35,
+             21, 45, 38, 58, 44, 57, 56, 55 ];
   }
   /* eslint-enable */
 
@@ -73,21 +61,19 @@ class BitHelper {
     * De Bruijn Multiplication
     */
   static bitScanFwd(bb) {
-    bb = -bb | bb;
-    return this.deBruijnTable()[BigInt.asUintN(64, (BigInt.asUintN(64, (~(bb) *
-      this.deBruijnMagicNum()))) >> BigInt(57))];
+    bb = bb & U64Neg(bb);
+    return this.deBruijnTable()[(U64(bb * this.deBruijnMagicNum()) >> U64(58))];
   }
 
-  static bigScanRev(bb) {
-    bb |= bb >> BigInt(1);
-    bb |= bb >> BigInt(2);
-    bb |= bb >> BigInt(4);
-    bb |= bb >> BigInt(8);
-    bb |= bb >> BigInt(16);
-    bb |= bb >> BigInt(32);
-    return this.deBruijnTable()[BigInt.asUintN(64, (BigInt.asUintN(64, (bb *
-      this.deBruijnMagicNum()))) >> BigInt(57))];
-  }
+  // static bigScanRev(bb) {
+  //   bb |= bb >> U64(1);
+  //   bb |= bb >> U64(2);
+  //   bb |= bb >> U64(4);
+  //   bb |= bb >> U64(8);
+  //   bb |= bb >> U64(16);
+  //   bb |= bb >> U64(32);
+  //   return this.deBruijnTable()[(U64(bb * this.deBruijnMagicNum()) >> U64(58))];
+  // }
 
   /** counting bits:
    *  www-graphics.stanford.edu/~seander/bithacks.html#CountBitsSetKernighan
@@ -97,7 +83,7 @@ class BitHelper {
 
     while (bb > 0) {
       count++;
-      bb &= bb - BigInt(1); // reset LS1B
+      bb &= bb - U64(1); // reset LS1B
     }
 
     return count;
@@ -107,46 +93,64 @@ class BitHelper {
 // LERF-mapping constants
 class BoardHelper {
   static aFile() {
-    return BigInt('0x0101010101010101');
+    return U64('0x0101010101010101');
+  }
+  static bFile() {
+    return U64('0x0202020202020202');
+  }
+  static cFile() {
+    return U64('0x0404040404040404');
+  }
+  static dFile() {
+    return U64('0x0808080808080808');
+  }
+  static eFile() {
+    return U64('0x1010101010101010');
+  }
+  static fFile() {
+    return U64('0x2020202020202020');
+  }
+  static gFile() {
+    return U64('0x4040404040404040');
   }
   static hFile() {
-    return BigInt('0x8080808080808080');
+    return U64('0x8080808080808080');
   }
   static firstRank() {
-    return BigInt('0x00000000000000FF');
+    return U64('0x00000000000000FF');
   }
   static secondRank() {
-    return BigInt('0x000000000000FF00');
+    return U64('0x000000000000FF00');
   }
   static thirdRank() {
-    return BigInt('0x0000000000FF0000');
+    return U64('0x0000000000FF0000');
   }
   static fourthRank() {
-    return BigInt('0x00000000FF000000');
+    return U64('0x00000000FF000000');
   }
   static fifthRank() {
-    return BigInt('0x000000FF00000000');
+    return U64('0x000000FF00000000');
   }
   static sixthRank() {
-    return BigInt('0x0000FF0000000000');
+    return U64('0x0000FF0000000000');
   }
   static seventhRank() {
-    return BigInt('0x00FF000000000000');
+    return U64('0x00FF000000000000');
   }
   static eighthRank() {
-    return BigInt('0xFF00000000000000');
+    return U64('0xFF00000000000000');
   }
   static a1H8Diagonal() {
-    return BigInt('0x8040201008040201');
+    return U64('0x8040201008040201');
   }
   static h1A8Diagonal() {
-    return BigInt('0x0102040810204080');
+    return U64('0x0102040810204080');
   }
   static lightSq() {
-    return BigInt('0x55AA55AA55AA55AA');
+    return U64('0x55AA55AA55AA55AA');
   }
   static darkSq() {
-    return BigInt('0xAA55AA55AA55AA55');
+    return U64('0xAA55AA55AA55AA55');
   }
 }
 
@@ -215,11 +219,11 @@ class SquareHelper {
 
   static indicesFor(board) {
     const someList = [];
-    if (board != BigInt(0)) {
+    if (board != U64(0)) {
       do {
         const idx = BitHelper.bitScanFwd(board);
         someList.push(idx);
-      } while ( board &= board - BigInt(1));
+      } while ( board &= board - U64(1));
     }
     return someList;
   }
@@ -230,4 +234,7 @@ module.exports = {
   BoardHelper: BoardHelper,
   ViewHelper: ViewHelper,
   SquareHelper: SquareHelper,
+  U64: U64,
+  U64Comp: U64Comp,
+  U64Neg: U64Neg,
 };

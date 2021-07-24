@@ -1,6 +1,16 @@
 const BitHelper = require('./helpers.js').BitHelper;
 const BoardHelper = require('./helpers.js').BoardHelper;
 
+class MoveList {
+  static for(fenChar, fromIdx, toIdxs, pieceBoard) {
+    const moveList = [];
+    toIdxs.forEach((toIdx) => {
+      moveList.push(Move.for(fenChar, fromIdx, toIdx, pieceBoard));
+    });
+    return moveList;
+  }
+}
+
 class Move {
   static for(fenChar, fromIdx, toIdx, pieceBoard) {
     let MoveClass;
@@ -11,18 +21,14 @@ class Move {
       case 'p':
         MoveClass = BlackPawnMove;
         break;
+      case 'N':
+        MoveClass = WhiteKnightMove;
+        break;
+      case 'n':
+        MoveClass = BlackKnightMove;
+        break;
     }
     return new MoveClass(fromIdx, toIdx, pieceBoard);
-  }
-}
-
-class MoveList {
-  static for(fenChar, fromIdx, toIdxs, pieceBoard) {
-    const moveList = [];
-    toIdxs.forEach((toIdx) => {
-      moveList.push(Move.for(fenChar, fromIdx, toIdx, pieceBoard));
-    });
-    return moveList;
   }
 }
 
@@ -55,6 +61,7 @@ class WhitePawnMove {
 
 class BlackPawnMove {
   constructor(fromIdx, toIdx, pieceBoard) {
+    this.bb = BigInt(0);
     this.from = fromIdx;
     this.to = toIdx;
     this.check = this.isCheck(toIdx, pieceBoard);
@@ -79,6 +86,33 @@ class BlackPawnMove {
       pieceBoard.whiteMajorBb)) == BigInt(0) ? false : true;
   }
 }
+
+// class WhiteKnightMove {
+//   constructor(fromIdx, toIdx, pieceBoard) {
+//     this.from = fromIdx;
+//     this.to = toIdx;
+//     this.check = this.isCheck(toIdx, pieceBoard);
+//     this.capture = this.isCapture(toIdx, pieceBoard);
+//     this.attack = this.isAttack(toIdx, pieceBoard);
+//   }
+
+//   isCheck(toIdx, pieceBoard) {
+//     const pieceBb = BitHelper.setBit(BigInt(0), BigInt(toIdx));
+//     return ((Direction.wKnightAttacks(pieceBb) & pieceBoard.blackKingBb) ==
+//       BigInt(0) ? false : true);
+//   }
+
+//   isCapture(toIdx, pieceBoard) {
+//     const pieceBb = BitHelper.setBit(BigInt(0), BigInt(toIdx));
+//     return ((pieceBb & pieceBoard.blackBb) == BigInt(0) ? false : true );
+//   }
+
+//   isAttack(toIdx, pieceBoard) {
+//     const pieceBb = BitHelper.setBit(BigInt(0), BigInt(toIdx));
+//     return (Direction.wKnightAttacks(pieceBb) & (pieceBoard.blackMinorBb |
+//       pieceBoard.blackMajorBb)) == BigInt(0) ? false : true;
+//   }
+// }
 
 class Direction {
   static wSinglePush(bb, emptySq) {

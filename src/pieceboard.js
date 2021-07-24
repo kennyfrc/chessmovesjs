@@ -59,6 +59,17 @@ class PieceBoard {
     this.whiteMajorBb = board.whiteMajorBb;
     this.blackMajorBb = board.blackMajorBb;
   }
+
+  makeMoveList(fenChar) {
+    const moveList = [];
+    SquareHelper.indicesFor(this.bb).forEach((fromIdx) => {
+      const pieceBb = BitHelper.setBit(BigInt(0), fromIdx);
+      const toIdxs = SquareHelper.indicesFor(this.generateMoves(pieceBb));
+      moveList.push(MoveList.for(fenChar, fromIdx, toIdxs, this));
+    });
+
+    return moveList.flat();
+  }
 }
 
 // TODO: movegen for pawn using MoveClass
@@ -68,33 +79,38 @@ class WhitePawnBoard extends PieceBoard {
     super();
     this.bb = bb;
     this.moveList = [];
+    this.moveBb = BigInt(0);
+    this.emptySq = BigInt(0);
   }
 
-  generateMoves(pieceBb) {
-    let pawnMoves = BigInt(0);
-    const emptySq = ~this.mainBoardBb;
-    // start pos parsing
-    if (pieceBb & BoardHelper.secondRank()) {
-      pawnMoves |= Direction.wSinglePush(pieceBb, emptySq) |
-        Direction.wDoublePush(pieceBb, emptySq);
-    } else {
-      pawnMoves |= Direction.wSinglePush(pieceBb, emptySq);
-    }
-    // attack parsing
-    pawnMoves |= (Direction.wPawnAttacks(pieceBb) & this.blackBb);
-    return pawnMoves;
+  atSecondRank(pieceBb) {
+    return pieceBb & BoardHelper.secondRank();
+  }
+
+  canDoublePush(pieceBb) {
+    return Direction.wDoublePush(pieceBb, this.emptySq);
+  }
+
+  canSinglePush(pieceBb) {
+    return Direction.wSinglePush(pieceBb, this.emptySq);
+  }
+
+  pawnAttacks(pieceBb) {
+    return Direction.wPawnAttacks(pieceBb) & this.whiteBb;
+  }
+
+  generateMoves(pieceBb) {    
+    this.moveBb = BigInt(0);
+    this.moveBb |= this.canSinglePush(pieceBb) | this.pawnAttacks(pieceBb);
+    if (this.atSecondRank(pieceBb)) {
+      this.moveBb |= this.canDoublePush(pieceBb);
+    } 
+    return this.moveBb;
   }
 
   moves() {
-    const moveList = [];
-    SquareHelper.indicesFor(this.bb).forEach((fromIdx) => {
-      const pieceBb = BitHelper.setBit(BigInt(0), fromIdx);
-      const toIdxs = SquareHelper.indicesFor(this.generateMoves(pieceBb));
-      moveList.push(MoveList.for('P', fromIdx, toIdxs, this));
-    });
-
-    this.moveList = moveList.flat();
-
+    this.emptySq = ~this.mainBoardBb;
+    this.moveList = this.makeMoveList('P');
     return this.moveList;
   }
 }
@@ -104,33 +120,38 @@ class BlackPawnBoard extends PieceBoard {
     super();
     this.bb = bb;
     this.moveList = [];
+    this.moveBb = BigInt(0);
+    this.emptySq = BigInt(0);
   }
 
-  generateMoves(pieceBb) {
-    let pawnMoves = BigInt(0);
-    const emptySq = ~this.mainBoardBb;
-    // start pos parsing
-    if (pieceBb & BoardHelper.seventhRank()) {
-      pawnMoves |= Direction.bSinglePush(pieceBb, emptySq) |
-        Direction.bDoublePush(pieceBb, emptySq);
-    } else {
-      pawnMoves |= Direction.bSinglePush(pieceBb, emptySq);
-    }
-    // attack parsing
-    pawnMoves |= (Direction.bPawnAttacks(pieceBb) & this.whiteBb);
-    return pawnMoves;
+  atSeventhRank(pieceBb) {
+    return pieceBb & BoardHelper.seventhRank();
+  }
+
+  canDoublePush(pieceBb) {
+    return Direction.bDoublePush(pieceBb, this.emptySq);
+  }
+
+  canSinglePush(pieceBb) {
+    return Direction.bSinglePush(pieceBb, this.emptySq);
+  }
+
+  pawnAttacks(pieceBb) {
+    return Direction.bPawnAttacks(pieceBb) & this.whiteBb;
+  }
+
+  generateMoves(pieceBb) {    
+    this.moveBb = BigInt(0);
+    this.moveBb |= this.canSinglePush(pieceBb) | this.pawnAttacks(pieceBb);
+    if (this.atSeventhRank(pieceBb)) {
+      this.moveBb |= this.canDoublePush(pieceBb);
+    } 
+    return this.moveBb;
   }
 
   moves() {
-    const moveList = [];
-    SquareHelper.indicesFor(this.bb).forEach((fromIdx) => {
-      const pieceBb = BitHelper.setBit(BigInt(0), fromIdx);
-      const toIdxs = SquareHelper.indicesFor(this.generateMoves(pieceBb));
-      moveList.push(MoveList.for('p', fromIdx, toIdxs, this));
-    });
-
-    this.moveList = moveList.flat();
-
+    this.emptySq = ~this.mainBoardBb;
+    this.moveList = this.makeMoveList('p');
     return this.moveList;
   }
 }
@@ -139,6 +160,16 @@ class WhiteKnightBoard extends PieceBoard {
   constructor(bb) {
     super();
     this.bb = bb;
+    this.moveList = [];
+  }
+
+  generateMoves(pieceBb) {
+
+  }
+
+  moves() {
+    this.moveList = this.makeMoveList('N');
+    return this.moveList;
   }
 }
 
@@ -146,6 +177,7 @@ class WhiteBishopBoard extends PieceBoard {
   constructor(bb) {
     super();
     this.bb = bb;
+    this.moveList = [];
   }
 }
 

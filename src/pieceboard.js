@@ -86,13 +86,16 @@ class WhitePawnBoard extends PieceBoard {
   }
 
   moves() {
+    const moveList = [];
     Square.indicesFor(this.bb).forEach((fromIdx) => {
       const pieceBb = BitHelper.setBit(BigInt(0), fromIdx);
       const toIdxs = Square.indicesFor(this.generateMoves(pieceBb));
-      this.moveList.push(MoveList.for('P', fromIdx, toIdxs, this));
+      moveList.push(MoveList.for('P', fromIdx, toIdxs, this));
     });
 
-    return this.moveList.flat();
+    this.moveList = moveList.flat();
+
+    return this.moveList;
   }
 }
 
@@ -119,13 +122,16 @@ class BlackPawnBoard extends PieceBoard {
   }
 
   moves() {
+    const moveList = [];
     Square.indicesFor(this.bb).forEach((fromIdx) => {
       const pieceBb = BitHelper.setBit(BigInt(0), fromIdx);
       const toIdxs = Square.indicesFor(this.generateMoves(pieceBb));
-      this.moveList.push(MoveList.for('p', fromIdx, toIdxs, this));
+      moveList.push(MoveList.for('p', fromIdx, toIdxs, this));
     });
 
-    return this.moveList.flat();
+    this.moveList = moveList.flat();
+
+    return this.moveList;
   }
 }
 

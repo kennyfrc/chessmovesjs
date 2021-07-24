@@ -108,9 +108,6 @@ describe('PawnBoard', function() {
       const blackPawn = bBoardWChecks.pieceBoardList.p;
       blackPawn.on(bBoardWChecks);
 
-      console.log(blackPawn.moves())
-      console.log(whitePawn.moves())
-
       assert.equal(blackPawn.moves()[1].capture, true);
       assert.equal(blackPawn.moves()[1].check, true);
     })

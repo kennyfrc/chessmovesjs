@@ -78,7 +78,7 @@ class Board {
       }
     }
 
-    this.setPieceBbs(this.pieceBoardList);
+    this.setPieceBbs();
     this.setPieceSetBbs();
     this.setBoardBb();
   }
@@ -105,19 +105,19 @@ class Board {
     }
   }
 
-  setPieceBbs(pbList) {
-    this.whiteKingBb |= pbList.K.bb;
-    this.blackKingBb |= pbList.k.bb;
-    this.whiteQueenBb |= pbList.Q.bb;
-    this.blackQueenBb |= pbList.q.bb;
-    this.whiteRookBb |= pbList.R.bb;
-    this.blackRookBb |= pbList.r.bb;
-    this.whiteBishopBb |= pbList.B.bb;
-    this.blackBishopBb |= pbList.b.bb;
-    this.whiteKnightBb |= pbList.N.bb;
-    this.blackKnightBb |= pbList.n.bb;
-    this.whitePawnBb |= pbList.P.bb;
-    this.blackPawnBb |= pbList.p.bb;
+  setPieceBbs() {
+    this.whiteKingBb |= this.pieceBoardList.K.bb;
+    this.blackKingBb |= this.pieceBoardList.k.bb;
+    this.whiteQueenBb |= this.pieceBoardList.Q.bb;
+    this.blackQueenBb |= this.pieceBoardList.q.bb;
+    this.whiteRookBb |= this.pieceBoardList.R.bb;
+    this.blackRookBb |= this.pieceBoardList.r.bb;
+    this.whiteBishopBb |= this.pieceBoardList.B.bb;
+    this.blackBishopBb |= this.pieceBoardList.b.bb;
+    this.whiteKnightBb |= this.pieceBoardList.N.bb;
+    this.blackKnightBb |= this.pieceBoardList.n.bb;
+    this.whitePawnBb |= this.pieceBoardList.P.bb;
+    this.blackPawnBb |= this.pieceBoardList.p.bb;
   }
 
   setPieceSetBbs() {

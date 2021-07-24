@@ -17,6 +17,18 @@ class Board {
     this.blackBb = BigInt(0);
     this.whiteKingBb = BigInt(0);
     this.blackKingBb = BigInt(0);
+    this.whiteKnightBb = BigInt(0);
+    this.blackKnightBb = BigInt(0);
+    this.whiteBishopBb = BigInt(0);
+    this.blackBishopBb = BigInt(0);
+    this.whiteRookBb = BigInt(0);
+    this.blackRookBb = BigInt(0);
+    this.whiteQueenBb = BigInt(0);
+    this.blackQueenBb = BigInt(0);
+    this.whiteMinorBb = BigInt(0);
+    this.blackMinorBb = BigInt(0);
+    this.whiteMajorBb = BigInt(0);
+    this.blackMajorBb = BigInt(0);
   }
 
   parseFenToBoard(fen) {
@@ -76,8 +88,36 @@ class Board {
       if ('k'.includes(pieceKey)) {
         this.blackKingBb |= this.pieceBoardList[pieceKey].bb;
       }
+      if ('N'.includes(pieceKey)) {
+        this.whiteKnightBb |= this.pieceBoardList[pieceKey].bb;
+      }
+      if ('n'.includes(pieceKey)) {
+        this.blackKnightBb |= this.pieceBoardList[pieceKey].bb;
+      }
+      if ('B'.includes(pieceKey)) {
+        this.whiteBishopBb |= this.pieceBoardList[pieceKey].bb;
+      }
+      if ('b'.includes(pieceKey)) {
+        this.blackBishopBb |= this.pieceBoardList[pieceKey].bb;
+      }
+      if ('R'.includes(pieceKey)) {
+        this.whiteRookBb |= this.pieceBoardList[pieceKey].bb;
+      }
+      if ('r'.includes(pieceKey)) {
+        this.blackRookBb |= this.pieceBoardList[pieceKey].bb;
+      }
+      if ('Q'.includes(pieceKey)) {
+        this.whiteQueenBb |= this.pieceBoardList[pieceKey].bb;
+      }
+      if ('q'.includes(pieceKey)) {
+        this.blackQueenBb |= this.pieceBoardList[pieceKey].bb;
+      }
     });
 
+    this.whiteMajorBb = this.whiteRookBb | this.whiteQueenBb;
+    this.whiteMinorBb = this.whiteKnightBb | this.whiteBishopBb;
+    this.blackMajorBb = this.blackRookBb | this.blackQueenBb;
+    this.blackMinorBb = this.blackKnightBb | this.blackBishopBb;
     this.bb = this.whiteBb | this.blackBb;
   }
 

@@ -54,6 +54,10 @@ class PieceBoard {
     this.blackBb = board.blackBb;
     this.whiteKingBb = board.whiteKingBb;
     this.blackKingBb = board.blackKingBb;
+    this.whiteMinorBb = board.whiteMinorBb;
+    this.blackMinorBb = board.blackMinorBb;
+    this.whiteMajorBb = board.whiteMajorBb;
+    this.blackMajorBb = board.blackMajorBb;
   }
 }
 

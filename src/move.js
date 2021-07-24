@@ -32,6 +32,7 @@ class WhitePawnMove {
     this.to = toIdx;
     this.check = this.isCheck(toIdx, pieceBoard);
     this.capture = this.isCapture(toIdx, pieceBoard);
+    this.attack = this.isAttack(toIdx, pieceBoard);
   }
 
   isCheck(toIdx, pieceBoard) {
@@ -44,6 +45,12 @@ class WhitePawnMove {
     const pieceBb = BitHelper.setBit(BigInt(0), BigInt(toIdx));
     return ((pieceBb & pieceBoard.blackBb) == BigInt(0) ? false : true );
   }
+
+  isAttack(toIdx, pieceBoard) {
+    const pieceBb = BitHelper.setBit(BigInt(0), BigInt(toIdx));
+    return ((Direction.wPawnAttacks(pieceBb) & (pieceBoard.blackMinorBb |
+      pieceBoard.blackMajorBb)) == BigInt(0) ? false : true);
+  }
 }
 
 class BlackPawnMove {
@@ -52,6 +59,7 @@ class BlackPawnMove {
     this.to = toIdx;
     this.check = this.isCheck(toIdx, pieceBoard);
     this.capture = this.isCapture(toIdx, pieceBoard);
+    this.attack = this.isAttack(toIdx, pieceBoard);
   }
 
   isCheck(toIdx, pieceBoard) {
@@ -63,6 +71,12 @@ class BlackPawnMove {
   isCapture(toIdx, pieceBoard) {
     const pieceBb = BitHelper.setBit(BigInt(0), BigInt(toIdx));
     return ((pieceBb & pieceBoard.whiteBb) == BigInt(0) ? false : true );
+  }
+
+  isAttack(toIdx, pieceBoard) {
+    const pieceBb = BitHelper.setBit(BigInt(0), BigInt(toIdx));
+    return ((Direction.bPawnAttacks(pieceBb) & (pieceBoard.whiteMinorBb |
+      pieceBoard.whiteMajorBb)) == BigInt(0) ? false : true);
   }
 }
 

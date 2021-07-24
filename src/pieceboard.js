@@ -1,8 +1,10 @@
 const BitHelper = require('./helpers.js').BitHelper;
 const BoardHelper = require('./helpers.js').BoardHelper;
 const SquareHelper = require('./helpers.js').SquareHelper;
+const ViewHelper = require('./helpers.js').ViewHelper;
 const Direction = require('./move.js').Direction;
 const MoveList = require('./move.js').MoveList;
+const U64 = require('./helpers.js').U64;
 
 class PieceBoard {
   static for(fenChar, pieceBit) {
@@ -63,7 +65,7 @@ class PieceBoard {
   makeMoveList(fenChar) {
     const moveList = [];
     SquareHelper.indicesFor(this.bb).forEach((fromIdx) => {
-      const pieceBb = BitHelper.setBit(BigInt(0), fromIdx);
+      const pieceBb = BitHelper.setBit(U64(0), fromIdx);
       const toIdxs = SquareHelper.indicesFor(this.generateMoves(pieceBb));
       moveList.push(MoveList.for(fenChar, fromIdx, toIdxs, this));
     });
@@ -79,8 +81,8 @@ class WhitePawnBoard extends PieceBoard {
     super();
     this.bb = bb;
     this.moveList = [];
-    this.moveBb = BigInt(0);
-    this.emptySq = BigInt(0);
+    this.moveBb = U64(0);
+    this.emptySq = U64(0);
   }
 
   atSecondRank(pieceBb) {
@@ -100,8 +102,8 @@ class WhitePawnBoard extends PieceBoard {
   }
 
   generateMoves(pieceBb) {    
-    this.moveBb = BigInt(0);
-    this.moveBb |= this.canSinglePush(pieceBb) | this.pawnAttacks(pieceBb);
+    this.moveBb = U64(0);
+    this.moveBb = this.canSinglePush(pieceBb) | this.pawnAttacks(pieceBb);
     if (this.atSecondRank(pieceBb)) {
       this.moveBb |= this.canDoublePush(pieceBb);
     } 
@@ -120,8 +122,8 @@ class BlackPawnBoard extends PieceBoard {
     super();
     this.bb = bb;
     this.moveList = [];
-    this.moveBb = BigInt(0);
-    this.emptySq = BigInt(0);
+    this.moveBb = U64(0);
+    this.emptySq = U64(0);
   }
 
   atSeventhRank(pieceBb) {
@@ -141,8 +143,8 @@ class BlackPawnBoard extends PieceBoard {
   }
 
   generateMoves(pieceBb) {    
-    this.moveBb = BigInt(0);
-    this.moveBb |= this.canSinglePush(pieceBb) | this.pawnAttacks(pieceBb);
+    this.moveBb = U64(0);
+    this.moveBb = this.canSinglePush(pieceBb) | this.pawnAttacks(pieceBb);
     if (this.atSeventhRank(pieceBb)) {
       this.moveBb |= this.canDoublePush(pieceBb);
     } 
@@ -161,14 +163,50 @@ class WhiteKnightBoard extends PieceBoard {
     super();
     this.bb = bb;
     this.moveList = [];
+    this.moveBb = U64(0);
+    this.occupiable = U64(0);
+  }
+
+  knightAttacks(pieceBb) {
+    return Direction.knightAttacks(pieceBb) & this.occupiable;
   }
 
   generateMoves(pieceBb) {
-
+    this.moveBb = U64(0);
+    this.moveBb = this.knightAttacks(pieceBb);
+    
+    return this.moveBb;
   }
 
   moves() {
+    this.occupiable = ~this.whiteBb;
     this.moveList = this.makeMoveList('N');
+    return this.moveList;
+  }
+}
+
+class BlackKnightBoard extends PieceBoard {
+  constructor(bb) {
+    super();
+    this.bb = bb;
+    this.moveList = [];
+    this.moveBb = U64(0);
+    this.occupiable = U64(0);
+  }
+
+  knightAttacks(pieceBb) {
+    return Direction.knightAttacks(pieceBb) & this.occupiable;
+  }
+
+  generateMoves(pieceBb) {
+    this.moveBb = U64(0);
+    this.moveBb = this.knightAttacks(pieceBb);
+    return this.moveBb;
+  }
+
+  moves() {
+    this.occupiable = ~this.blackBb;
+    this.moveList = this.makeMoveList('n');
     return this.moveList;
   }
 }
@@ -202,12 +240,6 @@ class WhiteKingBoard extends PieceBoard {
   }
 }
 
-class BlackKnightBoard extends PieceBoard {
-  constructor(bb) {
-    super();
-    this.bb = bb;
-  }
-}
 
 class BlackBishopBoard extends PieceBoard {
   constructor(bb) {
@@ -239,18 +271,18 @@ class BlackKingBoard extends PieceBoard {
 
 class PieceBoardList {
   constructor() {
-    this.K = PieceBoard.for('K', BigInt(0));
-    this.Q = PieceBoard.for('Q', BigInt(0));
-    this.R = PieceBoard.for('R', BigInt(0));
-    this.B = PieceBoard.for('B', BigInt(0));
-    this.N = PieceBoard.for('N', BigInt(0));
-    this.P = PieceBoard.for('P', BigInt(0));
-    this.k = PieceBoard.for('k', BigInt(0));
-    this.q = PieceBoard.for('q', BigInt(0));
-    this.r = PieceBoard.for('r', BigInt(0));
-    this.b = PieceBoard.for('b', BigInt(0));
-    this.n = PieceBoard.for('n', BigInt(0));
-    this.p = PieceBoard.for('p', BigInt(0));
+    this.K = PieceBoard.for('K', U64(0));
+    this.Q = PieceBoard.for('Q', U64(0));
+    this.R = PieceBoard.for('R', U64(0));
+    this.B = PieceBoard.for('B', U64(0));
+    this.N = PieceBoard.for('N', U64(0));
+    this.P = PieceBoard.for('P', U64(0));
+    this.k = PieceBoard.for('k', U64(0));
+    this.q = PieceBoard.for('q', U64(0));
+    this.r = PieceBoard.for('r', U64(0));
+    this.b = PieceBoard.for('b', U64(0));
+    this.n = PieceBoard.for('n', U64(0));
+    this.p = PieceBoard.for('p', U64(0));
   }
 }
 

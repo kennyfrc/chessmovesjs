@@ -1,5 +1,8 @@
 const BitHelper = require('./helpers.js').BitHelper;
 const BoardHelper = require('./helpers.js').BoardHelper;
+const U64 = require('./helpers.js').U64;
+const U64Comp = require('./helpers.js').U64Comp;
+const U64Neg = require('./helpers.js').U64Neg;
 
 class MoveList {
   static for(fenChar, fromIdx, toIdxs, pieceBoard) {
@@ -42,26 +45,26 @@ class WhitePawnMove {
   }
 
   isCheck(toIdx, pieceBoard) {
-    const pieceBb = BitHelper.setBit(BigInt(0), BigInt(toIdx));
+    const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
     return ((Direction.wPawnAttacks(pieceBb) & pieceBoard.blackKingBb) ==
-      BigInt(0) ? false : true);
+      U64(0) ? false : true);
   }
 
   isCapture(toIdx, pieceBoard) {
-    const pieceBb = BitHelper.setBit(BigInt(0), BigInt(toIdx));
-    return ((pieceBb & pieceBoard.blackBb) == BigInt(0) ? false : true );
+    const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
+    return ((pieceBb & pieceBoard.blackBb) == U64(0) ? false : true );
   }
 
   isAttack(toIdx, pieceBoard) {
-    const pieceBb = BitHelper.setBit(BigInt(0), BigInt(toIdx));
+    const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
     return (Direction.wPawnAttacks(pieceBb) & (pieceBoard.blackMinorBb |
-      pieceBoard.blackMajorBb)) == BigInt(0) ? false : true;
+      pieceBoard.blackMajorBb)) == U64(0) ? false : true;
   }
 }
 
 class BlackPawnMove {
   constructor(fromIdx, toIdx, pieceBoard) {
-    this.bb = BigInt(0);
+    this.bb = U64(0);
     this.from = fromIdx;
     this.to = toIdx;
     this.check = this.isCheck(toIdx, pieceBoard);
@@ -70,20 +73,22 @@ class BlackPawnMove {
   }
 
   isCheck(toIdx, pieceBoard) {
-    const pieceBb = BitHelper.setBit(BigInt(0), BigInt(toIdx));
+    const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
     return ((Direction.bPawnAttacks(pieceBb) & pieceBoard.whiteKingBb) ==
-      BigInt(0) ? false : true);
+      U64(0) ? false : true);
   }
 
   isCapture(toIdx, pieceBoard) {
-    const pieceBb = BitHelper.setBit(BigInt(0), BigInt(toIdx));
-    return ((pieceBb & pieceBoard.whiteBb) == BigInt(0) ? false : true );
+    const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
+    return ((pieceBb & pieceBoard.whiteBb) == U64(0) ? false : true );
   }
 
   isAttack(toIdx, pieceBoard) {
-    const pieceBb = BitHelper.setBit(BigInt(0), BigInt(toIdx));
+    const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
     return (Direction.bPawnAttacks(pieceBb) & (pieceBoard.whiteMinorBb |
-      pieceBoard.whiteMajorBb)) == BigInt(0) ? false : true;
+      pieceBoard.whiteMajorBb)) == U64(0) ? false : true;
+  }
+}
   }
 }
 
@@ -134,13 +139,14 @@ class Direction {
   }
 
   static wPawnAttacks(bb) {
-    return ( Compass.northWestOne(bb & ~BoardHelper.aFile()) |
-     Compass.northEastOne(bb & ~BoardHelper.hFile()) );
+    return ( Compass.northWestOne(bb & U64Comp(BoardHelper.aFile())) |
+     Compass.northEastOne(bb & U64Comp(BoardHelper.hFile())) );
   }
 
   static bPawnAttacks(bb) {
-    return ( Compass.southWestOne(bb & ~BoardHelper.aFile()) |
-     Compass.southEastOne(bb & ~BoardHelper.hFile()) );
+    return ( Compass.southWestOne(bb & U64Comp(BoardHelper.aFile())) |
+     Compass.southEastOne(bb & U64Comp(BoardHelper.hFile())) );
+  }
   }
 }
 
@@ -156,36 +162,38 @@ class Direction {
  * soWe         sout         soEa
  **/
 class Compass {
+  // basic compass
   static northOne(bb) {
-    return bb << BigInt(8);
+    return bb << U64(8);
   }
 
   static northEastOne(bb) {
-    return bb << BigInt(9);
+    return bb << U64(9);
   }
 
   static eastOne(bb) {
-    return bb << BigInt(1);
+    return bb << U64(1);
   }
 
   static southEastOne(bb) {
-    return bb >> BigInt(7);
+    return bb >> U64(7);
   }
 
   static southOne(bb) {
-    return bb >> BigInt(8);
+    return bb >> U64(8);
   }
 
   static southWestOne(bb) {
-    return bb >> BigInt(9);
+    return bb >> U64(9);
   }
 
   static westOne(bb) {
-    return bb >> BigInt(1);
+    return bb >> U64(1);
   }
 
   static northWestOne(bb) {
-    return bb << BigInt(7);
+    return bb << U64(7);
+  }
   }
 }
 

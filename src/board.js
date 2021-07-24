@@ -2,28 +2,29 @@ const BitHelper = require('./helpers.js').BitHelper;
 const PieceBoard = require('./pieceboard.js').PieceBoard;
 const PieceBoardList = require('./pieceboard.js').PieceBoardList;
 const ViewHelper = require('./helpers.js').ViewHelper;
+const U64 = require('./helpers.js').U64;
 
 class Board {
   constructor() {
-    this.bb = BigInt(0);
-    this.whiteBb = BigInt(0);
-    this.blackBb = BigInt(0);
-    this.whiteKingBb = BigInt(0);
-    this.blackKingBb = BigInt(0);
-    this.whitePawnBb = BigInt(0);
-    this.blackPawnBb = BigInt(0);
-    this.whiteKnightBb = BigInt(0);
-    this.blackKnightBb = BigInt(0);
-    this.whiteBishopBb = BigInt(0);
-    this.blackBishopBb = BigInt(0);
-    this.whiteRookBb = BigInt(0);
-    this.blackRookBb = BigInt(0);
-    this.whiteQueenBb = BigInt(0);
-    this.blackQueenBb = BigInt(0);
-    this.whiteMinorBb = BigInt(0);
-    this.blackMinorBb = BigInt(0);
-    this.whiteMajorBb = BigInt(0);
-    this.blackMajorBb = BigInt(0);
+    this.bb = U64(0);
+    this.whiteBb = U64(0);
+    this.blackBb = U64(0);
+    this.whiteKingBb = U64(0);
+    this.blackKingBb = U64(0);
+    this.whitePawnBb = U64(0);
+    this.blackPawnBb = U64(0);
+    this.whiteKnightBb = U64(0);
+    this.blackKnightBb = U64(0);
+    this.whiteBishopBb = U64(0);
+    this.blackBishopBb = U64(0);
+    this.whiteRookBb = U64(0);
+    this.blackRookBb = U64(0);
+    this.whiteQueenBb = U64(0);
+    this.blackQueenBb = U64(0);
+    this.whiteMinorBb = U64(0);
+    this.blackMinorBb = U64(0);
+    this.whiteMajorBb = U64(0);
+    this.blackMajorBb = U64(0);
 
     this.pieceBoardList = new PieceBoardList();
 

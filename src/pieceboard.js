@@ -1,6 +1,6 @@
 const BitHelper = require('./helpers.js').BitHelper;
 const BoardHelper = require('./helpers.js').BoardHelper;
-const Square = require('./square.js').Square;
+const SquareHelper = require('./helpers.js').SquareHelper;
 const Direction = require('./move.js').Direction;
 const MoveList = require('./move.js').MoveList;
 
@@ -87,9 +87,9 @@ class WhitePawnBoard extends PieceBoard {
 
   moves() {
     const moveList = [];
-    Square.indicesFor(this.bb).forEach((fromIdx) => {
+    SquareHelper.indicesFor(this.bb).forEach((fromIdx) => {
       const pieceBb = BitHelper.setBit(BigInt(0), fromIdx);
-      const toIdxs = Square.indicesFor(this.generateMoves(pieceBb));
+      const toIdxs = SquareHelper.indicesFor(this.generateMoves(pieceBb));
       moveList.push(MoveList.for('P', fromIdx, toIdxs, this));
     });
 
@@ -123,9 +123,9 @@ class BlackPawnBoard extends PieceBoard {
 
   moves() {
     const moveList = [];
-    Square.indicesFor(this.bb).forEach((fromIdx) => {
+    SquareHelper.indicesFor(this.bb).forEach((fromIdx) => {
       const pieceBb = BitHelper.setBit(BigInt(0), fromIdx);
-      const toIdxs = Square.indicesFor(this.generateMoves(pieceBb));
+      const toIdxs = SquareHelper.indicesFor(this.generateMoves(pieceBb));
       moveList.push(MoveList.for('p', fromIdx, toIdxs, this));
     });
 

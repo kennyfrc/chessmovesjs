@@ -1,7 +1,7 @@
 const assert = require('assert');
 const Board = require('../src/board.js').Board;
 const BoardView = require('../src/boardview.js').BoardView;
-const Square = require('../src/square.js').Square;
+const SquareHelper = require('../src/helpers.js').SquareHelper;
 // const PieceBoard = require('../src/board.js').PieceBoard;
 // const ViewHelper = require('../src/pieceboard.js').ViewHelper;
 
@@ -137,24 +137,24 @@ describe('BoardView', function() {
 });
 /* eslint-enable max-len */
 
-// Square should return integer indices
-describe('Square', function() {
+// SquareHelper should return integer indices
+describe('SquareHelper', function() {
   describe('#indicesFor', function() {
     const rookBoard = board.pieceBoardList.r;
     const bKingBoard = board.pieceBoardList.k;
     const wKingBoard = board.pieceBoardList.K;
 
     it('shows indices of black rook', function() {
-      assert.equal(Square.indicesFor(rookBoard.bb)[0], 56);
-      assert.equal(Square.indicesFor(rookBoard.bb)[1], 63);
+      assert.equal(SquareHelper.indicesFor(rookBoard.bb)[0], 56);
+      assert.equal(SquareHelper.indicesFor(rookBoard.bb)[1], 63);
     });
 
     it('shows indices of black king', function() {
-      assert.equal(Square.indicesFor(bKingBoard.bb)[0], 60);
+      assert.equal(SquareHelper.indicesFor(bKingBoard.bb)[0], 60);
     });
 
     it('shows indices of white king', function() {
-      assert.equal(Square.indicesFor(wKingBoard.bb)[0], 4);
+      assert.equal(SquareHelper.indicesFor(wKingBoard.bb)[0], 4);
     });
   });
 });

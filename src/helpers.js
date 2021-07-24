@@ -159,39 +159,69 @@ class ViewHelper {
     }
 
     console.log(`=BEGIN ${message}` + '\n' +
-      userView[Square.for('A8')] + userView[Square.for('B8')] +
-      userView[Square.for('C8')] + userView[Square.for('D8')] +
-      userView[Square.for('E8')] + userView[Square.for('F8')] +
-      userView[Square.for('G8')] + userView[Square.for('H8')] + '\n' +
-      userView[Square.for('A7')] + userView[Square.for('B7')] +
-      userView[Square.for('C7')] + userView[Square.for('D7')] +
-      userView[Square.for('E7')] + userView[Square.for('F7')] +
-      userView[Square.for('G7')] + userView[Square.for('H7')] + '\n' +
-      userView[Square.for('A6')] + userView[Square.for('B6')] +
-      userView[Square.for('C6')] + userView[Square.for('D6')] +
-      userView[Square.for('E6')] + userView[Square.for('F6')] +
-      userView[Square.for('G6')] + userView[Square.for('H6')] + '\n' +
-      userView[Square.for('A5')] + userView[Square.for('B5')] +
-      userView[Square.for('C5')] + userView[Square.for('D5')] +
-      userView[Square.for('E5')] + userView[Square.for('F5')] +
-      userView[Square.for('G5')] + userView[Square.for('H5')] + '\n' +
-      userView[Square.for('A4')] + userView[Square.for('B4')] +
-      userView[Square.for('C4')] + userView[Square.for('D4')] +
-      userView[Square.for('E4')] + userView[Square.for('F4')] +
-      userView[Square.for('G4')] + userView[Square.for('H4')] + '\n' +
-      userView[Square.for('A3')] + userView[Square.for('B3')] +
-      userView[Square.for('C3')] + userView[Square.for('D3')] +
-      userView[Square.for('E3')] + userView[Square.for('F3')] +
-      userView[Square.for('G3')] + userView[Square.for('H3')] + '\n' +
-      userView[Square.for('A2')] + userView[Square.for('B2')] +
-      userView[Square.for('C2')] + userView[Square.for('D2')] +
-      userView[Square.for('E2')] + userView[Square.for('F2')] +
-      userView[Square.for('G2')] + userView[Square.for('H2')] + '\n' +
-      userView[Square.for('A1')] + userView[Square.for('B1')] +
-      userView[Square.for('C1')] + userView[Square.for('D1')] +
-      userView[Square.for('E1')] + userView[Square.for('F1')] +
-      userView[Square.for('G1')] + userView[Square.for('H1')] + '\n' +
+      userView[SquareHelper.for('A8')] + userView[SquareHelper.for('B8')] +
+      userView[SquareHelper.for('C8')] + userView[SquareHelper.for('D8')] +
+      userView[SquareHelper.for('E8')] + userView[SquareHelper.for('F8')] +
+      userView[SquareHelper.for('G8')] + userView[SquareHelper.for('H8')] + '\n' +
+      userView[SquareHelper.for('A7')] + userView[SquareHelper.for('B7')] +
+      userView[SquareHelper.for('C7')] + userView[SquareHelper.for('D7')] +
+      userView[SquareHelper.for('E7')] + userView[SquareHelper.for('F7')] +
+      userView[SquareHelper.for('G7')] + userView[SquareHelper.for('H7')] + '\n' +
+      userView[SquareHelper.for('A6')] + userView[SquareHelper.for('B6')] +
+      userView[SquareHelper.for('C6')] + userView[SquareHelper.for('D6')] +
+      userView[SquareHelper.for('E6')] + userView[SquareHelper.for('F6')] +
+      userView[SquareHelper.for('G6')] + userView[SquareHelper.for('H6')] + '\n' +
+      userView[SquareHelper.for('A5')] + userView[SquareHelper.for('B5')] +
+      userView[SquareHelper.for('C5')] + userView[SquareHelper.for('D5')] +
+      userView[SquareHelper.for('E5')] + userView[SquareHelper.for('F5')] +
+      userView[SquareHelper.for('G5')] + userView[SquareHelper.for('H5')] + '\n' +
+      userView[SquareHelper.for('A4')] + userView[SquareHelper.for('B4')] +
+      userView[SquareHelper.for('C4')] + userView[SquareHelper.for('D4')] +
+      userView[SquareHelper.for('E4')] + userView[SquareHelper.for('F4')] +
+      userView[SquareHelper.for('G4')] + userView[SquareHelper.for('H4')] + '\n' +
+      userView[SquareHelper.for('A3')] + userView[SquareHelper.for('B3')] +
+      userView[SquareHelper.for('C3')] + userView[SquareHelper.for('D3')] +
+      userView[SquareHelper.for('E3')] + userView[SquareHelper.for('F3')] +
+      userView[SquareHelper.for('G3')] + userView[SquareHelper.for('H3')] + '\n' +
+      userView[SquareHelper.for('A2')] + userView[SquareHelper.for('B2')] +
+      userView[SquareHelper.for('C2')] + userView[SquareHelper.for('D2')] +
+      userView[SquareHelper.for('E2')] + userView[SquareHelper.for('F2')] +
+      userView[SquareHelper.for('G2')] + userView[SquareHelper.for('H2')] + '\n' +
+      userView[SquareHelper.for('A1')] + userView[SquareHelper.for('B1')] +
+      userView[SquareHelper.for('C1')] + userView[SquareHelper.for('D1')] +
+      userView[SquareHelper.for('E1')] + userView[SquareHelper.for('F1')] +
+      userView[SquareHelper.for('G1')] + userView[SquareHelper.for('H1')] + '\n' +
       '=END');
+  }
+}
+
+class SquareHelper {
+  static for(rankFile) {
+    // Little-Endian Rank-File Mapping
+    /* eslint-disable key-spacing */
+    const indexMap = {
+      A8: 56, B8: 57, C8: 58, D8: 59, E8: 60, F8: 61, G8: 62, H8: 63,
+      A7: 48, B7: 49, C7: 50, D7: 51, E7: 52, F7: 53, G7: 54, H7: 55,
+      A6: 40, B6: 41, C6: 42, D6: 43, E6: 44, F6: 45, G6: 46, H6: 47,
+      A5: 32, B5: 33, C5: 34, D5: 35, E5: 36, F5: 37, G5: 38, H5: 39,
+      A4: 24, B4: 25, C4: 26, D4: 27, E4: 28, F4: 29, G4: 30, H4: 31,
+      A3: 16, B3: 17, C3: 18, D3: 19, E3: 20, F3: 21, G3: 22, H3: 23,
+      A2:  8, B2:  9, C2: 10, D2: 11, E2: 12, F2: 13, G2: 14, H2: 15,
+      A1:  0, B1:  1, C1:  2, D1:  3, E1:  4, F1:  5, G1:  6, H1:  7,
+    };
+    /* eslint-enable key-spacing */
+    return indexMap[rankFile];
+  }
+
+  static indicesFor(board) {
+    const someList = [];
+    if (board != BigInt(0)) {
+      do {
+        const idx = BitHelper.bitScanFwd(board);
+        someList.push(idx);
+      } while ( board &= board - BigInt(1));
+    }
+    return someList;
   }
 }
 
@@ -199,4 +229,5 @@ module.exports = {
   BitHelper: BitHelper,
   BoardHelper: BoardHelper,
   ViewHelper: ViewHelper,
+  SquareHelper: SquareHelper,
 };

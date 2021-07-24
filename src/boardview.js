@@ -1,6 +1,6 @@
 const Board = require('./board.js').Board;
 const BitHelper = require('./helpers.js').BitHelper;
-const Square = require('../src/square.js').Square;
+const Square = require('./square.js').Square;
 
 class BoardView extends Board {
   constructor(pieceBoardList) {

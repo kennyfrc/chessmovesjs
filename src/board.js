@@ -6,7 +6,6 @@ const PieceBoardList = require('./pieceboard.js').PieceBoardList;
 
 class Board {
   constructor() {
-    this.startFen = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
     this.bb = BigInt(0);
     this.pieceBoardList = new PieceBoardList();
 
@@ -15,6 +14,11 @@ class Board {
 
     this.whiteToMove = 1;
     this.moveBit = {'w': 1, 'b': 0};
+
+    this.whiteBb = BigInt(0);
+    this.blackBb = BigInt(0);
+    this.whiteKingBb = BigInt(0);
+    this.blackKingBb = BigInt(0);
   }
 
   parseFenToBoard(fen) {
@@ -36,13 +40,13 @@ class Board {
       } else {
         if ('KQRBNP'.includes(fen[i])) {
           const pieceBit = BitHelper.setBit(this.pieceBoardList[fen[i]].bb, fenIndex);
-          this.pieceBoardList[fen[i]] = PieceBoard.for(fen[i], pieceBit, this);
+          this.pieceBoardList[fen[i]] = PieceBoard.for(fen[i], pieceBit);
           fenIndex += 1;
         }
 
         if ('kqrbnp'.includes(fen[i])) {
           const pieceBit = BitHelper.setBit(this.pieceBoardList[fen[i]].bb, fenIndex);
-          this.pieceBoardList[fen[i]] = PieceBoard.for(fen[i], pieceBit, this);
+          this.pieceBoardList[fen[i]] = PieceBoard.for(fen[i], pieceBit);
           fenIndex += 1;
         }
 
@@ -62,8 +66,21 @@ class Board {
     }
 
     Object.keys(this.pieceBoardList).forEach((pieceKey) => {
-      this.bb |= this.pieceBoardList[pieceKey].bb;
+      if ('KQRBNP'.includes(pieceKey)) {
+        this.whiteBb |= this.pieceBoardList[pieceKey].bb;
+      }
+      if ('kqrbnp'.includes(pieceKey)) {
+        this.blackBb |= this.pieceBoardList[pieceKey].bb;
+      }
+      if ('K'.includes(pieceKey)) {
+        this.whiteKingBb |= this.pieceBoardList[pieceKey].bb;
+      }
+      if ('k'.includes(pieceKey)) {
+        this.blackKingBb |= this.pieceBoardList[pieceKey].bb;
+      }
     });
+
+    this.bb = this.whiteBb | this.blackBb;
   }
 
   resetBoard() {

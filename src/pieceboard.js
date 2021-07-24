@@ -107,9 +107,9 @@ class BlackPawnBoard extends PieceBoard {
     let pawnMoves = BigInt(0);
     const emptySq = ~this.mainBoardBb;
     // start pos parsing
-    if (pieceBb & BoardHelper.secondRank()) {
+    if (pieceBb & BoardHelper.seventhRank()) {
       pawnMoves |= Direction.bSinglePush(pieceBb, emptySq) |
-        Direction.wDoublePush(pieceBb, emptySq);
+        Direction.bDoublePush(pieceBb, emptySq);
     } else {
       pawnMoves |= Direction.bSinglePush(pieceBb, emptySq);
     }

@@ -80,6 +80,40 @@ describe('PawnBoard', function() {
       assert.equal(blackPawn.moves()[4].from, 35);
       assert.equal(blackPawn.moves()[4].to, 27);
     });
+
+    it('shows attacks', function() {
+      const wBoardWAttacks = new Board();
+      wBoardWAttacks.parseFenToBoard('r1bqkbnr/pppppppp/8/n7/4PP2/8/PPPP2PP/RNBQKBNR w KQkq - 1 3');
+      const whitePawn = wBoardWAttacks.pieceBoardList.P;
+      whitePawn.on(wBoardWAttacks);
+      
+      const bBoardWAttacks = new Board();
+      bBoardWAttacks.parseFenToBoard('r1bqkb1r/pppp1ppp/5n2/4P3/3Q4/8/PPP2PPP/RNB1KB1R b KQkq - 0 6');
+      const blackPawn = bBoardWAttacks.pieceBoardList.p;
+      blackPawn.on(bBoardWAttacks);
+
+      assert.equal(whitePawn.moves()[3].attack, true);
+      assert.equal(blackPawn.moves()[4].attack, true);
+    });
+
+    it('shows checks', function() {
+      const wBoardWChecks = new Board();
+      wBoardWChecks.parseFenToBoard('r1bqkb1r/pp2pppp/4Pn2/n1pp1P2/8/8/PPPP2PP/RNBQKBNR w KQkq - 1 6');
+      const whitePawn = wBoardWChecks.pieceBoardList.P;
+      whitePawn.on(wBoardWChecks);
+      const wPawnLen = whitePawn.moves().length;
+
+      const bBoardWChecks = new Board();
+      bBoardWChecks.parseFenToBoard('rnbq1bnr/pp2pkpp/8/3p4/5P2/2p2N2/PPPP2PP/RNBQKB1R b KQ - 1 6');
+      const blackPawn = bBoardWChecks.pieceBoardList.p;
+      blackPawn.on(bBoardWChecks);
+
+      console.log(blackPawn.moves())
+      console.log(whitePawn.moves())
+
+      assert.equal(blackPawn.moves()[1].capture, true);
+      assert.equal(blackPawn.moves()[1].check, true);
+    })
   });
 });
 

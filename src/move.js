@@ -48,8 +48,8 @@ class WhitePawnMove {
 
   isAttack(toIdx, pieceBoard) {
     const pieceBb = BitHelper.setBit(BigInt(0), BigInt(toIdx));
-    return ((Direction.wPawnAttacks(pieceBb) & (pieceBoard.blackMinorBb |
-      pieceBoard.blackMajorBb)) == BigInt(0) ? false : true);
+    return (Direction.wPawnAttacks(pieceBb) & (pieceBoard.blackMinorBb |
+      pieceBoard.blackMajorBb)) == BigInt(0) ? false : true;
   }
 }
 
@@ -75,8 +75,8 @@ class BlackPawnMove {
 
   isAttack(toIdx, pieceBoard) {
     const pieceBb = BitHelper.setBit(BigInt(0), BigInt(toIdx));
-    return ((Direction.bPawnAttacks(pieceBb) & (pieceBoard.whiteMinorBb |
-      pieceBoard.whiteMajorBb)) == BigInt(0) ? false : true);
+    return (Direction.bPawnAttacks(pieceBb) & (pieceBoard.whiteMinorBb |
+      pieceBoard.whiteMajorBb)) == BigInt(0) ? false : true;
   }
 }
 

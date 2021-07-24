@@ -48,9 +48,10 @@ class BitHelper {
   }
 
   static deBruijnMagicNum() {
-    return BigInt("0x6c04f118e9966f6b");
+    return BigInt('0x6c04f118e9966f6b');
   }
 
+  /* eslint-disable */
   static deBruijnTable() {
     return [ 0, 48, -1, -1, 31, -1, 15, 51, -1, 63, 
              5, -1, -1, -1, 19, -1, 23, 28, -1, -1, 
@@ -66,19 +67,15 @@ class BitHelper {
             -1, 35, 12, -1, -1, -1, 59, 42, -1, -1,
             61, 3, 26, 38, 44, -1, 56 ];
   }
+  /* eslint-enable */
 
   /**
     * De Bruijn Multiplication
     */
   static bitScanFwd(bb) {
     bb = -bb | bb;
-    return this.deBruijnTable()[
-      BigInt.asUintN(
-        64,
-        (BigInt.asUintN(
-          64,
-          (~(bb) * this.deBruijnMagicNum()))) >> BigInt(57))
-    ];
+    return this.deBruijnTable()[BigInt.asUintN(64, (BigInt.asUintN(64, (~(bb) *
+      this.deBruijnMagicNum()))) >> BigInt(57))];
   }
 
   static bigScanRev(bb) {
@@ -88,13 +85,8 @@ class BitHelper {
     bb |= bb >> BigInt(8);
     bb |= bb >> BigInt(16);
     bb |= bb >> BigInt(32);
-    return this.deBruijnTable()[
-      BigInt.asUintN(
-        64,
-        (BigInt.asUintN(
-          64,
-          (bb * this.deBruijnMagicNum()))) >> BigInt(57))
-    ];
+    return this.deBruijnTable()[BigInt.asUintN(64, (BigInt.asUintN(64, (bb *
+      this.deBruijnMagicNum()))) >> BigInt(57))];
   }
 
   /** counting bits:

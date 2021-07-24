@@ -4,7 +4,7 @@ const BoardHelper = require('./helpers.js').BoardHelper;
 class Move {
   static for(fenChar, fromIdx, toIdx, pieceBoard) {
     let MoveClass;
-    switch(fenChar) {
+    switch (fenChar) {
       case 'P':
         MoveClass = WhitePawnMove;
         break;
@@ -35,12 +35,13 @@ class WhitePawnMove {
   }
 
   isCheck(toIdx, pieceBoard) {
-    let pieceBb = BitHelper.setBit(BigInt(0), BigInt(toIdx));
-    return ((Direction.wPawnAttacks(pieceBb) & pieceBoard.blackKingBb) == BigInt(0) ? false : true);
+    const pieceBb = BitHelper.setBit(BigInt(0), BigInt(toIdx));
+    return ((Direction.wPawnAttacks(pieceBb) & pieceBoard.blackKingBb) ==
+      BigInt(0) ? false : true);
   }
 
   isCapture(toIdx, pieceBoard) {
-    let pieceBb = BitHelper.setBit(BigInt(0), BigInt(toIdx));
+    const pieceBb = BitHelper.setBit(BigInt(0), BigInt(toIdx));
     return ((pieceBb & pieceBoard.blackBb) == BigInt(0) ? false : true );
   }
 }
@@ -54,12 +55,13 @@ class BlackPawnMove {
   }
 
   isCheck(toIdx, pieceBoard) {
-    let pieceBb = BitHelper.setBit(BigInt(0), BigInt(toIdx));
-    return ((Direction.bPawnAttacks(pieceBb) & pieceBoard.whiteKingBb) == BigInt(0) ? false : true);
+    const pieceBb = BitHelper.setBit(BigInt(0), BigInt(toIdx));
+    return ((Direction.bPawnAttacks(pieceBb) & pieceBoard.whiteKingBb) ==
+      BigInt(0) ? false : true);
   }
 
   isCapture(toIdx, pieceBoard) {
-    let pieceBb = BitHelper.setBit(BigInt(0), BigInt(toIdx));
+    const pieceBb = BitHelper.setBit(BigInt(0), BigInt(toIdx));
     return ((pieceBb & pieceBoard.whiteBb) == BigInt(0) ? false : true );
   }
 }
@@ -94,9 +96,9 @@ class Direction {
   }
 }
 
-/** 
- * Compass 
- * 
+/**
+ * Compass
+ *
  * noWe         nort         noEa
  *         +7    +8    +9
  *             \  |  /
@@ -146,4 +148,4 @@ module.exports = {
   MoveList: MoveList,
   Direction: Direction,
   Compass: Compass,
-}
+};

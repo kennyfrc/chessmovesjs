@@ -1,7 +1,5 @@
-const Board = require('./board.js').Board;
 const BitHelper = require('./helpers.js').BitHelper;
 const BoardHelper = require('./helpers.js').BoardHelper;
-const ViewHelper = require('./helpers.js').ViewHelper;
 const Square = require('./square.js').Square;
 const Direction = require('./move.js').Direction;
 const MoveList = require('./move.js').MoveList;
@@ -73,7 +71,7 @@ class WhitePawnBoard extends PieceBoard {
     const emptySq = ~this.mainBoardBb;
     // start pos parsing
     if (pieceBb & BoardHelper.secondRank()) {
-      pawnMoves |= Direction.wSinglePush(pieceBb, emptySq) | 
+      pawnMoves |= Direction.wSinglePush(pieceBb, emptySq) |
         Direction.wDoublePush(pieceBb, emptySq);
     } else {
       pawnMoves |= Direction.wSinglePush(pieceBb, emptySq);
@@ -85,7 +83,7 @@ class WhitePawnBoard extends PieceBoard {
 
   moves() {
     Square.indicesFor(this.bb).forEach((fromIdx) => {
-      let pieceBb = BitHelper.setBit(BigInt(0), fromIdx);
+      const pieceBb = BitHelper.setBit(BigInt(0), fromIdx);
       const toIdxs = Square.indicesFor(this.generateMoves(pieceBb));
       this.moveList.push(MoveList.for('P', fromIdx, toIdxs, this));
     });
@@ -106,7 +104,7 @@ class BlackPawnBoard extends PieceBoard {
     const emptySq = ~this.mainBoardBb;
     // start pos parsing
     if (pieceBb & BoardHelper.secondRank()) {
-      pawnMoves |= Direction.bSinglePush(pieceBb, emptySq) | 
+      pawnMoves |= Direction.bSinglePush(pieceBb, emptySq) |
         Direction.wDoublePush(pieceBb, emptySq);
     } else {
       pawnMoves |= Direction.bSinglePush(pieceBb, emptySq);
@@ -118,7 +116,7 @@ class BlackPawnBoard extends PieceBoard {
 
   moves() {
     Square.indicesFor(this.bb).forEach((fromIdx) => {
-      let pieceBb = BitHelper.setBit(BigInt(0), fromIdx);
+      const pieceBb = BitHelper.setBit(BigInt(0), fromIdx);
       const toIdxs = Square.indicesFor(this.generateMoves(pieceBb));
       this.moveList.push(MoveList.for('p', fromIdx, toIdxs, this));
     });

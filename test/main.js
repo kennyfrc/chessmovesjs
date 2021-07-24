@@ -53,32 +53,32 @@ describe('PawnBoard', function() {
     it('returns pseudo-legal pawn moves', function() {
       const boardWManyPawnAttacks = new Board();
       boardWManyPawnAttacks.parseFenToBoard('rnbqkbnr/1p2pp1p/8/p1pp2p1/1P2PP1P/8/P1PP2P1/RNBQKBNR');
-      const whitePawn = boardWManyPawnAttacks.pieceBoardList.P
-      const blackPawn = boardWManyPawnAttacks.pieceBoardList.p
+      const whitePawn = boardWManyPawnAttacks.pieceBoardList.P;
+      const blackPawn = boardWManyPawnAttacks.pieceBoardList.p;
 
-      whitePawn.on(boardWManyPawnAttacks)
-      blackPawn.on(boardWManyPawnAttacks)
+      whitePawn.on(boardWManyPawnAttacks);
+      blackPawn.on(boardWManyPawnAttacks);
 
-      assert.equal(whitePawn.moves()[0].from, 8)
-      assert.equal(whitePawn.moves()[0].to, 16)
-      assert.equal(whitePawn.moves()[1].from, 8)
-      assert.equal(whitePawn.moves()[1].to, 24)
-      assert.equal(whitePawn.moves()[2].from, 10)
-      assert.equal(whitePawn.moves()[2].to, 18)
-      assert.equal(whitePawn.moves()[3].from, 10)
-      assert.equal(whitePawn.moves()[3].to, 26)
-      assert.equal(whitePawn.moves()[4].from, 11)
-      assert.equal(whitePawn.moves()[4].to, 19)
-      assert.equal(blackPawn.moves()[0].from, 32)
-      assert.equal(blackPawn.moves()[0].to, 24)
-      assert.equal(blackPawn.moves()[1].from, 32)
-      assert.equal(blackPawn.moves()[1].to, 25)
-      assert.equal(blackPawn.moves()[2].from, 34)
-      assert.equal(blackPawn.moves()[2].to, 25)
-      assert.equal(blackPawn.moves()[3].from, 34)
-      assert.equal(blackPawn.moves()[3].to, 26)
-      assert.equal(blackPawn.moves()[4].from, 35)
-      assert.equal(blackPawn.moves()[4].to, 27)
+      assert.equal(whitePawn.moves()[0].from, 8);
+      assert.equal(whitePawn.moves()[0].to, 16);
+      assert.equal(whitePawn.moves()[1].from, 8);
+      assert.equal(whitePawn.moves()[1].to, 24);
+      assert.equal(whitePawn.moves()[2].from, 10);
+      assert.equal(whitePawn.moves()[2].to, 18);
+      assert.equal(whitePawn.moves()[3].from, 10);
+      assert.equal(whitePawn.moves()[3].to, 26);
+      assert.equal(whitePawn.moves()[4].from, 11);
+      assert.equal(whitePawn.moves()[4].to, 19);
+      assert.equal(blackPawn.moves()[0].from, 32);
+      assert.equal(blackPawn.moves()[0].to, 24);
+      assert.equal(blackPawn.moves()[1].from, 32);
+      assert.equal(blackPawn.moves()[1].to, 25);
+      assert.equal(blackPawn.moves()[2].from, 34);
+      assert.equal(blackPawn.moves()[2].to, 25);
+      assert.equal(blackPawn.moves()[3].from, 34);
+      assert.equal(blackPawn.moves()[3].to, 26);
+      assert.equal(blackPawn.moves()[4].from, 35);
+      assert.equal(blackPawn.moves()[4].to, 27);
     });
   });
 });

@@ -1,6 +1,4 @@
 const BitHelper = require('./helpers.js').BitHelper;
-const BoardHelper = require('./helpers.js').BoardHelper;
-const Square = require('./square.js').Square;
 const PieceBoard = require('./pieceboard.js').PieceBoard;
 const PieceBoardList = require('./pieceboard.js').PieceBoardList;
 

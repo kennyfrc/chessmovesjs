@@ -54,6 +54,8 @@ class PieceBoard {
     this.mainBoardBb = board.bb;
     this.whiteBb = board.whiteBb;
     this.blackBb = board.blackBb;
+    this.whiteQueenBb = board.whiteQueenBb;
+    this.blackQueenBb = board.blackQueenBb;
     this.whiteKingBb = board.whiteKingBb;
     this.blackKingBb = board.blackKingBb;
     this.whiteMinorBb = board.whiteMinorBb;
@@ -273,6 +275,56 @@ class WhiteRookBoard extends PieceBoard {
   constructor(bb) {
     super();
     this.bb = bb;
+    this.moveList = [];
+    this.moveBb = U64(0);
+    this.occupied = U64(0);
+    this.occupiable = U64(0);
+  }
+
+  rookAttacks(sq, occupied, occupiable) {
+    return Direction.rookRays(sq, occupied, occupiable);
+  }
+
+  generateMoves(pieceBb) {
+    this.moveBb = U64(0);
+    let sq = SquareHelper.indicesFor(pieceBb);
+    this.moveBb = this.rookAttacks(sq, this.occupied, this.occupiable);
+    return this.moveBb;
+  }
+
+  moves() {
+    this.occupied = this.mainBoardBb;
+    this.occupiable = ~this.whiteBb;
+    this.moveList = this.makeMoveList('R');
+    return this.moveList;
+  }
+}
+
+class BlackRookBoard extends PieceBoard {
+  constructor(bb) {
+    super();
+    this.bb = bb;
+    this.moveBb = U64(0);
+    this.occupied = U64(0);
+    this.occupiable = U64(0);
+  }
+
+  rookAttacks(sq, occupied, occupiable) {
+    return Direction.rookRays(sq, occupied, occupiable);
+  }
+
+  generateMoves(pieceBb) {
+    this.moveBb = U64(0);
+    let sq = SquareHelper.indicesFor(pieceBb);
+    this.moveBb = this.rookAttacks(sq, this.occupied, this.occupiable);
+    return this.moveBb;
+  }
+
+  moves() {
+    this.occupied = this.mainBoardBb;
+    this.occupiable = ~this.blackBb;
+    this.moveList = this.makeMoveList('r');
+    return this.moveList;
   }
 }
 
@@ -290,13 +342,6 @@ class WhiteKingBoard extends PieceBoard {
   }
 }
 
-
-class BlackRookBoard extends PieceBoard {
-  constructor(bb) {
-    super();
-    this.bb = bb;
-  }
-}
 
 class BlackQueenBoard extends PieceBoard {
   constructor(bb) {

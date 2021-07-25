@@ -180,8 +180,8 @@ describe('BishopBoard', function() {
     whiteBishop.on(boardWManyBishopAttacks);
     blackBishop.on(boardWManyBishopAttacks);
 
-    console.log(whiteBishop.moves())
-    console.log(blackBishop.moves())
+    // console.log(whiteBishop.moves())
+    // console.log(blackBishop.moves())
 
     it('returns pseudo-legal moves', function() {
       assert.equal(whiteBishop.moves()[0].from, 16);
@@ -236,6 +236,87 @@ describe('BishopBoard', function() {
     it('shows checks', function() {
       assert.equal(whiteBishop.moves()[8].check, true);
       assert.equal(blackBishop.moves()[7].check, true)
+    });
+  });
+});
+
+describe('RookBoard', function() {
+  describe('#moves()', function() {
+    const boardWManyRookAttacks = new Board();
+    boardWManyRookAttacks.parseFenToBoard('1nb1kb2/1pqpppp1/2pr1r1n/p6p/P3R2P/2R2P2/1PPPPKP1/1NBQ1BN1 b - - 5 10');
+    const whiteRook = boardWManyRookAttacks.pieceBoardList.R;
+    const blackRook = boardWManyRookAttacks.pieceBoardList.r;
+    whiteRook.on(boardWManyRookAttacks);
+    blackRook.on(boardWManyRookAttacks);
+
+    console.log(whiteRook.moves());
+    console.log(whiteRook.moves().length);
+    console.log(blackRook.moves());
+    console.log(blackRook.moves().length);
+
+    it('returns pseudo-legal moves', function() {
+      assert.equal(whiteRook.moves()[0].from, 18);
+      assert.equal(whiteRook.moves()[0].to, 16);
+      assert.equal(whiteRook.moves()[1].from, 18);
+      assert.equal(whiteRook.moves()[1].to, 17);
+      assert.equal(whiteRook.moves()[2].from, 18);
+      assert.equal(whiteRook.moves()[2].to, 19);
+      assert.equal(whiteRook.moves()[3].from, 18);
+      assert.equal(whiteRook.moves()[3].to, 20);
+      assert.equal(whiteRook.moves()[4].from, 18);
+      assert.equal(whiteRook.moves()[4].to, 26);
+      assert.equal(whiteRook.moves()[5].from, 18);
+      assert.equal(whiteRook.moves()[5].to, 34);
+      assert.equal(whiteRook.moves()[6].from, 18);
+      assert.equal(whiteRook.moves()[6].to, 42);
+      assert.equal(whiteRook.moves()[7].from, 28);
+      assert.equal(whiteRook.moves()[7].to, 20);
+      assert.equal(whiteRook.moves()[8].from, 28);
+      assert.equal(whiteRook.moves()[8].to, 25);
+      assert.equal(whiteRook.moves()[9].from, 28);
+      assert.equal(whiteRook.moves()[9].to, 26);
+      assert.equal(whiteRook.moves()[10].from, 28);
+      assert.equal(whiteRook.moves()[10].to, 27);
+      assert.equal(whiteRook.moves()[11].from, 28);
+      assert.equal(whiteRook.moves()[11].to, 29);
+      assert.equal(whiteRook.moves()[12].from, 28);
+      assert.equal(whiteRook.moves()[12].to, 30);
+      assert.equal(whiteRook.moves()[13].from, 28);
+      assert.equal(whiteRook.moves()[13].to, 36);
+      assert.equal(whiteRook.moves()[14].from, 28);
+      assert.equal(whiteRook.moves()[14].to, 44);
+      assert.equal(whiteRook.moves()[15].from, 28);
+      assert.equal(whiteRook.moves()[15].to, 52);
+      assert.equal(blackRook.moves()[0].from, 43);
+      assert.equal(blackRook.moves()[0].to, 11);
+      assert.equal(blackRook.moves()[1].from, 43);
+      assert.equal(blackRook.moves()[1].to, 19);
+      assert.equal(blackRook.moves()[2].from, 43);
+      assert.equal(blackRook.moves()[2].to, 27);
+      assert.equal(blackRook.moves()[3].from, 43);
+      assert.equal(blackRook.moves()[3].to, 35);
+      assert.equal(blackRook.moves()[4].from, 43);
+      assert.equal(blackRook.moves()[4].to, 44);
+      assert.equal(blackRook.moves()[5].from, 45);
+      assert.equal(blackRook.moves()[5].to, 21);
+      assert.equal(blackRook.moves()[6].from, 45);
+      assert.equal(blackRook.moves()[6].to, 29);
+      assert.equal(blackRook.moves()[7].from, 45);
+      assert.equal(blackRook.moves()[7].to, 37);
+      assert.equal(blackRook.moves()[8].from, 45);
+      assert.equal(blackRook.moves()[8].to, 44);
+      assert.equal(blackRook.moves()[9].from, 45);
+      assert.equal(blackRook.moves()[9].to, 46);
+    });
+
+    it('shows attacks', function() {
+      assert.equal(whiteRook.moves()[6].attack, true);
+      assert.equal(blackRook.moves()[0].attack, true);
+    });
+
+    it('shows checks', function() {
+      assert.equal(whiteRook.moves()[15].check, true);
+      assert.equal(blackRook.moves()[5].check, true);
     });
   });
 });

@@ -13,17 +13,17 @@ function U64Neg(int) {
 
 class BitHelper {
   static getBit(bb, bitPosition) {
-    return (bb & (U64(1) << U64(bitPosition))) === U64(0) ?
+    return (U64(bb) & (U64(1) << U64(bitPosition))) === U64(0) ?
       U64(0) : U64(1);
   }
 
   static setBit(bb, bitPosition) {
-    return bb | U64(1) << U64(bitPosition);
+    return U64(bb) | U64(1) << U64(bitPosition);
   }
 
   static clearBit(bb, bitPosition) {
     const mask = U64Comp(U64(1) << U64(bitPosition));
-    return bb & mask;
+    return U64(bb & mask);
   }
 
   static updateBit(bb, bitPosition, bitValue) {
@@ -41,19 +41,19 @@ class BitHelper {
   }
 
   static deBruijnMagicNum() {
-    return U64('0x025467169baf21fb');
+    return U64('0x03f79d71b4cb0a89');
   }
 
   /* eslint-disable */
   static deBruijnTable() {
-    return [  0,  1,  2, 51,  3, 24, 14, 52,
-             48,  4,  7, 25, 15, 33, 19, 53,
-             49, 12,  5, 31, 10,  8, 26, 41,
-             61, 16, 28, 34, 20, 37, 43, 54,
-             63, 50, 23, 13, 47,  6, 32, 18,
-             11, 30,  9, 40, 60, 27, 36, 42,
-             62, 22, 46, 17, 29, 39, 59, 35,
-             21, 45, 38, 58, 44, 57, 56, 55 ];
+    return [    0, 47,  1, 56, 48, 27,  2, 60,
+               57, 49, 41, 37, 28, 16,  3, 61,
+               54, 58, 35, 52, 50, 42, 21, 44,
+               38, 32, 29, 23, 17, 11,  4, 62,
+               46, 55, 26, 59, 40, 36, 15, 53,
+               34, 51, 20, 43, 31, 22, 10, 45,
+               25, 39, 14, 33, 19, 30,  9, 24,
+               13, 18,  8, 12,  7,  6,  5, 63 ];
   }
   /* eslint-enable */
 
@@ -61,19 +61,19 @@ class BitHelper {
     * De Bruijn Multiplication
     */
   static bitScanFwd(bb) {
-    bb = bb & U64Neg(bb);
+    bb = U64(bb) ^ (U64(bb) - U64(1));
     return this.deBruijnTable()[(U64(bb * this.deBruijnMagicNum()) >> U64(58))];
   }
 
-  // static bigScanRev(bb) {
-  //   bb |= bb >> U64(1);
-  //   bb |= bb >> U64(2);
-  //   bb |= bb >> U64(4);
-  //   bb |= bb >> U64(8);
-  //   bb |= bb >> U64(16);
-  //   bb |= bb >> U64(32);
-  //   return this.deBruijnTable()[(U64(bb * this.deBruijnMagicNum()) >> U64(58))];
-  // }
+  static bitScanRev(bb) {
+    bb |= U64(bb) >> U64(1);
+    bb |= U64(bb) >> U64(2);
+    bb |= U64(bb) >> U64(4);
+    bb |= U64(bb) >> U64(8);
+    bb |= U64(bb) >> U64(16);
+    bb |= U64(bb) >> U64(32);  
+    return this.deBruijnTable()[(U64(bb * this.deBruijnMagicNum()) >> U64(58))]
+  }
 
   /** counting bits:
    *  www-graphics.stanford.edu/~seander/bithacks.html#CountBitsSetKernighan
@@ -81,9 +81,9 @@ class BitHelper {
   static popCount(bb) {
     let count = 0;
 
-    while (bb > 0) {
+    while (U64(bb) > 0) {
       count++;
-      bb &= bb - U64(1); // reset LS1B
+      bb &= U64(bb) - U64(1); // reset LS1B
     }
 
     return count;
@@ -219,12 +219,13 @@ class SquareHelper {
 
   static indicesFor(board) {
     const someList = [];
-    if (board != U64(0)) {
+    if (U64(board) != U64(0)) {
       do {
         const idx = BitHelper.bitScanFwd(board);
         someList.push(idx);
-      } while ( board &= board - U64(1));
+      } while ( board &= U64(board) - U64(1));
     }
+
     return someList;
   }
 }

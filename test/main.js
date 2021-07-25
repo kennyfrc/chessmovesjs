@@ -117,12 +117,12 @@ describe('PawnBoard', function() {
 describe('KnightBoard', function() {
   describe('#moves()', function() {
     it('returns pseudo-legal moves', function() {
-      const boardWToughKnightPositions = new Board();
-      boardWToughKnightPositions.parseFenToBoard('rnbqkb1r/ppppp1pp/n7/5p2/3P1PN1/2P5/PP2P1PP/RNBQKB1R b KQkq - 1 6');
-      const whiteKnight = boardWToughKnightPositions.pieceBoardList.N;
-      const blackKnight = boardWToughKnightPositions.pieceBoardList.n;
-      whiteKnight.on(boardWToughKnightPositions);
-      blackKnight.on(boardWToughKnightPositions);
+      const boardWManyKnightMoves = new Board();
+      boardWManyKnightMoves.parseFenToBoard('rnbqkb1r/ppppp1pp/n7/5p2/3P1PN1/2P5/PP2P1PP/RNBQKB1R b KQkq - 1 6');
+      const whiteKnight = boardWManyKnightMoves.pieceBoardList.N;
+      const blackKnight = boardWManyKnightMoves.pieceBoardList.n;
+      whiteKnight.on(boardWManyKnightMoves);
+      blackKnight.on(boardWManyKnightMoves);
 
       assert.equal(whiteKnight.moves()[0].from, 1);
       assert.equal(whiteKnight.moves()[0].to, 11);
@@ -170,6 +170,76 @@ describe('KnightBoard', function() {
     });
   });
 });
+
+describe('BishopBoard', function() {
+  describe('#moves()', function() {
+    const boardWManyBishopAttacks = new Board()
+    boardWManyBishopAttacks.parseFenToBoard('rn2k2r/p1pq1ppp/1p1p1n2/2b1p3/2B1P1b1/BPNP4/P1PQ1PPP/R3K1NR w KQkq - 6 8');
+    const whiteBishop = boardWManyBishopAttacks.pieceBoardList.B;
+    const blackBishop = boardWManyBishopAttacks.pieceBoardList.b;
+    whiteBishop.on(boardWManyBishopAttacks);
+    blackBishop.on(boardWManyBishopAttacks);
+
+    console.log(whiteBishop.moves())
+    console.log(blackBishop.moves())
+
+    it('returns pseudo-legal moves', function() {
+      assert.equal(whiteBishop.moves()[0].from, 16);
+      assert.equal(whiteBishop.moves()[0].to, 2);
+      assert.equal(whiteBishop.moves()[1].from, 16);
+      assert.equal(whiteBishop.moves()[1].to, 9);
+      assert.equal(whiteBishop.moves()[2].from, 16);
+      assert.equal(whiteBishop.moves()[2].to, 25);
+      assert.equal(whiteBishop.moves()[3].from, 16);
+      assert.equal(whiteBishop.moves()[3].to, 34);
+      assert.equal(whiteBishop.moves()[4].from, 26);
+      assert.equal(whiteBishop.moves()[4].to, 33);
+      assert.equal(whiteBishop.moves()[5].from, 26);
+      assert.equal(whiteBishop.moves()[5].to, 35);
+      assert.equal(whiteBishop.moves()[6].from, 26);
+      assert.equal(whiteBishop.moves()[6].to, 40);
+      assert.equal(whiteBishop.moves()[7].from, 26);
+      assert.equal(whiteBishop.moves()[7].to, 44);
+      assert.equal(whiteBishop.moves()[8].from, 26);
+      assert.equal(whiteBishop.moves()[8].to, 53);
+      assert.equal(blackBishop.moves()[0].from, 30);
+      assert.equal(blackBishop.moves()[0].to, 3);
+      assert.equal(blackBishop.moves()[1].from, 30);
+      assert.equal(blackBishop.moves()[1].to, 12);
+      assert.equal(blackBishop.moves()[2].from, 30);
+      assert.equal(blackBishop.moves()[2].to, 21);
+      assert.equal(blackBishop.moves()[3].from, 30);
+      assert.equal(blackBishop.moves()[3].to, 23);
+      assert.equal(blackBishop.moves()[4].from, 30);
+      assert.equal(blackBishop.moves()[4].to, 37);
+      assert.equal(blackBishop.moves()[5].from, 30);
+      assert.equal(blackBishop.moves()[5].to, 39);
+      assert.equal(blackBishop.moves()[6].from, 30);
+      assert.equal(blackBishop.moves()[6].to, 44);
+      assert.equal(blackBishop.moves()[7].from, 34);
+      assert.equal(blackBishop.moves()[7].to, 13);
+      assert.equal(blackBishop.moves()[8].from, 34);
+      assert.equal(blackBishop.moves()[8].to, 16);
+      assert.equal(blackBishop.moves()[9].from, 34);
+      assert.equal(blackBishop.moves()[9].to, 20);
+      assert.equal(blackBishop.moves()[10].from, 34);
+      assert.equal(blackBishop.moves()[10].to, 25);
+      assert.equal(blackBishop.moves()[11].from, 34);
+      assert.equal(blackBishop.moves()[11].to, 27);
+    });
+
+    it('shows attacks', function() {
+      assert.equal(whiteBishop.moves()[4].attack, true);
+      assert.equal(blackBishop.moves()[9].attack, true);
+    });
+
+    it('shows checks', function() {
+      assert.equal(whiteBishop.moves()[8].check, true);
+      assert.equal(blackBishop.moves()[7].check, true)
+    });
+  });
+});
+
 
 // describe('NullPieceBoard', function() {
 //   describe('#moves()', function() {

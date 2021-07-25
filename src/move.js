@@ -1,5 +1,7 @@
 const BitHelper = require('./helpers.js').BitHelper;
 const BoardHelper = require('./helpers.js').BoardHelper;
+const SquareHelper = require('./helpers.js').SquareHelper;
+const ViewHelper = require('./helpers.js').ViewHelper;
 const U64 = require('./helpers.js').U64;
 const U64Comp = require('./helpers.js').U64Comp;
 const U64Neg = require('./helpers.js').U64Neg;
@@ -29,6 +31,12 @@ class Move {
         break;
       case 'n':
         MoveClass = BlackKnightMove;
+        break;
+      case 'B':
+        MoveClass = WhiteBishopMove;
+        break;
+      case 'b':
+        MoveClass = BlackBishopMove;
         break;
     }
     return new MoveClass(fromIdx, toIdx, pieceBoard);
@@ -144,50 +152,156 @@ class BlackKnightMove {
   }
 }
 
+class WhiteBishopMove {
+  constructor(fromIdx, toIdx, pieceBoard) {
+    this.from = fromIdx;
+    this.to = toIdx;
+    this.check = this.isCheck(toIdx, pieceBoard);
+    this.capture = this.isCapture(toIdx, pieceBoard);
+    this.attack = this.isAttack(toIdx, pieceBoard);
+  }
+
+  isCheck(toIdx, pieceBoard) {
+    const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
+    const sq = SquareHelper.indicesFor(pieceBb);
+    return ((Direction.bishopRays(sq, pieceBoard.occupied, pieceBoard.occupiable) & pieceBoard.blackKingBb) ==
+      U64(0) ? false : true);
+  }
+
+  isCapture(toIdx, pieceBoard) {
+    const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
+    return ((pieceBb & pieceBoard.blackBb) == U64(0) ? false : true );
+  }
+
+  isAttack(toIdx, pieceBoard) {
+    const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
+    const sq = SquareHelper.indicesFor(pieceBb);
+    return (Direction.bishopRays(sq, pieceBoard.occupied, pieceBoard.occupiable) & pieceBoard.blackMajorBb) ==
+      U64(0) ? false : true;
+  }
+}
+
+class BlackBishopMove {
+  constructor(fromIdx, toIdx, pieceBoard) {
+    this.from = fromIdx;
+    this.to = toIdx;
+    this.check = this.isCheck(toIdx, pieceBoard);
+    this.capture = this.isCapture(toIdx, pieceBoard);
+    this.attack = this.isAttack(toIdx, pieceBoard);
+  }
+
+  isCheck(toIdx, pieceBoard) {
+    const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
+    const sq = SquareHelper.indicesFor(pieceBb);
+    return ((Direction.bishopRays(sq, pieceBoard.occupied, pieceBoard.occupiable) & pieceBoard.whiteKingBb) ==
+      U64(0) ? false : true);
+  }
+
+  isCapture(toIdx, pieceBoard) {
+    const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
+    return ((pieceBb & pieceBoard.whiteBb) == U64(0) ? false : true );
+  }
+
+  isAttack(toIdx, pieceBoard) {
+    const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
+    const sq = SquareHelper.indicesFor(pieceBb);
+    return (Direction.bishopRays(sq, pieceBoard.occupied, pieceBoard.occupiable) & pieceBoard.whiteMajorBb) ==
+      U64(0) ? false : true;
+  }
+}
+
 
 class Direction {
   static wSinglePush(bb, emptySq) {
-    return Compass.northOne(bb) & emptySq;
+    return Mask.northOne(bb) & emptySq;
   }
 
   static wDoublePush(bb, emptySq) {
     const singlePushBb = this.wSinglePush(bb, emptySq);
-    return Compass.northOne(singlePushBb) & emptySq & BoardHelper.fourthRank();
+    return Mask.northOne(singlePushBb) & emptySq & BoardHelper.fourthRank();
   }
 
   static bSinglePush(bb, emptySq) {
-    return Compass.southOne(bb) & emptySq;
+    return Mask.southOne(bb) & emptySq;
   }
 
   static bDoublePush(bb, emptySq) {
     const singlePushBb = this.bSinglePush(bb, emptySq);
-    return Compass.southOne(singlePushBb) & emptySq & BoardHelper.fifthRank();
+    return Mask.southOne(singlePushBb) & emptySq & BoardHelper.fifthRank();
   }
 
   static wPawnAttacks(bb) {
-    return ( Compass.northWestOne(bb & U64Comp(BoardHelper.aFile())) |
-     Compass.northEastOne(bb & U64Comp(BoardHelper.hFile())) );
+    return ( Mask.northWestOne(bb & U64Comp(BoardHelper.aFile())) |
+     Mask.northEastOne(bb & U64Comp(BoardHelper.hFile())) );
   }
 
   static bPawnAttacks(bb) {
-    return ( Compass.southWestOne(bb & U64Comp(BoardHelper.aFile())) |
-     Compass.southEastOne(bb & U64Comp(BoardHelper.hFile())) );
+    return ( Mask.southWestOne(bb & U64Comp(BoardHelper.aFile())) |
+     Mask.southEastOne(bb & U64Comp(BoardHelper.hFile())) );
   }
 
   static knightAttacks(bb) {
-    return Compass.noNoEast(bb & U64Comp((BoardHelper.hFile()) | BoardHelper.seventhRank() | BoardHelper.eighthRank())) |
-      Compass.noEaEast(bb & U64Comp((BoardHelper.gFile()) | BoardHelper.hFile() | BoardHelper.eighthRank())) |
-      Compass.soEaEast(bb & U64Comp((BoardHelper.gFile()) | BoardHelper.hFile() | BoardHelper.firstRank())) |
-      Compass.soSoEast(bb & U64Comp((BoardHelper.hFile()) | BoardHelper.firstRank() | BoardHelper.secondRank())) |
-      Compass.noNoWest(bb & U64Comp((BoardHelper.aFile()) | BoardHelper.seventhRank() | BoardHelper.eighthRank())) |
-      Compass.noWeWest(bb & U64Comp((BoardHelper.aFile()) | BoardHelper.bFile() | BoardHelper.eighthRank())) |
-      Compass.soWeWest(bb & U64Comp((BoardHelper.aFile()) | BoardHelper.bFile() | BoardHelper.firstRank())) |
-      Compass.soSoWest(bb & U64Comp((BoardHelper.aFile()) | BoardHelper.firstRank() | BoardHelper.secondRank()))
+    return Mask.noNoEast(bb & U64Comp((BoardHelper.hFile()) | BoardHelper.seventhRank() | BoardHelper.eighthRank())) |
+      Mask.noEaEast(bb & U64Comp((BoardHelper.gFile()) | BoardHelper.hFile() | BoardHelper.eighthRank())) |
+      Mask.soEaEast(bb & U64Comp((BoardHelper.gFile()) | BoardHelper.hFile() | BoardHelper.firstRank())) |
+      Mask.soSoEast(bb & U64Comp((BoardHelper.hFile()) | BoardHelper.firstRank() | BoardHelper.secondRank())) |
+      Mask.noNoWest(bb & U64Comp((BoardHelper.aFile()) | BoardHelper.seventhRank() | BoardHelper.eighthRank())) |
+      Mask.noWeWest(bb & U64Comp((BoardHelper.aFile()) | BoardHelper.bFile() | BoardHelper.eighthRank())) |
+      Mask.soWeWest(bb & U64Comp((BoardHelper.aFile()) | BoardHelper.bFile() | BoardHelper.firstRank())) |
+      Mask.soSoWest(bb & U64Comp((BoardHelper.aFile()) | BoardHelper.firstRank() | BoardHelper.secondRank()))
+  }
+
+  static bishopRays(sq, occupied, occupiable) {
+    return (this.bishopNegAttacks(sq, occupied) | this.bishopPosAttacks(sq, occupied)) & occupiable;
+  }
+
+  static bishopPosAttacks(sq, occupied) {
+    let posRayAttacks = this.bishopPosRays(U64(sq));
+    let posRayBlocker = posRayAttacks & occupied;
+    while (posRayBlocker != U64(0)) {
+      let sqOfBlocker = BitHelper.bitScanFwd(posRayBlocker);
+      posRayBlocker = BitHelper.clearBit(posRayBlocker, sqOfBlocker);
+      let rayBehindBlocker = this.bishopPosRays(U64(sqOfBlocker)) & posRayAttacks;
+      posRayAttacks ^= rayBehindBlocker;
+    }
+    return posRayAttacks;
+  }
+
+  static bishopNegAttacks(sq, occupied) {
+    let negRayAttacks = this.bishopNegRays(U64(sq));
+    let negRayBlocker = negRayAttacks & occupied;
+    while (negRayBlocker != U64(0)) {
+      let sqOfBlocker = BitHelper.bitScanRev(negRayBlocker);
+      negRayBlocker = BitHelper.clearBit(negRayBlocker, sqOfBlocker);
+      let rayBehindBlocker = this.bishopNegRays(U64(sqOfBlocker)) & negRayAttacks;
+      negRayAttacks ^= rayBehindBlocker;
+    }
+    return negRayAttacks;
+  }
+
+  static bishopAttacks(sq) {
+    return Mask.diag(sq) ^ Mask.antiDiag(sq);
+  }
+
+  static bishopPosRays(sq) {
+    return Mask.posRays(sq) & this.bishopAttacks(sq);
+  }
+
+  static bishopNegRays(sq) {
+    return Mask.negRays(sq) & this.bishopAttacks(sq);
+  }
+
+  static rookAttacks(sq) {
+    return Mask.file(sq) ^ Mask.rank(sq);
+  }
+
+  static queenAttacks(sq) {
+    return this.rookAttacks(sq) | this.bishopAttacks(sq);
   }
 }
 
 /**
- * Compass
+ * Mask
  *
  * noWe         nort         noEa
  *         +7    +8    +9
@@ -197,8 +311,8 @@ class Direction {
  *         -9    -8    -7
  * soWe         sout         soEa
  **/
-class Compass {
-  // basic compass
+class Mask {
+  // basic Mask
   static northOne(bb) {
     return bb << U64(8);
   }
@@ -256,6 +370,55 @@ class Compass {
   static soSoWest(bb) {
     return bb >> U64(17);
   }
+
+  // rays
+  static posRays(sq) {
+    return U64(-2) << sq;
+  }
+
+  static negRays(sq) {
+    return ((U64(1) << sq) - U64(1));
+  }
+
+  static rank(sq) {
+    return BoardHelper.firstRank() << (sq & U64(56));
+  }
+
+  static file(sq) {
+    return BoardHelper.aFile() << (sq & U64(7));
+  }
+
+  static diag(sq) {
+    const diag = U64(8) * (sq & U64(7)) - (sq & U64(56));
+    const nort = U64Neg(diag) & (diag >> U64(31));
+    const sout = diag & (U64Neg(diag) >> U64(31));
+    return (BoardHelper.a1H8Diagonal() >> sout) << nort;
+  }
+
+  static antiDiag(sq) {
+    const diag = U64(56) - U64(8) * (sq & U64(7)) - (sq & U64(56));
+    const nort = U64Neg(diag) & (diag >> U64(31));
+    const sout = diag & (U64Neg(diag) >> U64(31));
+    return (BoardHelper.h1A8Diagonal() >> sout) << nort;
+  }
+
+  static testMask(sq) {
+    return (U64(-2) << sq)
+  }
+
+  // U64('0x0102040810204080');
+
+  // static noMaskExt(sq) {
+  //   return U64('0x0101010101010100') << sq;
+  // }
+
+  // static noEaFill(sq) {
+  //   return (U64(-2) << sq);
+  // }
+
+  // static noEaMaskExt(sq) {
+  //   return this.noEaFill(sq);
+  // }
 }
 
 module.exports = {
@@ -264,5 +427,5 @@ module.exports = {
   Move: Move,
   MoveList: MoveList,
   Direction: Direction,
-  Compass: Compass,
+  Mask: Mask,
 };

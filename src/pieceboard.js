@@ -216,6 +216,56 @@ class WhiteBishopBoard extends PieceBoard {
     super();
     this.bb = bb;
     this.moveList = [];
+    this.moveBb = U64(0);
+    this.occupied = U64(0);
+    this.occupiable = U64(0);
+  }
+
+  bishopAttacks(sq, occupied, occupiable) {
+    return Direction.bishopRays(sq, occupied, occupiable);
+  }
+
+  generateMoves(pieceBb) {
+    this.moveBb = U64(0);
+    let sq = SquareHelper.indicesFor(pieceBb);
+    this.moveBb = this.bishopAttacks(sq, this.occupied, this.occupiable);
+    return this.moveBb;
+  }
+
+  moves() {
+    this.occupied = this.mainBoardBb;
+    this.occupiable = ~this.whiteBb;
+    this.moveList = this.makeMoveList('B');
+    return this.moveList;
+  }
+}
+
+class BlackBishopBoard extends PieceBoard {
+  constructor(bb) {
+    super();
+    this.bb = bb;
+    this.moveList = [];
+    this.moveBb = U64(0);
+    this.occupied = U64(0);
+    this.occupiable = U64(0);
+  }
+
+  bishopAttacks(sq, occupied, occupiable) {
+    return Direction.bishopRays(sq, occupied, occupiable);
+  }
+
+  generateMoves(pieceBb) {
+    this.moveBb = U64(0);
+    let sq = SquareHelper.indicesFor(pieceBb);
+    this.moveBb = this.bishopAttacks(sq, this.occupied, this.occupiable);
+    return this.moveBb;
+  }
+
+  moves() {
+    this.occupied = this.mainBoardBb;
+    this.occupiable = ~this.blackBb;
+    this.moveList = this.makeMoveList('b');
+    return this.moveList;
   }
 }
 
@@ -240,13 +290,6 @@ class WhiteKingBoard extends PieceBoard {
   }
 }
 
-
-class BlackBishopBoard extends PieceBoard {
-  constructor(bb) {
-    super();
-    this.bb = bb;
-  }
-}
 
 class BlackRookBoard extends PieceBoard {
   constructor(bb) {

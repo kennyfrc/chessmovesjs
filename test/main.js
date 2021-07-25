@@ -249,11 +249,6 @@ describe('RookBoard', function() {
     whiteRook.on(boardWManyRookAttacks);
     blackRook.on(boardWManyRookAttacks);
 
-    console.log(whiteRook.moves());
-    console.log(whiteRook.moves().length);
-    console.log(blackRook.moves());
-    console.log(blackRook.moves().length);
-
     it('returns pseudo-legal moves', function() {
       assert.equal(whiteRook.moves()[0].from, 18);
       assert.equal(whiteRook.moves()[0].to, 16);
@@ -321,6 +316,71 @@ describe('RookBoard', function() {
   });
 });
 
+describe('QueenBoard', function() {
+  describe('#moves()', function() {
+    const boardWManyQueenAttacks = new Board();
+    boardWManyQueenAttacks.parseFenToBoard('rnb1kbnr/pp1p1ppp/8/q1p1p2Q/4P3/5N2/PPPP1PPP/RNB1KB1R w KQkq - 2 4');
+    const whiteQueen = boardWManyQueenAttacks.pieceBoardList.Q;
+    const blackQueen = boardWManyQueenAttacks.pieceBoardList.q;
+    whiteQueen.on(boardWManyQueenAttacks);
+    blackQueen.on(boardWManyQueenAttacks);
+
+    console.log(whiteQueen.moves())
+    console.log(whiteQueen.moves().length)
+    console.log(blackQueen.moves())
+    console.log(blackQueen.moves().length)
+
+    it('returns pseudo-legal moves', function() {
+      assert.equal(whiteQueen.moves()[0].from, 39)
+      assert.equal(whiteQueen.moves()[0].to, 23)
+      assert.equal(whiteQueen.moves()[1].from, 39)
+      assert.equal(whiteQueen.moves()[1].to, 30)
+      assert.equal(whiteQueen.moves()[2].from, 39)
+      assert.equal(whiteQueen.moves()[2].to, 31)
+      assert.equal(whiteQueen.moves()[3].from, 39)
+      assert.equal(whiteQueen.moves()[3].to, 36)
+      assert.equal(whiteQueen.moves()[4].from, 39)
+      assert.equal(whiteQueen.moves()[4].to, 37)
+      assert.equal(whiteQueen.moves()[5].from, 39)
+      assert.equal(whiteQueen.moves()[5].to, 38)
+      assert.equal(whiteQueen.moves()[6].from, 39)
+      assert.equal(whiteQueen.moves()[6].to, 46)
+      assert.equal(whiteQueen.moves()[7].from, 39)
+      assert.equal(whiteQueen.moves()[7].to, 47)
+      assert.equal(whiteQueen.moves()[8].from, 39)
+      assert.equal(whiteQueen.moves()[8].to, 53)
+      assert.equal(whiteQueen.moves()[9].from, 39)
+      assert.equal(whiteQueen.moves()[9].to, 55)
+      assert.equal(blackQueen.moves()[0].from, 32)
+      assert.equal(blackQueen.moves()[0].to, 8)
+      assert.equal(blackQueen.moves()[1].from, 32)
+      assert.equal(blackQueen.moves()[1].to, 11)
+      assert.equal(blackQueen.moves()[2].from, 32)
+      assert.equal(blackQueen.moves()[2].to, 16)
+      assert.equal(blackQueen.moves()[3].from, 32)
+      assert.equal(blackQueen.moves()[3].to, 18)
+      assert.equal(blackQueen.moves()[4].from, 32)
+      assert.equal(blackQueen.moves()[4].to, 24)
+      assert.equal(blackQueen.moves()[5].from, 32)
+      assert.equal(blackQueen.moves()[5].to, 25)
+      assert.equal(blackQueen.moves()[6].from, 32)
+      assert.equal(blackQueen.moves()[6].to, 33)
+      assert.equal(blackQueen.moves()[7].from, 32)
+      assert.equal(blackQueen.moves()[7].to, 40)
+      assert.equal(blackQueen.moves()[8].from, 32)
+      assert.equal(blackQueen.moves()[8].to, 41)
+      assert.equal(blackQueen.moves()[9].from, 32)
+      assert.equal(blackQueen.moves()[9].to, 50)
+      assert.equal(blackQueen.moves()[10].from, 32)
+      assert.equal(blackQueen.moves()[10].to, 59)
+    });
+
+    it('shows checks', function() {
+      assert.equal(whiteQueen.moves()[8].check, true)
+      assert.equal(blackQueen.moves()[1].check, true)
+    });
+  });
+});
 
 // describe('NullPieceBoard', function() {
 //   describe('#moves()', function() {

@@ -332,18 +332,61 @@ class WhiteQueenBoard extends PieceBoard {
   constructor(bb) {
     super();
     this.bb = bb;
+    this.moveList = [];
+    this.moveBb = U64(0);
+    this.occupied = U64(0);
+    this.occupiable = U64(0);
+  }
+
+  queenAttacks(sq, occupied, occupiable) {
+    return Direction.queenRays(sq, occupied, occupiable);
+  }
+
+  generateMoves(pieceBb) {
+    this.moveBb = U64(0);
+    let sq = SquareHelper.indicesFor(pieceBb);
+    this.moveBb = this.queenAttacks(sq, this.occupied, this.occupiable);
+    return this.moveBb;
+  }
+
+  moves() {
+    this.occupied = this.mainBoardBb;
+    this.occupiable = ~this.whiteBb;
+    this.moveList = this.makeMoveList('Q');
+    return this.moveList;
+  }
+}
+
+class BlackQueenBoard extends PieceBoard {
+  constructor(bb) {
+    super();
+    this.bb = bb;
+    this.moveList = [];
+    this.moveBb = U64(0);
+    this.occupied = U64(0);
+    this.occupiable = U64(0);
+  }
+
+  queenAttacks(sq, occupied, occupiable) {
+    return Direction.queenRays(sq, occupied, occupiable);
+  }
+
+  generateMoves(pieceBb) {
+    this.moveBb = U64(0);
+    let sq = SquareHelper.indicesFor(pieceBb);
+    this.moveBb = this.queenAttacks(sq, this.occupied, this.occupiable);
+    return this.moveBb;
+  }
+
+  moves() {
+    this.occupied = this.mainBoardBb;
+    this.occupiable = ~this.blackBb;
+    this.moveList = this.makeMoveList('q');
+    return this.moveList;
   }
 }
 
 class WhiteKingBoard extends PieceBoard {
-  constructor(bb) {
-    super();
-    this.bb = bb;
-  }
-}
-
-
-class BlackQueenBoard extends PieceBoard {
   constructor(bb) {
     super();
     this.bb = bb;

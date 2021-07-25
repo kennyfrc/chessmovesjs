@@ -44,6 +44,12 @@ class Move {
       case 'r':
         MoveClass = BlackRookMove;
         break;
+      case 'Q':
+        MoveClass = WhiteQueenMove;
+        break;
+      case 'q':
+        MoveClass = BlackQueenMove;
+        break;
     }
     return new MoveClass(fromIdx, toIdx, pieceBoard);
   }
@@ -274,6 +280,49 @@ class BlackRookMove {
   }
 }
 
+class WhiteQueenMove {
+  constructor(fromIdx, toIdx, pieceBoard) {
+    this.from = fromIdx;
+    this.to = toIdx;
+    this.check = this.isCheck(toIdx, pieceBoard);
+    this.capture = this.isCapture(toIdx, pieceBoard);
+    this.attack = false;
+  }
+
+  isCheck(toIdx, pieceBoard) {
+    const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
+    const sq = SquareHelper.indicesFor(pieceBb);
+    return ((Direction.queenRays(sq, pieceBoard.occupied, pieceBoard.occupiable) &
+          pieceBoard.blackKingBb) == U64(0) ? false : true);
+  }
+
+  isCapture(toIdx, pieceBoard) {
+    const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
+    return ((pieceBb & pieceBoard.blackBb) == U64(0) ? false : true );
+  }
+}
+
+class BlackQueenMove {
+  constructor(fromIdx, toIdx, pieceBoard) {
+    this.from = fromIdx;
+    this.to = toIdx;
+    this.check = this.isCheck(toIdx, pieceBoard);
+    this.capture = this.isCapture(toIdx, pieceBoard);
+    this.attack = false;
+  }
+
+  isCheck(toIdx, pieceBoard) {
+    const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
+    const sq = SquareHelper.indicesFor(pieceBb);
+    return ((Direction.queenRays(sq, pieceBoard.occupied, pieceBoard.occupiable) &
+          pieceBoard.whiteKingBb) == U64(0) ? false : true);
+  }
+
+  isCapture(toIdx, pieceBoard) {
+    const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
+    return ((pieceBb & pieceBoard.whiteBb) == U64(0) ? false : true );
+  }
+}
 
 class Direction {
   static wSinglePush(bb, emptySq) {
@@ -386,7 +435,7 @@ class Direction {
   }
 
   static rookAttacks(sq) {
-    return Mask.file(sq) ^ Mask.rank(sq);
+    return Mask.file(sq) | Mask.rank(sq);
   }
 
   static rookPosRays(sq) {
@@ -397,9 +446,29 @@ class Direction {
     return Mask.negRays(sq) & this.rookAttacks(sq);
   }
 
-  static queenAttacks(sq) {
-    return this.rookAttacks(sq) | this.bishopAttacks(sq);
+  static queenRays(sq, occupied, occupiable) {
+      return this.rookRays(sq, occupied, occupiable) | this.bishopRays(sq, occupied, occupiable)
   }
+
+  // static queenPosAttacks(sq, occupied) {
+  //   return this.rookPosAttacks(sq, occupied) | this.bishopPosAttacks(sq, occupied);
+  // }
+
+  // static queenNegAttacks(sq, occupied) {
+  //   return this.rookNegAttacks(sq, occupied) | this.bishopNegAttacks(sq, occupied);
+  // }
+
+  // static queenAttacks(sq) {
+  //   return this.rookAttacks(sq) | this.bishopAttacks(sq);
+  // }
+
+  // static queenPosRays(sq) {
+  //   return this.rookPosRays(sq) | this.bishopPosRays(sq);
+  // }
+
+  // static queenNegRays(sq) {
+  //   return this.rookNegRays(sq) | this.bishopNegRays(sq);
+  // }
 }
 
 /**

@@ -81,7 +81,7 @@ describe('PawnBoard', function() {
       assert.equal(blackPawn.moves()[4].to, 27);
     });
 
-    it('shows attacks', function() {
+    it('shows threats', function() {
       const wBoardWAttacks = new Board();
       wBoardWAttacks.parseFenToBoard('r1bqkbnr/pppppppp/8/n7/4PP2/8/PPPP2PP/RNBQKBNR w KQkq - 1 3');
       const whitePawn = wBoardWAttacks.pieceBoardList.P;
@@ -92,8 +92,8 @@ describe('PawnBoard', function() {
       const blackPawn = bBoardWAttacks.pieceBoardList.p;
       blackPawn.on(bBoardWAttacks);
 
-      assert.equal(whitePawn.moves()[3].attack, true);
-      assert.equal(blackPawn.moves()[4].attack, true);
+      assert.equal(whitePawn.moves()[3].threat, true);
+      assert.equal(blackPawn.moves()[4].threat, true);
     });
 
     it('shows checks', function() {
@@ -142,7 +142,7 @@ describe('KnightBoard', function() {
       assert.equal(blackKnight.moves()[2].to, 42);
     });
 
-    it('shows attacks', function() {
+    it('shows threats', function() {
       const boardWManyKnightAttacks = new Board();
       boardWManyKnightAttacks.parseFenToBoard('1nb1kb1r/1ppp1ppp/2n3q1/pQ1rp3/P3P1P1/1PN2N1P/2PP1P2/R1B1KB1R w KQk - 5 10');
       const whiteKnight = boardWManyKnightAttacks.pieceBoardList.N;
@@ -150,8 +150,8 @@ describe('KnightBoard', function() {
       whiteKnight.on(boardWManyKnightAttacks);
       blackKnight.on(boardWManyKnightAttacks);
 
-      assert.equal(whiteKnight.moves()[8].attack, true);
-      assert.equal(blackKnight.moves()[1].attack, true);
+      assert.equal(whiteKnight.moves()[8].threat, true);
+      assert.equal(blackKnight.moves()[1].threat, true);
 
     });
 
@@ -228,9 +228,9 @@ describe('BishopBoard', function() {
       assert.equal(blackBishop.moves()[11].to, 27);
     });
 
-    it('shows attacks', function() {
-      assert.equal(whiteBishop.moves()[4].attack, true);
-      assert.equal(blackBishop.moves()[9].attack, true);
+    it('shows threats', function() {
+      assert.equal(whiteBishop.moves()[4].threat, true);
+      assert.equal(blackBishop.moves()[9].threat, true);
     });
 
     it('shows checks', function() {
@@ -304,9 +304,9 @@ describe('RookBoard', function() {
       assert.equal(blackRook.moves()[9].to, 46);
     });
 
-    it('shows attacks', function() {
-      assert.equal(whiteRook.moves()[6].attack, true);
-      assert.equal(blackRook.moves()[0].attack, true);
+    it('shows threats', function() {
+      assert.equal(whiteRook.moves()[6].threat, true);
+      assert.equal(blackRook.moves()[0].threat, true);
     });
 
     it('shows checks', function() {
@@ -324,11 +324,6 @@ describe('QueenBoard', function() {
     const blackQueen = boardWManyQueenAttacks.pieceBoardList.q;
     whiteQueen.on(boardWManyQueenAttacks);
     blackQueen.on(boardWManyQueenAttacks);
-
-    console.log(whiteQueen.moves())
-    console.log(whiteQueen.moves().length)
-    console.log(blackQueen.moves())
-    console.log(blackQueen.moves().length)
 
     it('returns pseudo-legal moves', function() {
       assert.equal(whiteQueen.moves()[0].from, 39)
@@ -388,7 +383,7 @@ describe('QueenBoard', function() {
 
 //     });
 
-//     it('shows attacks', function() {
+//     it('shows threats', function() {
 
 //     });
 

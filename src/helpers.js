@@ -32,10 +32,10 @@ class BitHelper {
     return (bb & clearMask) | (bitValueNormalized << U64(bitPosition));
   }
 
-  static bitFor(indices) {
+  static bitsFor(indices) {
     let parsedBit = U64(0);
-    indices.forEach((index) => {
-      parsedBit |= this.setBit(parsedBit, idx);
+    indices.forEach((idx) => {
+      parsedBit |= BitHelper.setBit(parsedBit, idx);
     });
     return parsedBit;
   }
@@ -62,7 +62,7 @@ class BitHelper {
     */
   static bitScanFwd(bb) {
     bb = U64(bb) ^ (U64(bb) - U64(1));
-    return this.deBruijnTable()[(U64(bb * this.deBruijnMagicNum()) >> U64(58))];
+    return BitHelper.deBruijnTable()[(U64(bb * BitHelper.deBruijnMagicNum()) >> U64(58))];
   }
 
   static bitScanRev(bb) {
@@ -72,7 +72,7 @@ class BitHelper {
     bb |= U64(bb) >> U64(8);
     bb |= U64(bb) >> U64(16);
     bb |= U64(bb) >> U64(32);  
-    return this.deBruijnTable()[(U64(bb * this.deBruijnMagicNum()) >> U64(58))]
+    return BitHelper.deBruijnTable()[(U64(bb * BitHelper.deBruijnMagicNum()) >> U64(58))]
   }
 
   /** counting bits:

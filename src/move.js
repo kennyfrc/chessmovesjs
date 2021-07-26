@@ -50,6 +50,12 @@ class Move {
       case 'q':
         MoveClass = BlackQueenMove;
         break;
+      case 'K':
+        MoveClass = WhiteKingMove;
+        break;
+      case 'k':
+        MoveClass = BlackKingMove;
+        break;
     }
     return new MoveClass(fromIdx, toIdx, pieceBoard);
   }
@@ -175,8 +181,7 @@ class WhiteBishopMove {
 
   isCheck(toIdx, pieceBoard) {
     const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
-    const sq = SquareHelper.indicesFor(pieceBb);
-    return ((Direction.bishopRays(sq, pieceBoard.occupied, pieceBoard.occupiable) &
+    return ((Direction.bishopRays(pieceBb, pieceBoard.occupied, pieceBoard.occupiable) &
         pieceBoard.blackKingBb) == U64(0) ? false : true);
   }
 
@@ -187,8 +192,7 @@ class WhiteBishopMove {
 
   isThreat(toIdx, pieceBoard) {
     const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
-    const sq = SquareHelper.indicesFor(pieceBb);
-    return (Direction.bishopRays(sq, pieceBoard.occupied, pieceBoard.occupiable) &
+    return (Direction.bishopRays(pieceBb, pieceBoard.occupied, pieceBoard.occupiable) &
         pieceBoard.blackMajorBb) == U64(0) ? false : true;
   }
 }
@@ -204,8 +208,7 @@ class BlackBishopMove {
 
   isCheck(toIdx, pieceBoard) {
     const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
-    const sq = SquareHelper.indicesFor(pieceBb);
-    return ((Direction.bishopRays(sq, pieceBoard.occupied, pieceBoard.occupiable) &
+    return ((Direction.bishopRays(pieceBb, pieceBoard.occupied, pieceBoard.occupiable) &
       pieceBoard.whiteKingBb) == U64(0) ? false : true);
   }
 
@@ -216,8 +219,7 @@ class BlackBishopMove {
 
   isThreat(toIdx, pieceBoard) {
     const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
-    const sq = SquareHelper.indicesFor(pieceBb);
-    return (Direction.bishopRays(sq, pieceBoard.occupied, pieceBoard.occupiable) &
+    return (Direction.bishopRays(pieceBb, pieceBoard.occupied, pieceBoard.occupiable) &
       pieceBoard.whiteMajorBb) == U64(0) ? false : true;
   }
 }
@@ -233,8 +235,7 @@ class WhiteRookMove {
 
   isCheck(toIdx, pieceBoard) {
     const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
-    const sq = SquareHelper.indicesFor(pieceBb);
-    return ((Direction.rookRays(sq, pieceBoard.occupied, pieceBoard.occupiable) &
+    return ((Direction.rookRays(pieceBb, pieceBoard.occupied, pieceBoard.occupiable) &
           pieceBoard.blackKingBb) == U64(0) ? false : true);
   }
 
@@ -245,8 +246,7 @@ class WhiteRookMove {
 
   isThreat(toIdx, pieceBoard) {
     const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
-    const sq = SquareHelper.indicesFor(pieceBb);
-    return (Direction.rookRays(sq, pieceBoard.occupied, pieceBoard.occupiable) &
+    return (Direction.rookRays(pieceBb, pieceBoard.occupied, pieceBoard.occupiable) &
       pieceBoard.blackQueenBb) == U64(0) ? false : true;
   }
 }
@@ -262,8 +262,7 @@ class BlackRookMove {
 
   isCheck(toIdx, pieceBoard) {
     const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
-    const sq = SquareHelper.indicesFor(pieceBb);
-    return ((Direction.rookRays(sq, pieceBoard.occupied, pieceBoard.occupiable) &
+    return ((Direction.rookRays(pieceBb, pieceBoard.occupied, pieceBoard.occupiable) &
           pieceBoard.whiteKingBb) == U64(0) ? false : true);
   }
 
@@ -274,8 +273,7 @@ class BlackRookMove {
 
   isThreat(toIdx, pieceBoard) {
     const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
-    const sq = SquareHelper.indicesFor(pieceBb);
-    return (Direction.rookRays(sq, pieceBoard.occupied, pieceBoard.occupiable) &
+    return (Direction.rookRays(pieceBb, pieceBoard.occupied, pieceBoard.occupiable) &
       pieceBoard.whiteQueenBb) == U64(0) ? false : true;
   }
 }
@@ -291,8 +289,7 @@ class WhiteQueenMove {
 
   isCheck(toIdx, pieceBoard) {
     const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
-    const sq = SquareHelper.indicesFor(pieceBb);
-    return ((Direction.queenRays(sq, pieceBoard.occupied, pieceBoard.occupiable) &
+    return ((Direction.queenRays(pieceBb, pieceBoard.occupied, pieceBoard.occupiable) &
           pieceBoard.blackKingBb) == U64(0) ? false : true);
   }
 
@@ -304,8 +301,8 @@ class WhiteQueenMove {
 
 class BlackQueenMove {
   constructor(fromIdx, toIdx, pieceBoard) {
-    this.from = fromIdx;
     this.to = toIdx;
+    this.from = fromIdx;
     this.check = this.isCheck(toIdx, pieceBoard);
     this.capture = this.isCapture(toIdx, pieceBoard);
     this.threat = false;
@@ -313,8 +310,7 @@ class BlackQueenMove {
 
   isCheck(toIdx, pieceBoard) {
     const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
-    const sq = SquareHelper.indicesFor(pieceBb);
-    return ((Direction.queenRays(sq, pieceBoard.occupied, pieceBoard.occupiable) &
+    return ((Direction.queenRays(pieceBb, pieceBoard.occupied, pieceBoard.occupiable) &
           pieceBoard.whiteKingBb) == U64(0) ? false : true);
   }
 
@@ -394,90 +390,111 @@ class Direction {
       Mask.soSoWest(bb & U64Comp((BoardHelper.aFile()) | BoardHelper.firstRank() | BoardHelper.secondRank()))
   }
 
-  static bishopRays(sq, occupied, occupiable) {
-    return (this.bishopNegAttacks(sq, occupied) | 
-        this.bishopPosAttacks(sq, occupied)) & occupiable;
+  static bishopRays(bb, occupied, occupiable) {
+    let sq = SquareHelper.indicesFor(bb);
+    return (Ray.bishopNegAttacks(sq, occupied) | 
+        Ray.bishopPosAttacks(sq, occupied)) & occupiable;
+  }
+
+  static rookRays(bb, occupied, occupiable) {
+    let sq = SquareHelper.indicesFor(bb);
+    return (Ray.rookNegAttacks(sq, occupied) | 
+        Ray.rookPosAttacks(sq, occupied)) & occupiable;
+  }
+
+  static queenRays(pieceBb, occupied, occupiable) {
+    return this.rookRays(pieceBb, occupied, occupiable) | this.bishopRays(pieceBb, occupied, occupiable)
+  }
+
+  static kingMoves(pieceBb, occupiable) {
+    return Mask.mooreNeighborhood(pieceBb) & occupiable;
+  }
+}
+
+class Ray {
+  // basic board rays
+  static rank(sq) {
+    return BoardHelper.firstRank() << (sq & U64(56));
+  }
+
+  static file(sq) {
+    return BoardHelper.aFile() << (sq & U64(7));
+  }
+
+  static diag(sq) {
+    const diag = U64(8) * (sq & U64(7)) - (sq & U64(56));
+    const nort = U64Neg(diag) & (diag >> U64(31));
+    const sout = diag & (U64Neg(diag) >> U64(31));
+    return (BoardHelper.a1H8Diagonal() >> sout) << nort;
+  }
+
+  static antiDiag(sq) {
+    const diag = U64(56) - U64(8) * (sq & U64(7)) - (sq & U64(56));
+    const nort = U64Neg(diag) & (diag >> U64(31));
+    const sout = diag & (U64Neg(diag) >> U64(31));
+    return (BoardHelper.h1A8Diagonal() >> sout) << nort;
+  }
+
+  // positive & negative rays
+  static posRays(sq) {
+    return U64(-2) << sq;
+  }
+
+  static negRays(sq) {
+    return ((U64(1) << sq) - U64(1));
+  }
+
+  // piece specific
+  static sliderAttacks(sq, occupied, bitScanCallback, rayCallback) {
+    let rayAttacks = rayCallback(U64(sq));
+    let rayBlocker = rayAttacks & occupied;
+    while (rayBlocker != U64(0)) {
+      let sqOfBlocker = bitScanCallback(rayBlocker);
+      rayBlocker = BitHelper.clearBit(rayBlocker, sqOfBlocker);
+      let rayBehindBlocker = rayCallback(U64(sqOfBlocker)) & rayAttacks;
+      rayAttacks ^= rayBehindBlocker;
+    }
+    return rayAttacks;
   }
 
   static bishopPosAttacks(sq, occupied) {
-    let posRayAttacks = this.bishopPosRays(U64(sq));
-    let posRayBlocker = posRayAttacks & occupied;
-    while (posRayBlocker != U64(0)) {
-      let sqOfBlocker = BitHelper.bitScanFwd(posRayBlocker);
-      posRayBlocker = BitHelper.clearBit(posRayBlocker, sqOfBlocker);
-      let rayBehindBlocker = this.bishopPosRays(U64(sqOfBlocker)) & posRayAttacks;
-      posRayAttacks ^= rayBehindBlocker;
-    }
-    return posRayAttacks;
+    return Ray.sliderAttacks(sq, occupied, BitHelper.bitScanFwd, Ray.bishopPosRays);
   }
 
   static bishopNegAttacks(sq, occupied) {
-    let negRayAttacks = this.bishopNegRays(U64(sq));
-    let negRayBlocker = negRayAttacks & occupied;
-    while (negRayBlocker != U64(0)) {
-      let sqOfBlocker = BitHelper.bitScanRev(negRayBlocker);
-      negRayBlocker = BitHelper.clearBit(negRayBlocker, sqOfBlocker);
-      let rayBehindBlocker = this.bishopNegRays(U64(sqOfBlocker)) & negRayAttacks;
-      negRayAttacks ^= rayBehindBlocker;
-    }
-    return negRayAttacks;
+    return Ray.sliderAttacks(sq, occupied, BitHelper.bitScanRev, Ray.bishopNegRays);
   }
 
   static bishopAttacks(sq) {
-    return Mask.diag(sq) ^ Mask.antiDiag(sq);
+    return Ray.diag(sq) ^ Ray.antiDiag(sq);
   }
 
   static bishopPosRays(sq) {
-    return Mask.posRays(sq) & this.bishopAttacks(sq);
+    return Ray.posRays(sq) & Ray.bishopAttacks(sq);
   }
 
   static bishopNegRays(sq) {
-    return Mask.negRays(sq) & this.bishopAttacks(sq);
-  }
-
-  static rookRays(sq, occupied, occupiable) {
-    return (this.rookNegAttacks(sq, occupied) | 
-        this.rookPosAttacks(sq, occupied)) & occupiable;
+    return Ray.negRays(sq) & Ray.bishopAttacks(sq);
   }
 
   static rookPosAttacks(sq, occupied) {
-    let posRayAttacks = this.rookPosRays(U64(sq));
-    let posRayBlocker = posRayAttacks & occupied;
-    while (posRayBlocker != U64(0)) {
-      let sqOfBlocker = BitHelper.bitScanFwd(posRayBlocker);
-      posRayBlocker = BitHelper.clearBit(posRayBlocker, sqOfBlocker);
-      let rayBehindBlocker = this.rookPosRays(U64(sqOfBlocker)) & posRayAttacks;
-      posRayAttacks ^= rayBehindBlocker;
-    }
-    return posRayAttacks;
+    return Ray.sliderAttacks(sq, occupied, BitHelper.bitScanFwd, Ray.rookPosRays);
   }
 
   static rookNegAttacks(sq, occupied) {
-    let negRayAttacks = this.rookNegRays(U64(sq));
-    let negRayBlocker = negRayAttacks & occupied;
-    while (negRayBlocker != U64(0)) {
-      let sqOfBlocker = BitHelper.bitScanRev(negRayBlocker);
-      negRayBlocker = BitHelper.clearBit(negRayBlocker, sqOfBlocker);
-      let rayBehindBlocker = this.rookNegRays(U64(sqOfBlocker)) & negRayAttacks;
-      negRayAttacks ^= rayBehindBlocker;
-    }
-    return negRayAttacks;
+    return Ray.sliderAttacks(sq, occupied, BitHelper.bitScanRev, Ray.rookNegRays);
   }
 
   static rookAttacks(sq) {
-    return Mask.file(sq) | Mask.rank(sq);
+    return Ray.file(sq) | Ray.rank(sq);
   }
 
   static rookPosRays(sq) {
-    return Mask.posRays(sq) & this.rookAttacks(sq);
+    return Ray.posRays(sq) & Ray.rookAttacks(sq);
   }
 
   static rookNegRays(sq) {
-    return Mask.negRays(sq) & this.rookAttacks(sq);
-  }
-
-  static queenRays(sq, occupied, occupiable) {
-      return this.rookRays(sq, occupied, occupiable) | this.bishopRays(sq, occupied, occupiable)
+    return Ray.negRays(sq) & Ray.rookAttacks(sq);
   }
 
   // static queenPosAttacks(sq, occupied) {
@@ -546,6 +563,13 @@ class Mask {
     return bb << U64(7);
   }
 
+  // king moves
+  static mooreNeighborhood(bb) {
+    return Mask.northOne(bb) | Mask.northEastOne(bb) |
+      Mask.eastOne(bb) | Mask.southEastOne(bb) | Mask.southOne(bb) |
+      Mask.southWestOne(bb) | Mask.westOne(bb) | Mask.northWestOne(bb);      
+  }
+
   // knight moves
   static noNoEast(bb) {
     return bb << U64(17);
@@ -570,37 +594,6 @@ class Mask {
   }
   static soSoWest(bb) {
     return bb >> U64(17);
-  }
-
-  // rays
-  static posRays(sq) {
-    return U64(-2) << sq;
-  }
-
-  static negRays(sq) {
-    return ((U64(1) << sq) - U64(1));
-  }
-
-  static rank(sq) {
-    return BoardHelper.firstRank() << (sq & U64(56));
-  }
-
-  static file(sq) {
-    return BoardHelper.aFile() << (sq & U64(7));
-  }
-
-  static diag(sq) {
-    const diag = U64(8) * (sq & U64(7)) - (sq & U64(56));
-    const nort = U64Neg(diag) & (diag >> U64(31));
-    const sout = diag & (U64Neg(diag) >> U64(31));
-    return (BoardHelper.a1H8Diagonal() >> sout) << nort;
-  }
-
-  static antiDiag(sq) {
-    const diag = U64(56) - U64(8) * (sq & U64(7)) - (sq & U64(56));
-    const nort = U64Neg(diag) & (diag >> U64(31));
-    const sout = diag & (U64Neg(diag) >> U64(31));
-    return (BoardHelper.h1A8Diagonal() >> sout) << nort;
   }
 
   // static testMask(sq) {

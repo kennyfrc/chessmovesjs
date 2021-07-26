@@ -62,6 +62,8 @@ class PieceBoard {
     this.blackMinorBb = board.blackMinorBb;
     this.whiteMajorBb = board.whiteMajorBb;
     this.blackMajorBb = board.blackMajorBb;
+    this.blackAttacks = U64(0);
+    this.whiteAttacks = U64(0);
   }
 
   makeMoveList(fenChar) {
@@ -69,11 +71,22 @@ class PieceBoard {
     SquareHelper.indicesFor(this.bb).forEach((fromIdx) => {
       const pieceBb = BitHelper.setBit(U64(0), fromIdx);
       const toIdxs = SquareHelper.indicesFor(this.generateMoves(pieceBb));
+      // this.setAttack(fenChar, toIdxs);
       moveList.push(MoveList.for(fenChar, fromIdx, toIdxs, this));
     });
 
     return moveList.flat();
   }
+
+  // setAttack(fenChar, toIdxs) {
+  //   let attacks = BitHelper.bitsFor(toIdxs);
+  //   if ('KQRBNP'.includes(fenChar)) {
+  //     this.whiteAttacks |= attacks;
+  //   }
+  //   if ('kqrbnp'.includes(fenChar)) {
+  //     this.blackAttacks |= attacks;
+  //   }
+  // }
 }
 
 // TODO: movegen for pawn using MoveClass
@@ -223,14 +236,13 @@ class WhiteBishopBoard extends PieceBoard {
     this.occupiable = U64(0);
   }
 
-  bishopAttacks(sq, occupied, occupiable) {
-    return Direction.bishopRays(sq, occupied, occupiable);
+  bishopAttacks(pieceBb, occupied, occupiable) {
+    return Direction.bishopRays(pieceBb, occupied, occupiable);
   }
 
   generateMoves(pieceBb) {
     this.moveBb = U64(0);
-    let sq = SquareHelper.indicesFor(pieceBb);
-    this.moveBb = this.bishopAttacks(sq, this.occupied, this.occupiable);
+    this.moveBb = this.bishopAttacks(pieceBb, this.occupied, this.occupiable);
     return this.moveBb;
   }
 
@@ -258,8 +270,7 @@ class BlackBishopBoard extends PieceBoard {
 
   generateMoves(pieceBb) {
     this.moveBb = U64(0);
-    let sq = SquareHelper.indicesFor(pieceBb);
-    this.moveBb = this.bishopAttacks(sq, this.occupied, this.occupiable);
+    this.moveBb = this.bishopAttacks(pieceBb, this.occupied, this.occupiable);
     return this.moveBb;
   }
 
@@ -287,8 +298,7 @@ class WhiteRookBoard extends PieceBoard {
 
   generateMoves(pieceBb) {
     this.moveBb = U64(0);
-    let sq = SquareHelper.indicesFor(pieceBb);
-    this.moveBb = this.rookAttacks(sq, this.occupied, this.occupiable);
+    this.moveBb = this.rookAttacks(pieceBb, this.occupied, this.occupiable);
     return this.moveBb;
   }
 
@@ -315,8 +325,7 @@ class BlackRookBoard extends PieceBoard {
 
   generateMoves(pieceBb) {
     this.moveBb = U64(0);
-    let sq = SquareHelper.indicesFor(pieceBb);
-    this.moveBb = this.rookAttacks(sq, this.occupied, this.occupiable);
+    this.moveBb = this.rookAttacks(pieceBb, this.occupied, this.occupiable);
     return this.moveBb;
   }
 
@@ -344,8 +353,7 @@ class WhiteQueenBoard extends PieceBoard {
 
   generateMoves(pieceBb) {
     this.moveBb = U64(0);
-    let sq = SquareHelper.indicesFor(pieceBb);
-    this.moveBb = this.queenAttacks(sq, this.occupied, this.occupiable);
+    this.moveBb = this.queenAttacks(pieceBb, this.occupied, this.occupiable);
     return this.moveBb;
   }
 
@@ -373,8 +381,7 @@ class BlackQueenBoard extends PieceBoard {
 
   generateMoves(pieceBb) {
     this.moveBb = U64(0);
-    let sq = SquareHelper.indicesFor(pieceBb);
-    this.moveBb = this.queenAttacks(sq, this.occupied, this.occupiable);
+    this.moveBb = this.queenAttacks(pieceBb, this.occupied, this.occupiable);
     return this.moveBb;
   }
 

@@ -386,10 +386,30 @@ class BlackQueenBoard extends PieceBoard {
   }
 }
 
+// does not factor situations where the king is in check
 class WhiteKingBoard extends PieceBoard {
   constructor(bb) {
     super();
     this.bb = bb;
+    this.moveList = [];
+    this.moveBb = U64(0);
+    this.occupiable = U64(0);
+  }
+
+  kingAttacks(sq, occupiable) {
+    return Direction.kingMoves(sq, occupiable);
+  }
+
+  generateMoves(pieceBb) {
+    this.moveBb = U64(0);
+    this.moveBb = this.kingAttacks(pieceBb, this.occupiable);
+    return this.moveBb;
+  }
+
+  moves() {
+   this.occupiable = ~this.whiteBb;
+   this.moveList = this.makeMoveList('K');
+   return this.moveList;
   }
 }
 
@@ -397,6 +417,25 @@ class BlackKingBoard extends PieceBoard {
   constructor(bb) {
     super();
     this.bb = bb;
+    this.moveList = [];
+    this.moveBb = U64(0);
+    this.occupiable = U64(0);
+  }
+
+  kingAttacks(sq, occupiable) {
+    return Direction.kingMoves(sq, occupiable);
+  }
+
+  generateMoves(pieceBb) {
+    this.moveBb = U64(0);
+    this.moveBb = this.kingAttacks(pieceBb, this.occupiable);
+    return this.moveBb;
+  }
+
+  moves() {
+   this.occupiable = ~this.blackBb;
+   this.moveList = this.makeMoveList('k');
+   return this.moveList;
   }
 }
 

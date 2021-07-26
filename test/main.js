@@ -377,6 +377,42 @@ describe('QueenBoard', function() {
   });
 });
 
+describe('KingBoard', function() {
+  describe('#moves()', function() {
+    const boardWManyKingMoves = new Board();
+    boardWManyKingMoves.parseFenToBoard('1r3r2/p1pp3p/Pp1k2p1/3p1p2/5P1P/2K1P3/P1PP3P/R1B4R b - - 0 19');
+    const whiteKing = boardWManyKingMoves.pieceBoardList.K;
+    const blackKing = boardWManyKingMoves.pieceBoardList.k;
+    whiteKing.on(boardWManyKingMoves);
+    blackKing.on(boardWManyKingMoves);
+
+    console.log(whiteKing.moves());
+    console.log(whiteKing.moves().length);
+    console.log(blackKing.moves());
+    console.log(blackKing.moves().length);
+
+    it('returns pseudo-legal moves (can leave king in check)', function() {
+      assert.equal(whiteKing.moves()[0].from, 18)
+      assert.equal(whiteKing.moves()[0].to, 9)
+      assert.equal(whiteKing.moves()[1].from, 18)
+      assert.equal(whiteKing.moves()[1].to, 17)
+      assert.equal(whiteKing.moves()[2].from, 18)
+      assert.equal(whiteKing.moves()[2].to, 19)
+      assert.equal(whiteKing.moves()[3].from, 18)
+      assert.equal(whiteKing.moves()[3].to, 25)
+      assert.equal(whiteKing.moves()[4].from, 18)
+      assert.equal(whiteKing.moves()[4].to, 26)
+      assert.equal(whiteKing.moves()[5].from, 18)
+      assert.equal(whiteKing.moves()[5].to, 27)
+      assert.equal(blackKing.moves().length, 5) 
+    });
+
+    // it.skip('shows threats', function() {
+
+    // });
+  });
+});
+
 // describe('NullPieceBoard', function() {
 //   describe('#moves()', function() {
 //     it('returns pseudo-legal moves', function() {

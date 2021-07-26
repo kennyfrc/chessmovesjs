@@ -324,6 +324,36 @@ class BlackQueenMove {
   }
 }
 
+class WhiteKingMove {
+  constructor(fromIdx, toIdx, pieceBoard) {
+    this.from = fromIdx;
+    this.to = toIdx;
+    this.check = false;
+    this.capture = this.isCapture(toIdx, pieceBoard);
+    this.threat = false;
+  }
+
+  isCapture(toIdx, pieceBoard) {
+    const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
+    return ((pieceBb & pieceBoard.blackBb) == U64(0) ? false : true );
+  }
+}
+
+class BlackKingMove {
+  constructor(fromIdx, toIdx, pieceBoard) {
+    this.from = fromIdx;
+    this.to = toIdx;
+    this.check = false;
+    this.capture = this.isCapture(toIdx, pieceBoard);
+    this.threat = false;
+  }
+
+  isCapture(toIdx, pieceBoard) {
+    const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
+    return ((pieceBb & pieceBoard.whiteBb) == U64(0) ? false : true );
+  }
+}
+
 class Direction {
   static wSinglePush(bb, emptySq) {
     return Mask.northOne(bb) & emptySq;

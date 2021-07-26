@@ -64,6 +64,8 @@ class PieceBoard {
     this.blackMajorBb = board.blackMajorBb;
     this.blackAttacks = U64(0);
     this.whiteAttacks = U64(0);
+    this.epSqIdx = board.epSqIdx;
+    this.epSqBb = this.epSqIdx ? BitHelper.setBit(U64(0), this.epSqIdx) : U64(0);
   }
 
   makeMoveList(fenChar) {
@@ -89,8 +91,6 @@ class PieceBoard {
   // }
 }
 
-// TODO: movegen for pawn using MoveClass
-// en passant, king in check, etc
 class WhitePawnBoard extends PieceBoard {
   constructor(bb) {
     super();
@@ -113,7 +113,7 @@ class WhitePawnBoard extends PieceBoard {
   }
 
   pawnAttacks(pieceBb) {
-    return Direction.wPawnAttacks(pieceBb) & this.whiteBb;
+    return Direction.wPawnAttacks(pieceBb) & (this.whiteBb | this.epSqBb);
   }
 
   generateMoves(pieceBb) {    
@@ -154,7 +154,7 @@ class BlackPawnBoard extends PieceBoard {
   }
 
   pawnAttacks(pieceBb) {
-    return Direction.bPawnAttacks(pieceBb) & this.whiteBb;
+    return Direction.bPawnAttacks(pieceBb) & (this.whiteBb | this.epSqBb);
   }
 
   generateMoves(pieceBb) {    
@@ -168,6 +168,7 @@ class BlackPawnBoard extends PieceBoard {
 
   moves() {
     this.emptySq = ~this.mainBoardBb;
+    this.epSqBb = this.epSqIdx ? BitHelper.setBit(U64(0), this.epSqIdx) : U64(0);
     this.moveList = this.makeMoveList('p');
     return this.moveList;
   }

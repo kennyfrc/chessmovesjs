@@ -40,7 +40,7 @@ describe('PieceBoard', function() {
   describe('.bb', function() {
     it('returns the correct bigint', function() {
       const boardWRooksAtCorner = new Board();
-      boardWRooksAtCorner.parseFenToBoard('r1bqk1nr/pppp1ppp/2n5/2b1p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq ');
+      boardWRooksAtCorner.parseFenToBoard('r1bqk1nr/pppp1ppp/2n5/2b1p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq');
       assert.equal(boardWRooksAtCorner.pieceBoardList.r.bb, 9295429630892703744n);
       assert.equal(boardWRooksAtCorner.pieceBoardList.R.bb, 129n);
     });
@@ -110,7 +110,24 @@ describe('PawnBoard', function() {
 
       assert.equal(blackPawn.moves()[1].capture, true);
       assert.equal(blackPawn.moves()[1].check, true);
-    })
+    });
+
+    it('knows en passant', function() {
+      const boardWep = new Board();
+      boardWep.parseFenToBoard('rnbq1bnr/p1p1kppp/8/1pPpp3/4P3/8/PP1PKPPP/RNBQ1BNR w - b6 0 5');
+      const whitePawn = boardWep.pieceBoardList.P;
+      whitePawn.on(boardWep);
+      
+      const boardBlkWep = new Board();
+      boardBlkWep.parseFenToBoard('rnbq1bnr/p1p1kppp/8/2Ppp3/Pp2P3/3P4/1P2KPPP/RNBQ1BNR b - a3 0 6');
+      const blackPawn = boardBlkWep.pieceBoardList.p;
+      blackPawn.on(boardBlkWep);
+
+      assert.equal(whitePawn.moves()[12].capture, true);
+      assert.equal(whitePawn.moves()[12].ep, true);
+      assert.equal(blackPawn.moves()[0].capture, true);
+      assert.equal(blackPawn.moves()[0].ep, true);
+    });
   });
 });
 
@@ -386,10 +403,10 @@ describe('KingBoard', function() {
     whiteKing.on(boardWManyKingMoves);
     blackKing.on(boardWManyKingMoves);
 
-    console.log(whiteKing.moves());
-    console.log(whiteKing.moves().length);
-    console.log(blackKing.moves());
-    console.log(blackKing.moves().length);
+    // console.log(whiteKing.moves());
+    // console.log(whiteKing.moves().length);
+    // console.log(blackKing.moves());
+    // console.log(blackKing.moves().length);
 
     it('returns pseudo-legal moves (can leave king in check)', function() {
       assert.equal(whiteKing.moves()[0].from, 18)

@@ -2,6 +2,7 @@ const BitHelper = require('./helpers.js').BitHelper;
 const PieceBoard = require('./pieceboard.js').PieceBoard;
 const PieceBoardList = require('./pieceboard.js').PieceBoardList;
 const ViewHelper = require('./helpers.js').ViewHelper;
+const SquareHelper = require('./helpers.js').SquareHelper;
 const U64 = require('./helpers.js').U64;
 
 class Board {
@@ -28,54 +29,87 @@ class Board {
 
     this.pieceBoardList = new PieceBoardList();
 
-    this.castleStatus = 0;
-    this.castleBit = {'K': 1, 'Q': 2, 'k': 4, 'q': 8};
+    this.castleStatus = U64(0);
+    this.castleBit = {'K': U64(1), 'Q': U64(2), 'k': U64(4), 'q': U64(8)};
 
-    this.whiteToMove = 1;
-    this.moveBit = {'w': 1, 'b': 0};
+    this.whiteToMove = true;
+    this.moveBit = {'w': U64(1), 'b': U64(0)};
+
+    this.epSqIdx = undefined;
+    this.epSqBb = U64(0);
+    this.halfMoveClock = 0;
+    this.fullMoveNo = 0;
   }
 
   parseFenToBoard(fen) {
     this.resetBoard();
 
-    let fenIndex = 56; // fens start at a8
+    let boardIndex = 56; // fens start at a8
     let ranksRead = 1;
     let whiteSpace = 0;
 
     for (let i = 0; i < fen.length; i++) {
-      if (this.#finishedReadingBoard(ranksRead, whiteSpace)) {
-        if (this.#fenIsSidetoMove(fen[i])) {
+      if (FenReader.finishedReadingBoard(ranksRead, whiteSpace)) {
+        if (FenReader.isSidetoMove(fen[i])) {
           this.moveStatus = this.moveBit[fen[i]];
         }
 
-        if (this.#fenIsCastlingSymbol(fen[i])) {
+        if (FenReader.isCastlingSymbol(fen[i])) {
           this.castleStatus |= this.castleBit[fen[i]];
         }
+
+        if (FenReader.isEnPassantChar(fen[i], whiteSpace)) {
+          let epSq = fen[i] + fen[i+1]
+          this.epSqIdx = SquareHelper.for(epSq);
+          i += 1;
+        }
+
+        /**
+         * there will be an external class that decides whether
+         * a pawn is advanced or there was a capture
+         * both of the above require move history
+         **/
+        if (FenReader.isHalfMoveClock(fen[i], whiteSpace)) {
+          if (FenReader.isSpace(fen[i+1])) {
+            this.halfMoveClock = parseInt(fen[i]);
+          } else {
+            this.halfMoveClock = parseInt(fen[i] + fen[i+1]);
+            i += 1;
+          }
+        }
+
+        if (FenReader.isFullMoveNo(fen[i], whiteSpace)) {
+          if (FenReader.isUndefined(fen[i+1])) {
+              this.fullMoveNo = parseInt(fen[i]);
+            } else {
+              this.fullMoveNo = parseInt(fen[i] + fen[i+1]);
+              i += 1; 
+          }
+        }
       } else {
-        if (this.#fenIsWhitePiece(fen[i])) {
-          const pieceBit = BitHelper.setBit(this.pieceBoardList[fen[i]].bb, fenIndex);
+        if (FenReader.isWhitePiece(fen[i])) {
+          const pieceBit = BitHelper.setBit(this.pieceBoardList[fen[i]].bb, boardIndex);
           this.pieceBoardList[fen[i]] = PieceBoard.for(fen[i], pieceBit);
-          fenIndex += 1;
+          boardIndex += 1;
         }
 
-        if (this.#fenIsBlackPiece(fen[i])) {
-          const pieceBit = BitHelper.setBit(this.pieceBoardList[fen[i]].bb, fenIndex);
+        if (FenReader.isBlackPiece(fen[i])) {
+          const pieceBit = BitHelper.setBit(this.pieceBoardList[fen[i]].bb, boardIndex);
           this.pieceBoardList[fen[i]] = PieceBoard.for(fen[i], pieceBit);
-          fenIndex += 1;
+          boardIndex += 1;
         }
 
-        if (this.#fenIsEmptySquare(fen[i])) {
-          fenIndex += parseInt(fen[i]);
+        if (FenReader.isEmptySquare(fen[i])) {
+          boardIndex += parseInt(fen[i]);
         }
 
-        if (this.#fenIsNewRank(fen[i])) {
-          fenIndex = (56 - (ranksRead * 8));
+        if (FenReader.isNewRank(fen[i])) {
+          boardIndex = (56 - (ranksRead * 8));
           ranksRead += 1;
         }
-
-        if (this.#fenIsSpace(fen[i])) {
-          whiteSpace += 1;
-        }
+      }
+      if (FenReader.isSpace(fen[i])) {
+        whiteSpace += 1;
       }
     }
 
@@ -135,37 +169,55 @@ class Board {
   setBoardBb() {
     this.bb = this.whiteBb | this.blackBb;
   }
+}
 
-  #finishedReadingBoard(ranksRead, whiteSpace) {
-    return ranksRead == 8 && whiteSpace == 1;
+class FenReader {
+  static finishedReadingBoard(ranksRead, whiteSpace) {
+    return ranksRead === 8 && whiteSpace >= 1;
   }
 
-  #fenIsSidetoMove(fenChar) {
+  static isSidetoMove(fenChar) {
     return 'wb'.includes(fenChar);
   }
 
-  #fenIsCastlingSymbol(fenChar) {
+  static isCastlingSymbol(fenChar) {
     return 'KQkq'.includes(fenChar);
   }
 
-  #fenIsWhitePiece(fenChar) {
+  static isWhitePiece(fenChar) {
     return 'KQRBNP'.includes(fenChar);
   }
 
-  #fenIsBlackPiece(fenChar) {
+  static isBlackPiece(fenChar) {
     return 'kqrbnp'.includes(fenChar);
   }
 
-  #fenIsEmptySquare(fenChar) {
+  static isEmptySquare(fenChar) {
     return '12345678'.includes(fenChar);
   }
 
-  #fenIsNewRank(fenChar) {
-    return fenChar == '/';
+  static isNewRank(fenChar) {
+    return fenChar === '/';
   }
 
-  #fenIsSpace(fenChar) {
-    return fenChar == ' ';
+  static isSpace(fenChar) {
+    return fenChar === ' ';
+  }
+
+  static isEnPassantChar(fenChar, whiteSpace) {
+    return !'- '.includes(fenChar) && whiteSpace === 3;
+  }
+
+  static isHalfMoveClock(fenChar, whiteSpace) {
+    return !' '.includes(fenChar) && whiteSpace === 4;
+  }
+
+  static isFullMoveNo(fenChar, whiteSpace) {
+    return !' '.includes(fenChar) && whiteSpace === 5;
+  }
+
+  static isUndefined(fenChar) {
+    return fenChar === undefined;
   }
 }
 

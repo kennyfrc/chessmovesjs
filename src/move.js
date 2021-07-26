@@ -65,6 +65,7 @@ class WhitePawnMove {
   constructor(fromIdx, toIdx, pieceBoard) {
     this.from = fromIdx;
     this.to = toIdx;
+    this.ep = false;
     this.check = this.isCheck(toIdx, pieceBoard);
     this.capture = this.isCapture(toIdx, pieceBoard);
     this.threat = this.isThreat(toIdx, pieceBoard);
@@ -72,27 +73,30 @@ class WhitePawnMove {
 
   isCheck(toIdx, pieceBoard) {
     const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
-    return ((Direction.wPawnAttacks(pieceBb) & pieceBoard.blackKingBb) ==
+    return ((Direction.wPawnAttacks(pieceBb) & pieceBoard.blackKingBb) ===
       U64(0) ? false : true);
   }
 
   isCapture(toIdx, pieceBoard) {
     const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
-    return ((pieceBb & pieceBoard.blackBb) == U64(0) ? false : true );
+    const capOrEp = pieceBb & (pieceBoard.blackBb | pieceBoard.epSqBb);
+    const enPassant = pieceBb & pieceBoard.epSqBb;
+    this.ep = enPassant === U64(0) ? false : true;
+    return (capOrEp === U64(0) ? false : true );
   }
 
   isThreat(toIdx, pieceBoard) {
     const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
     return (Direction.wPawnAttacks(pieceBb) & (pieceBoard.blackMinorBb |
-      pieceBoard.blackMajorBb)) == U64(0) ? false : true;
+      pieceBoard.blackMajorBb)) === U64(0) ? false : true;
   }
 }
 
 class BlackPawnMove {
   constructor(fromIdx, toIdx, pieceBoard) {
-    this.bb = U64(0);
     this.from = fromIdx;
     this.to = toIdx;
+    this.ep = false;
     this.check = this.isCheck(toIdx, pieceBoard);
     this.capture = this.isCapture(toIdx, pieceBoard);
     this.threat = this.isThreat(toIdx, pieceBoard);
@@ -100,19 +104,22 @@ class BlackPawnMove {
 
   isCheck(toIdx, pieceBoard) {
     const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
-    return ((Direction.bPawnAttacks(pieceBb) & pieceBoard.whiteKingBb) ==
+    return ((Direction.bPawnAttacks(pieceBb) & pieceBoard.whiteKingBb) ===
       U64(0) ? false : true);
   }
 
   isCapture(toIdx, pieceBoard) {
     const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
-    return ((pieceBb & pieceBoard.whiteBb) == U64(0) ? false : true );
+    const capOrEp = pieceBb & (pieceBoard.whiteBb | pieceBoard.epSqBb);
+    const enPassant = pieceBb & pieceBoard.epSqBb;
+    this.ep = enPassant === U64(0) ? false : true;
+    return (capOrEp === U64(0) ? false : true );
   }
 
   isThreat(toIdx, pieceBoard) {
     const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
     return (Direction.bPawnAttacks(pieceBb) & (pieceBoard.whiteMinorBb |
-      pieceBoard.whiteMajorBb)) == U64(0) ? false : true;
+      pieceBoard.whiteMajorBb)) === U64(0) ? false : true;
   }
 }
 
@@ -127,18 +134,18 @@ class WhiteKnightMove {
 
   isCheck(toIdx, pieceBoard) {
     const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
-    return ((Direction.knightAttacks(pieceBb) & pieceBoard.blackKingBb) ==
+    return ((Direction.knightAttacks(pieceBb) & pieceBoard.blackKingBb) ===
       U64(0) ? false : true);
   }
 
   isCapture(toIdx, pieceBoard) {
     const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
-    return ((pieceBb & pieceBoard.blackBb) == U64(0) ? false : true );
+    return ((pieceBb & pieceBoard.blackBb) === U64(0) ? false : true );
   }
 
   isThreat(toIdx, pieceBoard) {
     const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
-    return (Direction.knightAttacks(pieceBb) & pieceBoard.blackMajorBb) ==
+    return (Direction.knightAttacks(pieceBb) & pieceBoard.blackMajorBb) ===
       U64(0) ? false : true;
   }
 }
@@ -154,18 +161,18 @@ class BlackKnightMove {
 
   isCheck(toIdx, pieceBoard) {
     const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
-    return ((Direction.knightAttacks(pieceBb) & pieceBoard.whiteKingBb) ==
+    return ((Direction.knightAttacks(pieceBb) & pieceBoard.whiteKingBb) ===
       U64(0) ? false : true);
   }
 
   isCapture(toIdx, pieceBoard) {
     const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
-    return ((pieceBb & pieceBoard.whiteBb) == U64(0) ? false : true );
+    return ((pieceBb & pieceBoard.whiteBb) === U64(0) ? false : true );
   }
 
   isThreat(toIdx, pieceBoard) {
     const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
-    return (Direction.knightAttacks(pieceBb) & pieceBoard.whiteMajorBb) ==
+    return (Direction.knightAttacks(pieceBb) & pieceBoard.whiteMajorBb) ===
       U64(0) ? false : true;
   }
 }
@@ -182,18 +189,18 @@ class WhiteBishopMove {
   isCheck(toIdx, pieceBoard) {
     const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
     return ((Direction.bishopRays(pieceBb, pieceBoard.occupied, pieceBoard.occupiable) &
-        pieceBoard.blackKingBb) == U64(0) ? false : true);
+        pieceBoard.blackKingBb) === U64(0) ? false : true);
   }
 
   isCapture(toIdx, pieceBoard) {
     const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
-    return ((pieceBb & pieceBoard.blackBb) == U64(0) ? false : true );
+    return ((pieceBb & pieceBoard.blackBb) === U64(0) ? false : true );
   }
 
   isThreat(toIdx, pieceBoard) {
     const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
     return (Direction.bishopRays(pieceBb, pieceBoard.occupied, pieceBoard.occupiable) &
-        pieceBoard.blackMajorBb) == U64(0) ? false : true;
+        pieceBoard.blackMajorBb) === U64(0) ? false : true;
   }
 }
 
@@ -209,18 +216,18 @@ class BlackBishopMove {
   isCheck(toIdx, pieceBoard) {
     const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
     return ((Direction.bishopRays(pieceBb, pieceBoard.occupied, pieceBoard.occupiable) &
-      pieceBoard.whiteKingBb) == U64(0) ? false : true);
+      pieceBoard.whiteKingBb) === U64(0) ? false : true);
   }
 
   isCapture(toIdx, pieceBoard) {
     const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
-    return ((pieceBb & pieceBoard.whiteBb) == U64(0) ? false : true );
+    return ((pieceBb & pieceBoard.whiteBb) === U64(0) ? false : true );
   }
 
   isThreat(toIdx, pieceBoard) {
     const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
     return (Direction.bishopRays(pieceBb, pieceBoard.occupied, pieceBoard.occupiable) &
-      pieceBoard.whiteMajorBb) == U64(0) ? false : true;
+      pieceBoard.whiteMajorBb) === U64(0) ? false : true;
   }
 }
 
@@ -236,18 +243,18 @@ class WhiteRookMove {
   isCheck(toIdx, pieceBoard) {
     const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
     return ((Direction.rookRays(pieceBb, pieceBoard.occupied, pieceBoard.occupiable) &
-          pieceBoard.blackKingBb) == U64(0) ? false : true);
+          pieceBoard.blackKingBb) === U64(0) ? false : true);
   }
 
   isCapture(toIdx, pieceBoard) {
     const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
-    return ((pieceBb & pieceBoard.blackBb) == U64(0) ? false : true );
+    return ((pieceBb & pieceBoard.blackBb) === U64(0) ? false : true );
   }
 
   isThreat(toIdx, pieceBoard) {
     const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
     return (Direction.rookRays(pieceBb, pieceBoard.occupied, pieceBoard.occupiable) &
-      pieceBoard.blackQueenBb) == U64(0) ? false : true;
+      pieceBoard.blackQueenBb) === U64(0) ? false : true;
   }
 }
 
@@ -263,18 +270,18 @@ class BlackRookMove {
   isCheck(toIdx, pieceBoard) {
     const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
     return ((Direction.rookRays(pieceBb, pieceBoard.occupied, pieceBoard.occupiable) &
-          pieceBoard.whiteKingBb) == U64(0) ? false : true);
+          pieceBoard.whiteKingBb) === U64(0) ? false : true);
   }
 
   isCapture(toIdx, pieceBoard) {
     const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
-    return ((pieceBb & pieceBoard.whiteBb) == U64(0) ? false : true );
+    return ((pieceBb & pieceBoard.whiteBb) === U64(0) ? false : true );
   }
 
   isThreat(toIdx, pieceBoard) {
     const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
     return (Direction.rookRays(pieceBb, pieceBoard.occupied, pieceBoard.occupiable) &
-      pieceBoard.whiteQueenBb) == U64(0) ? false : true;
+      pieceBoard.whiteQueenBb) === U64(0) ? false : true;
   }
 }
 
@@ -290,12 +297,12 @@ class WhiteQueenMove {
   isCheck(toIdx, pieceBoard) {
     const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
     return ((Direction.queenRays(pieceBb, pieceBoard.occupied, pieceBoard.occupiable) &
-          pieceBoard.blackKingBb) == U64(0) ? false : true);
+          pieceBoard.blackKingBb) === U64(0) ? false : true);
   }
 
   isCapture(toIdx, pieceBoard) {
     const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
-    return ((pieceBb & pieceBoard.blackBb) == U64(0) ? false : true );
+    return ((pieceBb & pieceBoard.blackBb) === U64(0) ? false : true );
   }
 }
 
@@ -311,12 +318,12 @@ class BlackQueenMove {
   isCheck(toIdx, pieceBoard) {
     const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
     return ((Direction.queenRays(pieceBb, pieceBoard.occupied, pieceBoard.occupiable) &
-          pieceBoard.whiteKingBb) == U64(0) ? false : true);
+          pieceBoard.whiteKingBb) === U64(0) ? false : true);
   }
 
   isCapture(toIdx, pieceBoard) {
     const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
-    return ((pieceBb & pieceBoard.whiteBb) == U64(0) ? false : true );
+    return ((pieceBb & pieceBoard.whiteBb) === U64(0) ? false : true );
   }
 }
 
@@ -331,7 +338,7 @@ class WhiteKingMove {
 
   isCapture(toIdx, pieceBoard) {
     const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
-    return ((pieceBb & pieceBoard.blackBb) == U64(0) ? false : true );
+    return ((pieceBb & pieceBoard.blackBb) === U64(0) ? false : true );
   }
 }
 
@@ -346,7 +353,7 @@ class BlackKingMove {
 
   isCapture(toIdx, pieceBoard) {
     const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
-    return ((pieceBb & pieceBoard.whiteBb) == U64(0) ? false : true );
+    return ((pieceBb & pieceBoard.whiteBb) === U64(0) ? false : true );
   }
 }
 

@@ -163,38 +163,38 @@ class ViewHelper {
     }
 
     console.log(`=BEGIN ${message}` + '\n' +
-      userView[SquareHelper.for('A8')] + userView[SquareHelper.for('B8')] +
-      userView[SquareHelper.for('C8')] + userView[SquareHelper.for('D8')] +
-      userView[SquareHelper.for('E8')] + userView[SquareHelper.for('F8')] +
-      userView[SquareHelper.for('G8')] + userView[SquareHelper.for('H8')] + '\n' +
-      userView[SquareHelper.for('A7')] + userView[SquareHelper.for('B7')] +
-      userView[SquareHelper.for('C7')] + userView[SquareHelper.for('D7')] +
-      userView[SquareHelper.for('E7')] + userView[SquareHelper.for('F7')] +
-      userView[SquareHelper.for('G7')] + userView[SquareHelper.for('H7')] + '\n' +
-      userView[SquareHelper.for('A6')] + userView[SquareHelper.for('B6')] +
-      userView[SquareHelper.for('C6')] + userView[SquareHelper.for('D6')] +
-      userView[SquareHelper.for('E6')] + userView[SquareHelper.for('F6')] +
-      userView[SquareHelper.for('G6')] + userView[SquareHelper.for('H6')] + '\n' +
-      userView[SquareHelper.for('A5')] + userView[SquareHelper.for('B5')] +
-      userView[SquareHelper.for('C5')] + userView[SquareHelper.for('D5')] +
-      userView[SquareHelper.for('E5')] + userView[SquareHelper.for('F5')] +
-      userView[SquareHelper.for('G5')] + userView[SquareHelper.for('H5')] + '\n' +
-      userView[SquareHelper.for('A4')] + userView[SquareHelper.for('B4')] +
-      userView[SquareHelper.for('C4')] + userView[SquareHelper.for('D4')] +
-      userView[SquareHelper.for('E4')] + userView[SquareHelper.for('F4')] +
-      userView[SquareHelper.for('G4')] + userView[SquareHelper.for('H4')] + '\n' +
-      userView[SquareHelper.for('A3')] + userView[SquareHelper.for('B3')] +
-      userView[SquareHelper.for('C3')] + userView[SquareHelper.for('D3')] +
-      userView[SquareHelper.for('E3')] + userView[SquareHelper.for('F3')] +
-      userView[SquareHelper.for('G3')] + userView[SquareHelper.for('H3')] + '\n' +
-      userView[SquareHelper.for('A2')] + userView[SquareHelper.for('B2')] +
-      userView[SquareHelper.for('C2')] + userView[SquareHelper.for('D2')] +
-      userView[SquareHelper.for('E2')] + userView[SquareHelper.for('F2')] +
-      userView[SquareHelper.for('G2')] + userView[SquareHelper.for('H2')] + '\n' +
-      userView[SquareHelper.for('A1')] + userView[SquareHelper.for('B1')] +
-      userView[SquareHelper.for('C1')] + userView[SquareHelper.for('D1')] +
-      userView[SquareHelper.for('E1')] + userView[SquareHelper.for('F1')] +
-      userView[SquareHelper.for('G1')] + userView[SquareHelper.for('H1')] + '\n' +
+      userView[SquareHelper.for('a8')] + userView[SquareHelper.for('b8')] +
+      userView[SquareHelper.for('c8')] + userView[SquareHelper.for('d8')] +
+      userView[SquareHelper.for('e8')] + userView[SquareHelper.for('f8')] +
+      userView[SquareHelper.for('g8')] + userView[SquareHelper.for('h8')] + '\n' +
+      userView[SquareHelper.for('a7')] + userView[SquareHelper.for('b7')] +
+      userView[SquareHelper.for('c7')] + userView[SquareHelper.for('d7')] +
+      userView[SquareHelper.for('e7')] + userView[SquareHelper.for('f7')] +
+      userView[SquareHelper.for('g7')] + userView[SquareHelper.for('h7')] + '\n' +
+      userView[SquareHelper.for('a6')] + userView[SquareHelper.for('b6')] +
+      userView[SquareHelper.for('c6')] + userView[SquareHelper.for('d6')] +
+      userView[SquareHelper.for('e6')] + userView[SquareHelper.for('f6')] +
+      userView[SquareHelper.for('g6')] + userView[SquareHelper.for('h6')] + '\n' +
+      userView[SquareHelper.for('a5')] + userView[SquareHelper.for('b5')] +
+      userView[SquareHelper.for('c5')] + userView[SquareHelper.for('d5')] +
+      userView[SquareHelper.for('e5')] + userView[SquareHelper.for('f5')] +
+      userView[SquareHelper.for('g5')] + userView[SquareHelper.for('h5')] + '\n' +
+      userView[SquareHelper.for('a4')] + userView[SquareHelper.for('b4')] +
+      userView[SquareHelper.for('c4')] + userView[SquareHelper.for('d4')] +
+      userView[SquareHelper.for('e4')] + userView[SquareHelper.for('f4')] +
+      userView[SquareHelper.for('g4')] + userView[SquareHelper.for('h4')] + '\n' +
+      userView[SquareHelper.for('a3')] + userView[SquareHelper.for('b3')] +
+      userView[SquareHelper.for('c3')] + userView[SquareHelper.for('d3')] +
+      userView[SquareHelper.for('e3')] + userView[SquareHelper.for('f3')] +
+      userView[SquareHelper.for('g3')] + userView[SquareHelper.for('h3')] + '\n' +
+      userView[SquareHelper.for('a2')] + userView[SquareHelper.for('b2')] +
+      userView[SquareHelper.for('c2')] + userView[SquareHelper.for('d2')] +
+      userView[SquareHelper.for('e2')] + userView[SquareHelper.for('f2')] +
+      userView[SquareHelper.for('g2')] + userView[SquareHelper.for('h2')] + '\n' +
+      userView[SquareHelper.for('a1')] + userView[SquareHelper.for('b1')] +
+      userView[SquareHelper.for('c1')] + userView[SquareHelper.for('d1')] +
+      userView[SquareHelper.for('e1')] + userView[SquareHelper.for('f1')] +
+      userView[SquareHelper.for('g1')] + userView[SquareHelper.for('h1')] + '\n' +
       '=END');
   }
 }
@@ -204,14 +204,14 @@ class SquareHelper {
     // Little-Endian Rank-File Mapping
     /* eslint-disable key-spacing */
     const indexMap = {
-      A8: 56, B8: 57, C8: 58, D8: 59, E8: 60, F8: 61, G8: 62, H8: 63,
-      A7: 48, B7: 49, C7: 50, D7: 51, E7: 52, F7: 53, G7: 54, H7: 55,
-      A6: 40, B6: 41, C6: 42, D6: 43, E6: 44, F6: 45, G6: 46, H6: 47,
-      A5: 32, B5: 33, C5: 34, D5: 35, E5: 36, F5: 37, G5: 38, H5: 39,
-      A4: 24, B4: 25, C4: 26, D4: 27, E4: 28, F4: 29, G4: 30, H4: 31,
-      A3: 16, B3: 17, C3: 18, D3: 19, E3: 20, F3: 21, G3: 22, H3: 23,
-      A2:  8, B2:  9, C2: 10, D2: 11, E2: 12, F2: 13, G2: 14, H2: 15,
-      A1:  0, B1:  1, C1:  2, D1:  3, E1:  4, F1:  5, G1:  6, H1:  7,
+      a8: 56, b8: 57, c8: 58, d8: 59, e8: 60, f8: 61, g8: 62, h8: 63,
+      a7: 48, b7: 49, c7: 50, d7: 51, e7: 52, f7: 53, g7: 54, h7: 55,
+      a6: 40, b6: 41, c6: 42, d6: 43, e6: 44, f6: 45, g6: 46, h6: 47,
+      a5: 32, b5: 33, c5: 34, d5: 35, e5: 36, f5: 37, g5: 38, h5: 39,
+      a4: 24, b4: 25, c4: 26, d4: 27, e4: 28, f4: 29, g4: 30, h4: 31,
+      a3: 16, b3: 17, c3: 18, d3: 19, e3: 20, f3: 21, g3: 22, h3: 23,
+      a2:  8, b2:  9, c2: 10, d2: 11, e2: 12, f2: 13, g2: 14, h2: 15,
+      a1:  0, b1:  1, c1:  2, d1:  3, e1:  4, f1:  5, g1:  6, h1:  7,
     };
     /* eslint-enable key-spacing */
     return indexMap[rankFile];

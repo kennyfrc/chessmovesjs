@@ -32,6 +32,28 @@ describe('Board', function() {
       assert.equal(board.castleStatus, 15);
     });
   });
+
+  describe('half-move counter', function() {
+    it('returns the integer representing the castling status', function() {
+      const boardW43hmc = new Board();
+      const boardW3hmc = new Board();
+      boardW43hmc.parseFenToBoard('r1bqk12/p2p1ppp/2n5/2b1p3/31P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 43 86')
+      boardW3hmc.parseFenToBoard('r1bqk12/p2p1ppp/2n5/2b1p3/31P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 3 6')
+      assert.equal(boardW43hmc.halfMoveClock, 43);
+      assert.equal(boardW3hmc.halfMoveClock, 3);
+    });
+  });
+
+  describe('full move number', function() {
+    it('returns the integer representing the castling status', function() {
+      const boardW83fmn = new Board();
+      const boardW3fmn = new Board();
+      boardW83fmn.parseFenToBoard('r1bqk12/p2p1ppp/2n5/2b1p3/31P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 21 83')
+      boardW3fmn.parseFenToBoard('r1bqk12/p2p1ppp/2n5/2b1p3/31P3/5N2/PPPP1PPP/RNBQK2R w KQkq - 3 3')
+      assert.equal(boardW83fmn.fullMoveNo, 83);
+      assert.equal(boardW3fmn.fullMoveNo, 3);
+    });
+  });
 });
 
 // PieceBoard should return BigInts

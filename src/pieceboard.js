@@ -58,6 +58,8 @@ class PieceBoard {
     this.blackQueenBb = board.blackQueenBb;
     this.whiteKingBb = board.whiteKingBb;
     this.blackKingBb = board.blackKingBb;
+    this.whiteRookBb = board.whiteRookBb;
+    this.blackRookBb = board.blackRookBb;
     this.whiteMinorBb = board.whiteMinorBb;
     this.blackMinorBb = board.blackMinorBb;
     this.whiteMajorBb = board.whiteMajorBb;
@@ -66,6 +68,7 @@ class PieceBoard {
     this.whiteAttacks = U64(0);
     this.epSqIdx = board.epSqIdx;
     this.epSqBb = this.epSqIdx ? BitHelper.setBit(U64(0), this.epSqIdx) : U64(0);
+    this.castleStatus = board.castleStatus;
   }
 
   makeMoveList(fenChar) {
@@ -401,21 +404,23 @@ class WhiteKingBoard extends PieceBoard {
     this.bb = bb;
     this.moveList = [];
     this.moveBb = U64(0);
+    this.occupied = U64(0);
     this.occupiable = U64(0);
   }
 
-  kingAttacks(sq, occupiable) {
-    return Direction.kingMoves(sq, occupiable);
+  kingAttacks(pieceBb) {
+    return Direction.kingMoves(pieceBb, this.occupied, this.occupiable, this.whiteRookBb, this.castleStatus);
   }
 
   generateMoves(pieceBb) {
-    this.moveBb = U64(0);
-    this.moveBb = this.kingAttacks(pieceBb, this.occupiable);
+    this.moveBb = U64(0);    
+    this.moveBb = this.kingAttacks(pieceBb);
     return this.moveBb;
   }
 
   moves() {
    this.occupiable = ~this.whiteBb;
+   this.occupied = this.mainBoardBb;
    this.moveList = this.makeMoveList('K');
    return this.moveList;
   }
@@ -427,21 +432,23 @@ class BlackKingBoard extends PieceBoard {
     this.bb = bb;
     this.moveList = [];
     this.moveBb = U64(0);
+    this.occupied = U64(0);
     this.occupiable = U64(0);
   }
 
-  kingAttacks(sq, occupiable) {
-    return Direction.kingMoves(sq, occupiable);
+  kingAttacks(pieceBb, occupiable) {
+    return Direction.kingMoves(pieceBb, this.occupied, this.occupiable, this.whiteRookBb, this.castleStatus);
   }
 
   generateMoves(pieceBb) {
     this.moveBb = U64(0);
-    this.moveBb = this.kingAttacks(pieceBb, this.occupiable);
+    this.moveBb = this.kingAttacks(pieceBb);
     return this.moveBb;
   }
 
   moves() {
    this.occupiable = ~this.blackBb;
+   this.occupied = this.mainBoardBb;
    this.moveList = this.makeMoveList('k');
    return this.moveList;
   }

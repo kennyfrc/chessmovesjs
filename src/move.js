@@ -331,14 +331,23 @@ class WhiteKingMove {
   constructor(fromIdx, toIdx, pieceBoard) {
     this.from = fromIdx;
     this.to = toIdx;
+    this.castle = this.isCastle(fromIdx, toIdx);
     this.check = false;
     this.capture = this.isCapture(toIdx, pieceBoard);
     this.threat = false;
   }
 
+  // TODO: isCheck for castling with rook
+  // TODO: isThreat for threats against other pawns / pieces
+
   isCapture(toIdx, pieceBoard) {
     const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
     return ((pieceBb & pieceBoard.blackBb) === U64(0) ? false : true );
+  }
+
+  isCastle(fromIdx, toIdx) {
+    const difference = toIdx - fromIdx;
+    return (difference == 2 || difference == -2) ? true : false;
   }
 }
 
@@ -346,6 +355,7 @@ class BlackKingMove {
   constructor(fromIdx, toIdx, pieceBoard) {
     this.from = fromIdx;
     this.to = toIdx;
+    this.castle = this.isCastle(fromIdx, toIdx);
     this.check = false;
     this.capture = this.isCapture(toIdx, pieceBoard);
     this.threat = false;
@@ -354,6 +364,11 @@ class BlackKingMove {
   isCapture(toIdx, pieceBoard) {
     const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
     return ((pieceBb & pieceBoard.whiteBb) === U64(0) ? false : true );
+  }
+
+  isCastle(fromIdx, toIdx) {
+    const difference = toIdx - fromIdx;
+    return (difference == 2 || difference == -2) ? true : false;
   }
 }
 
@@ -398,13 +413,13 @@ class Direction {
   }
 
   static bishopRays(bb, occupied, occupiable) {
-    let sq = SquareHelper.indicesFor(bb);
+    const sq = SquareHelper.indicesFor(bb);
     return (Ray.bishopNegAttacks(sq, occupied) | 
         Ray.bishopPosAttacks(sq, occupied)) & occupiable;
   }
 
   static rookRays(bb, occupied, occupiable) {
-    let sq = SquareHelper.indicesFor(bb);
+    const sq = SquareHelper.indicesFor(bb);
     return (Ray.rookNegAttacks(sq, occupied) | 
         Ray.rookPosAttacks(sq, occupied)) & occupiable;
   }
@@ -413,8 +428,39 @@ class Direction {
     return this.rookRays(pieceBb, occupied, occupiable) | this.bishopRays(pieceBb, occupied, occupiable)
   }
 
-  static kingMoves(pieceBb, occupiable) {
-    return Mask.mooreNeighborhood(pieceBb) & occupiable;
+  static kingMoves(pieceBb, occupied, occupiable, rookBb, castleStatus) {
+    const castlingMoves = this.castleCheck(pieceBb, occupied, rookBb, castleStatus);
+    return (Mask.mooreNeighborhood(pieceBb) & occupiable) | castlingMoves;
+  }
+
+  // ugly as hell. not sure yet how to improve it
+  static castleCheck(kingBb, occupied, rookBb, castleStatus) {
+    rookBb &= castleStatus;
+    if (rookBb === U64(0)) {
+      return U64(0); 
+    }
+    let castlingMoves = U64(0);
+    let qsCastle = U64(0);
+    let ksCastle = U64(0);
+    const kingSq = BitHelper.bitScanFwd(kingBb);
+    const rightOfKingSq = kingSq + 1;
+    const leftOfKingSq = kingSq - 1;
+    const rightOfKing = BitHelper.getBit(occupied, rightOfKingSq);
+    const leftOfKing = BitHelper.getBit(occupied, leftOfKingSq);
+    const rookSqs = SquareHelper.indicesFor(rookBb);
+    rookSqs.forEach((rookSq) => {
+      const ksCastleRays = Ray.castlingNegRays(rookSq, occupied);
+      const qsCastleRays = Ray.castlingPosRays(rookSq, occupied);
+      const rookCanReachQs = BitHelper.bitScanRev(qsCastleRays)
+      const rookCanReachKs = BitHelper.bitScanFwd(ksCastleRays)
+      if (rookCanReachQs !== U64(0) || rookCanReachQs !== U64(63)) {
+        qsCastle |= BitHelper.setBit(U64(0), leftOfKingSq-1);
+      } 
+      if (rookCanReachKs !== U64(0) || rookCanReachKs !== U64(63)) {
+        ksCastle |= BitHelper.setBit(U64(0), rightOfKingSq+1);
+      }
+    });
+    return (qsCastle | ksCastle);
   }
 }
 
@@ -482,6 +528,22 @@ class Ray {
 
   static bishopNegRays(sq) {
     return Ray.negRays(sq) & Ray.bishopAttacks(sq);
+  }
+
+  static castlingPosRays(sq, occupied) {
+    return Ray.sliderAttacks(sq, occupied, BitHelper.bitScanFwd, Ray.posRank);
+  }
+
+  static castlingNegRays(sq, occupied) {
+    return Ray.sliderAttacks(sq, occupied, BitHelper.bitScanRev, Ray.negRank);
+  }
+
+  static posRank(sq) {
+    return Ray.posRays(sq) & Ray.rank(sq);
+  }
+
+  static negRank(sq) {
+    return Ray.negRays(sq) & Ray.rank(sq);
   }
 
   static rookPosAttacks(sq, occupied) {

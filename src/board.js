@@ -30,7 +30,7 @@ class Board {
     this.pieceBoardList = new PieceBoardList();
 
     this.castleStatus = U64(0);
-    this.castleBit = {'K': U64(1), 'Q': U64(2), 'k': U64(4), 'q': U64(8)};
+    this.castleBit = {'K': U64('0x1'), 'Q': U64('0x80'), 'k': U64('0x100000000000000'), 'q': U64('0x8000000000000000')};
 
     this.whiteToMove = true;
     this.moveBit = {'w': U64(1), 'b': U64(0)};

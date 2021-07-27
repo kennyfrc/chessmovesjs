@@ -2,6 +2,7 @@ const assert = require('assert');
 const Board = require('../src/board.js').Board;
 const BoardView = require('../src/boardview.js').BoardView;
 const SquareHelper = require('../src/helpers.js').SquareHelper;
+const U64 = require('../src/helpers.js').U64;
 // const PieceBoard = require('../src/board.js').PieceBoard;
 // const ViewHelper = require('../src/pieceboard.js').ViewHelper;
 
@@ -29,7 +30,7 @@ describe('Board', function() {
 
   describe('.displayCastleStatus', function() {
     it('returns the integer representing the castling status', function() {
-      assert.equal(board.castleStatus, 15);
+      assert.equal(board.castleStatus, U64('0x8100000000000081'));
     });
   });
 
@@ -418,19 +419,14 @@ describe('QueenBoard', function() {
 
 describe('KingBoard', function() {
   describe('#moves()', function() {
-    const boardWManyKingMoves = new Board();
-    boardWManyKingMoves.parseFenToBoard('1r3r2/p1pp3p/Pp1k2p1/3p1p2/5P1P/2K1P3/P1PP3P/R1B4R b - - 0 19');
-    const whiteKing = boardWManyKingMoves.pieceBoardList.K;
-    const blackKing = boardWManyKingMoves.pieceBoardList.k;
-    whiteKing.on(boardWManyKingMoves);
-    blackKing.on(boardWManyKingMoves);
-
-    // console.log(whiteKing.moves());
-    // console.log(whiteKing.moves().length);
-    // console.log(blackKing.moves());
-    // console.log(blackKing.moves().length);
-
     it('returns pseudo-legal moves (can leave king in check)', function() {
+      const boardWManyKingMoves = new Board();
+      boardWManyKingMoves.parseFenToBoard('1r3r2/p1pp3p/Pp1k2p1/3p1p2/5P1P/2K1P3/P1PP3P/R1B4R b - - 0 19');
+      const whiteKing = boardWManyKingMoves.pieceBoardList.K;
+      const blackKing = boardWManyKingMoves.pieceBoardList.k;
+      whiteKing.on(boardWManyKingMoves);
+      blackKing.on(boardWManyKingMoves);
+
       assert.equal(whiteKing.moves()[0].from, 18)
       assert.equal(whiteKing.moves()[0].to, 9)
       assert.equal(whiteKing.moves()[1].from, 18)
@@ -446,9 +442,19 @@ describe('KingBoard', function() {
       assert.equal(blackKing.moves().length, 5) 
     });
 
-    // it.skip('shows threats', function() {
+    it('can castle', function() {
+      const boardWCastles = new Board();
+      boardWCastles.parseFenToBoard('r3k2r/ppqbbppp/3p1n2/4p1B1/2B1P3/2N4P/PPPQ1PP1/R3K2R w KQkq - 1 11');
+      const whiteKing = boardWCastles.pieceBoardList.K;
+      const blackKing = boardWCastles.pieceBoardList.k;
+      whiteKing.on(boardWCastles);
+      blackKing.on(boardWCastles);
 
-    // });
+      assert.equal(whiteKing.moves()[0].castle, true)
+      assert.equal(whiteKing.moves()[3].castle, true)
+      assert.equal(blackKing.moves()[0].castle, true)
+      assert.equal(blackKing.moves()[3].castle, true)
+    })
   });
 });
 

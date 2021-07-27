@@ -173,32 +173,41 @@ class Direction {
 
   // ugly as hell. not sure yet how to improve it
   static castleCheck(kingBb, occupied, rookBb, castleStatus) {
+    let castlingMoves = U64(0);
     rookBb &= castleStatus;
     if (rookBb === U64(0)) {
-      return U64(0); 
+      return castlingMoves;
     }
-    let castlingMoves = U64(0);
-    let qsCastle = U64(0);
-    let ksCastle = U64(0);
+    
     const kingSq = BitHelper.bitScanFwd(kingBb);
-    const rightOfKingSq = kingSq + 1;
-    const leftOfKingSq = kingSq - 1;
-    const rightOfKing = BitHelper.getBit(occupied, rightOfKingSq);
-    const leftOfKing = BitHelper.getBit(occupied, leftOfKingSq);
     const rookSqs = SquareHelper.indicesFor(rookBb);
     rookSqs.forEach((rookSq) => {
-      const ksCastleRays = Ray.castlingNegRays(rookSq, occupied);
-      const qsCastleRays = Ray.castlingPosRays(rookSq, occupied);
-      const rookCanReachQs = BitHelper.bitScanRev(qsCastleRays)
-      const rookCanReachKs = BitHelper.bitScanFwd(ksCastleRays)
-      if (rookCanReachQs !== U64(0) || rookCanReachQs !== U64(63)) {
-        qsCastle |= BitHelper.setBit(U64(0), leftOfKingSq-1);
-      } 
-      if (rookCanReachKs !== U64(0) || rookCanReachKs !== U64(63)) {
-        ksCastle |= BitHelper.setBit(U64(0), rightOfKingSq+1);
-      }
+      castlingMoves |= this.canCastleQs(rookSq, occupied) ?
+        this.setQsCastleMove(kingSq) : U64(0);
+      castlingMoves |= this.canCastleKs(rookSq, occupied) ?
+        this.setKsCastleMove(kingSq) : U64(0);
     });
-    return (qsCastle | ksCastle);
+    return castlingMoves;
+  }
+
+  static setQsCastleMove(kingSq) {
+    return BitHelper.setBit(U64(0), kingSq-2);
+  }
+
+  static setKsCastleMove(kingSq) {
+    return BitHelper.setBit(U64(0), kingSq+2);
+  }
+
+  static canCastleKs(rookSq, occupied) {
+    const ksCastleRays = Ray.castlingNegRays(rookSq, occupied);
+    const rookCanReachKs = BitHelper.bitScanFwd(ksCastleRays);
+    return rookCanReachKs !== U64(0) || rookCanReachKs !== U64(63);
+  }
+
+  static canCastleQs(rookSq, occupied) {
+    const qsCastleRays = Ray.castlingPosRays(rookSq, occupied);
+    const rookCanReachQs = BitHelper.bitScanRev(qsCastleRays);
+    return rookCanReachQs !== U64(0) || rookCanReachQs !== U64(63)
   }
 }
 

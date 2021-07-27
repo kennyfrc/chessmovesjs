@@ -191,11 +191,11 @@ class Direction {
   }
 
   static setQsCastleMove(kingSq) {
-    return BitHelper.setBit(U64(0), kingSq-2);
+    return BitHelper.setBit(U64(0), kingSq+2);
   }
 
   static setKsCastleMove(kingSq) {
-    return BitHelper.setBit(U64(0), kingSq+2);
+    return BitHelper.setBit(U64(0), kingSq-2);
   }
 
   static canCastleKs(rookSq, occupied) {

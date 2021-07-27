@@ -2,7 +2,7 @@ const BitHelper = require('./helpers.js').BitHelper;
 const BoardHelper = require('./helpers.js').BoardHelper;
 const SquareHelper = require('./helpers.js').SquareHelper;
 const ViewHelper = require('./helpers.js').ViewHelper;
-const Direction = require('./move.js').Direction;
+const Direction = require('./attack.js').Direction;
 const MoveList = require('./move.js').MoveList;
 const U64 = require('./helpers.js').U64;
 

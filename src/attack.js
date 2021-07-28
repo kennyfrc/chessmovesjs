@@ -7,6 +7,39 @@ const U64Comp = require('./helpers.js').U64Comp;
 const U64Neg = require('./helpers.js').U64Neg;
 const Mask = require('./mask.js').Mask;
 
+class Attacks {
+  static for(fenPiece, sqBb, pieceBoard, epSqIdx, whiteBb, blackBb, whiteRookBb,
+    blackRookBb, castleStatus) {
+    const occupied = whiteBb | blackBb;
+    switch (fenPiece) {
+      case 'K':
+        return pieceBoard.attacksBb(sqBb, occupied, ~whiteBb, whiteRookBb, castleStatus);
+      case 'k':
+        return pieceBoard.attacksBb(sqBb, occupied, ~blackBb, blackRookBb, castleStatus);
+      case 'Q':
+        return pieceBoard.attacksBb(sqBb, occupied, ~whiteBb);
+      case 'q':
+        return pieceBoard.attacksBb(sqBb, occupied, ~blackBb);
+      case 'R':
+        return pieceBoard.attacksBb(sqBb, occupied, ~whiteBb);
+      case 'r':
+        return pieceBoard.attacksBb(sqBb, occupied, ~blackBb);
+      case 'B':
+        return pieceBoard.attacksBb(sqBb, occupied, ~whiteBb);
+      case 'b':
+        return pieceBoard.attacksBb(sqBb, occupied, ~blackBb);
+      case 'N':
+        return pieceBoard.attacksBb(sqBb, ~whiteBb);
+      case 'n':
+        return pieceBoard.attacksBb(sqBb, ~blackBb);
+      case 'P':
+        return pieceBoard.attacksBb(sqBb, epSqIdx, blackBb);
+      case 'p':
+        return pieceBoard.attacksBb(sqBb, epSqIdx, whiteBb);
+    }
+  }
+}
+
 class Ray {
   // basic board rays
   static rank(sq) {
@@ -214,4 +247,5 @@ class CastleRay {
 module.exports = {
   Ray: Ray,
   Direction, Direction,
+  Attacks: Attacks,
 }

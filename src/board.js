@@ -5,6 +5,7 @@ const PieceBoardList = require('./pieceboard.js').PieceBoardList;
 const ViewHelper = require('./helpers.js').ViewHelper;
 const SquareHelper = require('./helpers.js').SquareHelper;
 const U64 = require('./helpers.js').U64;
+const Attacks = require('./attack.js').Attacks;
 
 class Board {
   constructor() {
@@ -187,39 +188,6 @@ class Board {
 
   allPieces() {
     return ['K', 'Q', 'R', 'B', 'N', 'P', 'k', 'q', 'b', 'r', 'n', 'p'];
-  }
-}
-
-class Attacks {
-  static for(fenPiece, sqBb, pieceBoard, epSqIdx, whiteBb, blackBb, whiteRookBb,
-    blackRookBb, castleStatus) {
-    const occupied = whiteBb | blackBb;
-    switch (fenPiece) {
-      case 'K':
-        return pieceBoard.attacksBb(sqBb, occupied, ~whiteBb, whiteRookBb, castleStatus);
-      case 'k':
-        return pieceBoard.attacksBb(sqBb, occupied, ~blackBb, blackRookBb, castleStatus);
-      case 'Q':
-        return pieceBoard.attacksBb(sqBb, occupied, ~whiteBb);
-      case 'q':
-        return pieceBoard.attacksBb(sqBb, occupied, ~blackBb);
-      case 'R':
-        return pieceBoard.attacksBb(sqBb, occupied, ~whiteBb);
-      case 'r':
-        return pieceBoard.attacksBb(sqBb, occupied, ~blackBb);
-      case 'B':
-        return pieceBoard.attacksBb(sqBb, occupied, ~whiteBb);
-      case 'b':
-        return pieceBoard.attacksBb(sqBb, occupied, ~blackBb);
-      case 'N':
-        return pieceBoard.attacksBb(sqBb, ~whiteBb);
-      case 'n':
-        return pieceBoard.attacksBb(sqBb, ~blackBb);
-      case 'P':
-        return pieceBoard.attacksBb(sqBb, epSqIdx, blackBb);
-      case 'p':
-        return pieceBoard.attacksBb(sqBb, epSqIdx, whiteBb);
-    }
   }
 }
 

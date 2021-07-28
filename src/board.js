@@ -179,7 +179,7 @@ class Board {
       SquareHelper.indicesFor(piece.bb).forEach((sq) => {
         let bb = BitHelper.setBit(U64(0), sq);
         attacks |= Attacks.for(fenPiece, bb, piece, this.epSqIdx, this.whiteBb, this.blackBb,
-        this.whiteRookBb, this.blackRookBb, this.castleStatus);
+          this.whiteRookBb, this.blackRookBb, this.castleStatus);
       });
     });
     return (targetSq & attacks) === U64(0) ? false : true;

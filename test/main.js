@@ -55,6 +55,19 @@ describe('Board', function() {
       assert.equal(boardW3fmn.fullMoveNo, 3);
     });
   });
+
+  describe('attacksTo() & attackedByPiece()', function() {
+    const board = new Board();
+    board.parseFenToBoard('1n2kb1r/1bpp1ppp/3qpn1P/r6R/pp4P1/P1N1PQ2/1PPP1PB1/R1B1K1N1 w Qk - 1 11');
+
+    it('should return true if attacked', function() {
+      assert.equal(board.attacksTo(SquareHelper.for('d5')), true);    
+      assert.equal(board.attacksTo(SquareHelper.for('b8')), false);     
+      assert.equal(board.attacksTo(SquareHelper.for('g1')), false);
+    });
+
+    // TODO: add attackedbypiece?
+  });
 });
 
 // PieceBoard should return BigInts
@@ -146,8 +159,8 @@ describe('PawnBoard', function() {
       const blackPawn = boardBlkWep.pieceBoardList.p;
       blackPawn.on(boardBlkWep);
 
-      assert.equal(whitePawn.moves()[12].capture, true);
-      assert.equal(whitePawn.moves()[12].ep, true);
+      assert.equal(whitePawn.moves()[13].capture, true);
+      assert.equal(whitePawn.moves()[13].ep, true);
       assert.equal(blackPawn.moves()[0].capture, true);
       assert.equal(blackPawn.moves()[0].ep, true);
     });
@@ -457,6 +470,7 @@ describe('KingBoard', function() {
     })
   });
 });
+
 
 // describe('NullPieceBoard', function() {
 //   describe('#moves()', function() {

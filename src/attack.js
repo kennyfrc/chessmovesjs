@@ -162,34 +162,34 @@ class Direction {
         Ray.rookPosAttacks(sq, occupied)) & occupiable;
   }
 
-  static queenRays(pieceBb, occupied, occupiable) {
-    return this.rookRays(pieceBb, occupied, occupiable) | this.bishopRays(pieceBb, occupied, occupiable)
+  static queenRays(bb, occupied, occupiable) {
+    return this.rookRays(bb, occupied, occupiable) | this.bishopRays(bb, occupied, occupiable)
   }
 
-  static kingMoves(pieceBb, occupied, occupiable, rookBb, castleStatus) {
-    const castlingMoves = this.castleCheck(pieceBb, occupied, rookBb, castleStatus);
-    return (Mask.mooreNeighborhood(pieceBb) & occupiable) | castlingMoves;
+  static kingMoves(bb, occupied, occupiable, rookBb, castleStatus) {
+    const castlingMoves = this.castleCheck(bb, occupied, rookBb, castleStatus);
+    return (Mask.mooreNeighborhood(bb) & occupiable) | castlingMoves;
   }
 
-  // ugly as hell. not sure yet how to improve it
   static castleCheck(kingBb, occupied, rookBb, castleStatus) {
     let castlingMoves = U64(0);
     rookBb &= castleStatus;
     if (rookBb === U64(0)) {
       return castlingMoves;
     }
-    
     const kingSq = BitHelper.bitScanFwd(kingBb);
     const rookSqs = SquareHelper.indicesFor(rookBb);
     rookSqs.forEach((rookSq) => {
-      castlingMoves |= this.canCastleQs(rookSq, occupied) ?
-        this.setQsCastleMove(kingSq) : U64(0);
-      castlingMoves |= this.canCastleKs(rookSq, occupied) ?
-        this.setKsCastleMove(kingSq) : U64(0);
+      castlingMoves |= CastleRay.canCastleQs(rookSq, occupied) ?
+        CastleRay.setQsCastleMove(kingSq) : U64(0);
+      castlingMoves |= CastleRay.canCastleKs(rookSq, occupied) ?
+        CastleRay.setKsCastleMove(kingSq) : U64(0);
     });
     return castlingMoves;
   }
+}
 
+class CastleRay {
   static setQsCastleMove(kingSq) {
     return BitHelper.setBit(U64(0), kingSq+2);
   }

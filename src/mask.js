@@ -1,6 +1,7 @@
 const U64 = require('./helpers.js').U64;
 const U64Comp = require('./helpers.js').U64Comp;
 const U64Neg = require('./helpers.js').U64Neg;
+const ViewHelper = require('./helpers.js').ViewHelper;
 
 /**
  * Mask

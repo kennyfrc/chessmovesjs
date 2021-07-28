@@ -115,13 +115,22 @@ class WhitePawnBoard extends PieceBoard {
     return Direction.wSinglePush(pieceBb, this.emptySq);
   }
 
-  pawnAttacks(pieceBb) {
-    return Direction.wPawnAttacks(pieceBb) & (this.whiteBb | this.epSqBb);
+  // TODO: looks like a duplicate for pawns
+  // but all pieceboards will be abstracted later
+  attacks(pieceBb) {
+    return Direction.wPawnAttacks(pieceBb) & (this.blackBb | this.epSqBb);
   }
 
-  generateMoves(pieceBb) {    
+  attacksBb(pieceBb, epIdx, theirBb) {
+    this.blackBb = theirBb || this.blackBb;
+    this.epSqIdx = epIdx || this.epSqIdx;
+    this.epSqBb = this.epSqIdx === undefined ? U64(0) : BitHelper.setBit(U64(0), this.epSqIdx);
+    return this.attacks(pieceBb);
+  }
+
+  generateMoves(pieceBb) {
     this.moveBb = U64(0);
-    this.moveBb = this.canSinglePush(pieceBb) | this.pawnAttacks(pieceBb);
+    this.moveBb = this.canSinglePush(pieceBb) | this.attacksBb(pieceBb);
     if (this.atSecondRank(pieceBb)) {
       this.moveBb |= this.canDoublePush(pieceBb);
     } 
@@ -156,22 +165,26 @@ class BlackPawnBoard extends PieceBoard {
     return Direction.bSinglePush(pieceBb, this.emptySq);
   }
 
-  pawnAttacks(pieceBb) {
+  attacks(pieceBb) {
     return Direction.bPawnAttacks(pieceBb) & (this.whiteBb | this.epSqBb);
+  }
+
+  attacksBb(pieceBb, epIdx, theirBb) {
+    this.whiteBb = theirBb || this.whiteBb;
+    this.epSqIdx = epIdx || this.epSqIdx;
+    this.epSqBb = this.epSqIdx === undefined ? U64(0) : BitHelper.setBit(U64(0), this.epSqIdx);
+    return this.attacks(pieceBb);
   }
 
   generateMoves(pieceBb) {    
     this.moveBb = U64(0);
-    this.moveBb = this.canSinglePush(pieceBb) | this.pawnAttacks(pieceBb);
-    if (this.atSeventhRank(pieceBb)) {
-      this.moveBb |= this.canDoublePush(pieceBb);
-    } 
+    this.moveBb = this.canSinglePush(pieceBb) | this.attacksBb(pieceBb);
+    this.moveBb |= this.atSeventhRank(pieceBb) ? this.canDoublePush(pieceBb) : U64(0);
     return this.moveBb;
   }
 
   moves() {
     this.emptySq = ~this.mainBoardBb;
-    this.epSqBb = this.epSqIdx ? BitHelper.setBit(U64(0), this.epSqIdx) : U64(0);
     this.moveList = this.makeMoveList('p');
     return this.moveList;
   }
@@ -186,14 +199,13 @@ class WhiteKnightBoard extends PieceBoard {
     this.occupiable = U64(0);
   }
 
-  knightAttacks(pieceBb) {
-    return Direction.knightAttacks(pieceBb) & this.occupiable;
+  attacksBb(pieceBb, occupiable) {
+    return Direction.knightAttacks(pieceBb) & occupiable;
   }
 
   generateMoves(pieceBb) {
     this.moveBb = U64(0);
-    this.moveBb = this.knightAttacks(pieceBb);
-    
+    this.moveBb = this.attacksBb(pieceBb, this.occupiable);
     return this.moveBb;
   }
 
@@ -213,13 +225,13 @@ class BlackKnightBoard extends PieceBoard {
     this.occupiable = U64(0);
   }
 
-  knightAttacks(pieceBb) {
-    return Direction.knightAttacks(pieceBb) & this.occupiable;
+  attacksBb(pieceBb, occupiable) {
+    return Direction.knightAttacks(pieceBb) & occupiable;
   }
 
   generateMoves(pieceBb) {
     this.moveBb = U64(0);
-    this.moveBb = this.knightAttacks(pieceBb);
+    this.moveBb = this.attacksBb(pieceBb, this.occupiable);
     return this.moveBb;
   }
 
@@ -240,13 +252,13 @@ class WhiteBishopBoard extends PieceBoard {
     this.occupiable = U64(0);
   }
 
-  bishopAttacks(pieceBb, occupied, occupiable) {
+  attacksBb(pieceBb, occupied, occupiable) {
     return Direction.bishopRays(pieceBb, occupied, occupiable);
   }
 
   generateMoves(pieceBb) {
     this.moveBb = U64(0);
-    this.moveBb = this.bishopAttacks(pieceBb, this.occupied, this.occupiable);
+    this.moveBb = this.attacksBb(pieceBb, this.occupied, this.occupiable);
     return this.moveBb;
   }
 
@@ -268,13 +280,13 @@ class BlackBishopBoard extends PieceBoard {
     this.occupiable = U64(0);
   }
 
-  bishopAttacks(sq, occupied, occupiable) {
-    return Direction.bishopRays(sq, occupied, occupiable);
+  attacksBb(pieceBb, occupied, occupiable) {
+    return Direction.bishopRays(pieceBb, occupied, occupiable);
   }
 
   generateMoves(pieceBb) {
     this.moveBb = U64(0);
-    this.moveBb = this.bishopAttacks(pieceBb, this.occupied, this.occupiable);
+    this.moveBb = this.attacksBb(pieceBb, this.occupied, this.occupiable);
     return this.moveBb;
   }
 
@@ -296,13 +308,13 @@ class WhiteRookBoard extends PieceBoard {
     this.occupiable = U64(0);
   }
 
-  rookAttacks(sq, occupied, occupiable) {
-    return Direction.rookRays(sq, occupied, occupiable);
+  attacksBb(pieceBb, occupied, occupiable) {
+    return Direction.rookRays(pieceBb, occupied, occupiable);
   }
 
   generateMoves(pieceBb) {
     this.moveBb = U64(0);
-    this.moveBb = this.rookAttacks(pieceBb, this.occupied, this.occupiable);
+    this.moveBb = this.attacksBb(pieceBb, this.occupied, this.occupiable);
     return this.moveBb;
   }
 
@@ -323,13 +335,13 @@ class BlackRookBoard extends PieceBoard {
     this.occupiable = U64(0);
   }
 
-  rookAttacks(sq, occupied, occupiable) {
-    return Direction.rookRays(sq, occupied, occupiable);
+  attacksBb(pieceBb, occupied, occupiable) {
+    return Direction.rookRays(pieceBb, occupied, occupiable);
   }
 
   generateMoves(pieceBb) {
     this.moveBb = U64(0);
-    this.moveBb = this.rookAttacks(pieceBb, this.occupied, this.occupiable);
+    this.moveBb = this.attacksBb(pieceBb, this.occupied, this.occupiable);
     return this.moveBb;
   }
 
@@ -351,13 +363,13 @@ class WhiteQueenBoard extends PieceBoard {
     this.occupiable = U64(0);
   }
 
-  queenAttacks(sq, occupied, occupiable) {
-    return Direction.queenRays(sq, occupied, occupiable);
+  attacksBb(pieceBb, occupied, occupiable) {
+    return Direction.queenRays(pieceBb, occupied, occupiable);
   }
 
   generateMoves(pieceBb) {
     this.moveBb = U64(0);
-    this.moveBb = this.queenAttacks(pieceBb, this.occupied, this.occupiable);
+    this.moveBb = this.attacksBb(pieceBb, this.occupied, this.occupiable);
     return this.moveBb;
   }
 
@@ -379,13 +391,13 @@ class BlackQueenBoard extends PieceBoard {
     this.occupiable = U64(0);
   }
 
-  queenAttacks(sq, occupied, occupiable) {
-    return Direction.queenRays(sq, occupied, occupiable);
+  attacksBb(pieceBb, occupied, occupiable) {
+    return Direction.queenRays(pieceBb, occupied, occupiable);
   }
 
   generateMoves(pieceBb) {
     this.moveBb = U64(0);
-    this.moveBb = this.queenAttacks(pieceBb, this.occupied, this.occupiable);
+    this.moveBb = this.attacksBb(pieceBb, this.occupied, this.occupiable);
     return this.moveBb;
   }
 
@@ -408,13 +420,14 @@ class WhiteKingBoard extends PieceBoard {
     this.occupiable = U64(0);
   }
 
-  kingAttacks(pieceBb) {
-    return Direction.kingMoves(pieceBb, this.occupied, this.occupiable, this.whiteRookBb, this.castleStatus);
+  attacksBb(pieceBb, occupied, occupiable, myRookBb, castleStatus) {
+    return Direction.kingMoves(pieceBb, occupied, occupiable, myRookBb, castleStatus);
   }
 
   generateMoves(pieceBb) {
     this.moveBb = U64(0);    
-    this.moveBb = this.kingAttacks(pieceBb);
+    this.moveBb = this.attacksBb(pieceBb, this.occupied, this.occupiable,
+      this.whiteRookBb, this.castleStatus);
     return this.moveBb;
   }
 
@@ -436,13 +449,16 @@ class BlackKingBoard extends PieceBoard {
     this.occupiable = U64(0);
   }
 
-  kingAttacks(pieceBb, occupiable) {
-    return Direction.kingMoves(pieceBb, this.occupied, this.occupiable, this.whiteRookBb, this.castleStatus);
+  attacksBb(pieceBb, occupied, occupiable, myRookBb, castleStatus) {
+    // TODO: castling bug
+    // ViewHelper.display(Direction.kingMoves(pieceBb, occupied, occupiable, myRookBb, castleStatus))
+    return Direction.kingMoves(pieceBb, occupied, occupiable, myRookBb, castleStatus);
   }
 
   generateMoves(pieceBb) {
-    this.moveBb = U64(0);
-    this.moveBb = this.kingAttacks(pieceBb);
+    this.moveBb = U64(0);    
+    this.moveBb = this.attacksBb(pieceBb, this.occupied, this.occupiable,
+      this.blackRookBb, this.castleStatus);
     return this.moveBb;
   }
 

@@ -6,6 +6,7 @@ const ViewHelper = require('./helpers.js').ViewHelper;
 const SquareHelper = require('./helpers.js').SquareHelper;
 const U64 = require('./helpers.js').U64;
 const Attacks = require('./attack.js').Attacks;
+const Pieces = require('./pieces.js').Pieces;
 
 class Board {
   constructor() {
@@ -172,22 +173,18 @@ class Board {
     this.bb = this.whiteBb | this.blackBb;
   }
 
-  attacksTo(sq) {
+  attacksTo(sq, fromPieceOrSide) {
     const targetSq = BitHelper.setBit(U64(0), sq);
     let attacks = U64(0);
-    this.allPieces().forEach((fenPiece) => {
-      let piece = this.pieceBoardList[fenPiece];
-      SquareHelper.indicesFor(piece.bb).forEach((sq) => {
+    Pieces.for(fromPieceOrSide).forEach((fenPiece) => {
+      let pieceBoard = this.pieceBoardList[fenPiece];
+      SquareHelper.indicesFor(pieceBoard.bb).forEach((sq) => {
         let bb = BitHelper.setBit(U64(0), sq);
-        attacks |= Attacks.for(fenPiece, bb, piece, this.epSqIdx, this.whiteBb, this.blackBb,
+        attacks |= Attacks.for(fenPiece, bb, pieceBoard, this.epSqIdx, this.whiteBb, this.blackBb,
           this.whiteRookBb, this.blackRookBb, this.castleStatus);
       });
     });
     return (targetSq & attacks) === U64(0) ? false : true;
-  }
-
-  allPieces() {
-    return ['K', 'Q', 'R', 'B', 'N', 'P', 'k', 'q', 'b', 'r', 'n', 'p'];
   }
 }
 

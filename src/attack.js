@@ -212,9 +212,9 @@ class Direction {
     }
     const kingSq = BitHelper.bitScanFwd(kingBb);
     castlingMoves |= CastleRay.canCastleQs(kingSq, occupied, occupiable) ?
-      CastleRay.setKsCastleMove(kingSq) : U64(0);
-    castlingMoves |= CastleRay.canCastleKs(kingSq, occupied, occupiable) ?
       CastleRay.setQsCastleMove(kingSq) : U64(0);
+    castlingMoves |= CastleRay.canCastleKs(kingSq, occupied, occupiable) ?
+      CastleRay.setKsCastleMove(kingSq) : U64(0);
     return castlingMoves;
   }
 }

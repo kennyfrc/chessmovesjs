@@ -200,20 +200,20 @@ class Direction {
   }
 
   static kingMoves(bb, occupied, occupiable, rookBb, castleStatus) {
-    const castlingMoves = this.castleCheck(bb, occupied, rookBb, castleStatus);
+    const castlingMoves = this.castleCheck(bb, occupied, occupiable, rookBb, castleStatus);
     return (Mask.mooreNeighborhood(bb) | castlingMoves) & occupiable;
   }
 
-  static castleCheck(kingBb, occupied, rookBb, castleStatus) {
+  static castleCheck(kingBb, occupied, occupiable, rookBb, castleStatus) {
     let castlingMoves = U64(0);
     rookBb &= castleStatus;
     if (rookBb === U64(0)) {
       return castlingMoves;
     }
     const kingSq = BitHelper.bitScanFwd(kingBb);
-    castlingMoves |= CastleRay.canCastleQs(kingSq, occupied) ?
+    castlingMoves |= CastleRay.canCastleQs(kingSq, occupied, occupiable) ?
       CastleRay.setKsCastleMove(kingSq) : U64(0);
-    castlingMoves |= CastleRay.canCastleKs(kingSq, occupied) ?
+    castlingMoves |= CastleRay.canCastleKs(kingSq, occupied, occupiable) ?
       CastleRay.setQsCastleMove(kingSq) : U64(0);
     return castlingMoves;
   }
@@ -228,14 +228,14 @@ class CastleRay {
     return BitHelper.setBit(U64(0), kingSq-2);
   }
 
-  static canCastleKs(kingSq, occupied) {
-    let ksCastleRays = Ray.castlingPosRays(kingSq, occupied) & ~occupied;
+  static canCastleKs(kingSq, occupied, occupiable) {
+    let ksCastleRays = Ray.castlingPosRays(kingSq, occupied) & occupiable;
     const kingCanReachKsSq = BitHelper.bitScanRev(ksCastleRays);
     return kingCanReachKsSq === 62 || kingCanReachKsSq === 6;
   }
 
-  static canCastleQs(kingSq, occupied) {
-    let qsCastleRays = Ray.castlingNegRays(kingSq, occupied) & ~occupied;
+  static canCastleQs(kingSq, occupied, occupiable) {
+    let qsCastleRays = Ray.castlingNegRays(kingSq, occupied) & occupiable;
     const kingCanReachQsSq = BitHelper.bitScanFwd(qsCastleRays);
     return kingCanReachQsSq === 57 || kingCanReachQsSq === 1;
   }

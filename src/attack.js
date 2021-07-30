@@ -230,14 +230,14 @@ class CastleRay {
 
   static canCastleKs(kingSq, occupied, occupiable) {
     let ksCastleRays = Ray.castlingPosRays(kingSq, occupied) & occupiable;
-    const kingCanReachKsSq = BitHelper.bitScanRev(ksCastleRays);
-    return kingCanReachKsSq === 62 || kingCanReachKsSq === 6;
+    const kingCanSeeKsSq = BitHelper.bitScanRev(ksCastleRays);
+    return kingCanSeeKsSq === 62 || kingCanSeeKsSq === 6;
   }
 
   static canCastleQs(kingSq, occupied, occupiable) {
     let qsCastleRays = Ray.castlingNegRays(kingSq, occupied) & occupiable;
-    const kingCanReachQsSq = BitHelper.bitScanFwd(qsCastleRays);
-    return kingCanReachQsSq === 57 || kingCanReachQsSq === 1;
+    const kingCanSeeQsSq = BitHelper.bitScanFwd(qsCastleRays);
+    return kingCanSeeQsSq === 57 || kingCanSeeQsSq === 1;
   }
 }
 

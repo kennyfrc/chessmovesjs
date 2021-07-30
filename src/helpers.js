@@ -152,6 +152,22 @@ class BoardHelper {
   static darkSq() {
     return U64('0xAA55AA55AA55AA55');
   }
+
+  static blackKsSqs() {
+    return U64('0x6000000000000000');
+  }
+
+  static blackQsSqs() {
+    return U64('0xE00000000000000');
+  }
+
+  static whiteQsSqs() {
+    return U64('0xE');
+  }
+
+  static whiteKsSqs() {
+    return U64('0x60');
+  }
 }
 
 class ViewHelper {

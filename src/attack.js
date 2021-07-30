@@ -201,7 +201,7 @@ class Direction {
 
   static kingMoves(bb, occupied, occupiable, rookBb, castleStatus) {
     const castlingMoves = this.castleCheck(bb, occupied, rookBb, castleStatus);
-    return (Mask.mooreNeighborhood(bb) & occupiable) | castlingMoves;
+    return (Mask.mooreNeighborhood(bb) | castlingMoves) & occupiable;
   }
 
   static castleCheck(kingBb, occupied, rookBb, castleStatus) {
@@ -211,13 +211,10 @@ class Direction {
       return castlingMoves;
     }
     const kingSq = BitHelper.bitScanFwd(kingBb);
-    const rookSqs = SquareHelper.indicesFor(rookBb);
-    rookSqs.forEach((rookSq) => {
-      castlingMoves |= CastleRay.canCastleQs(rookSq, occupied) ?
-        CastleRay.setQsCastleMove(kingSq) : U64(0);
-      castlingMoves |= CastleRay.canCastleKs(rookSq, occupied) ?
-        CastleRay.setKsCastleMove(kingSq) : U64(0);
-    });
+    castlingMoves |= CastleRay.canCastleQs(kingSq, occupied) ?
+      CastleRay.setKsCastleMove(kingSq) : U64(0);
+    castlingMoves |= CastleRay.canCastleKs(kingSq, occupied) ?
+      CastleRay.setQsCastleMove(kingSq) : U64(0);
     return castlingMoves;
   }
 }
@@ -231,16 +228,16 @@ class CastleRay {
     return BitHelper.setBit(U64(0), kingSq-2);
   }
 
-  static canCastleKs(rookSq, occupied) {
-    const ksCastleRays = Ray.castlingNegRays(rookSq, occupied);
-    const rookCanReachKs = BitHelper.bitScanFwd(ksCastleRays);
-    return rookCanReachKs !== U64(0) || rookCanReachKs !== U64(63);
+  static canCastleKs(kingSq, occupied) {
+    let ksCastleRays = Ray.castlingPosRays(kingSq, occupied) & ~occupied;
+    const kingCanReachKsSq = BitHelper.bitScanRev(ksCastleRays);
+    return kingCanReachKsSq === 62 || kingCanReachKsSq === 6;
   }
 
-  static canCastleQs(rookSq, occupied) {
-    const qsCastleRays = Ray.castlingPosRays(rookSq, occupied);
-    const rookCanReachQs = BitHelper.bitScanRev(qsCastleRays);
-    return rookCanReachQs !== U64(0) || rookCanReachQs !== U64(63)
+  static canCastleQs(kingSq, occupied) {
+    let qsCastleRays = Ray.castlingNegRays(kingSq, occupied) & ~occupied;
+    const kingCanReachQsSq = BitHelper.bitScanFwd(qsCastleRays);
+    return kingCanReachQsSq === 57 || kingCanReachQsSq === 1;
   }
 }
 

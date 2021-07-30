@@ -4,7 +4,7 @@ const BoardView = require('../src/boardview.js').BoardView;
 const SquareHelper = require('../src/helpers.js').SquareHelper;
 const U64 = require('../src/helpers.js').U64;
 // const PieceBoard = require('../src/board.js').PieceBoard;
-// const ViewHelper = require('../src/pieceboard.js').ViewHelper;
+const ViewHelper = require('../src/helpers.js').ViewHelper;
 
 const board = new Board();
 board.parseFenToBoard('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'); // eslint-disable-line
@@ -68,6 +68,16 @@ describe('Board', function() {
 
     // TODO: add attackedbypiece?
   });
+
+  // describe('king shouldnt be able to castle', function() {
+  //   it('cant castle', function() {
+  //     const board = new Board();
+  //     board.parseFenToBoard('r2qkb1r/p1ppnppp/bpn1p3/8/5P2/4PNP1/PPPP2BP/RNBQK2R w KQkq - 3 6');
+  //     // ViewHelper.display(board.movesFor('k'), 'blackkingmoves')
+
+  //     assert.equal(true, false)
+  //   })
+  // })
 });
 
 // PieceBoard should return BigInts
@@ -76,7 +86,7 @@ describe('PieceBoard', function() {
   describe('.bb', function() {
     it('returns the correct bigint', function() {
       const boardWRooksAtCorner = new Board();
-      boardWRooksAtCorner.parseFenToBoard('r1bqk1nr/pppp1ppp/2n5/2b1p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq');
+      boardWRooksAtCorner.parseFenToBoard('r2qkb1r/p1ppnppp/bpn1p3/8/5P2/4PNP1/PPPP2BP/RNBQK2R w KQkq - 3 6');
       assert.equal(boardWRooksAtCorner.pieceBoardList.r.bb, 9295429630892703744n);
       assert.equal(boardWRooksAtCorner.pieceBoardList.R.bb, 129n);
     });
@@ -462,6 +472,8 @@ describe('KingBoard', function() {
       const blackKing = boardWCastles.pieceBoardList.k;
       whiteKing.on(boardWCastles);
       blackKing.on(boardWCastles);
+
+      // console.log(blackKing.moves())
 
       assert.equal(whiteKing.moves()[0].castle, true)
       assert.equal(whiteKing.moves()[3].castle, true)

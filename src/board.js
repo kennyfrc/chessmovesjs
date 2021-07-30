@@ -173,17 +173,22 @@ class Board {
     this.bb = this.whiteBb | this.blackBb;
   }
 
-  attacksTo(sq, fromPieceOrSide) {
-    const targetSq = BitHelper.setBit(U64(0), sq);
-    let attacks = U64(0);
-    Pieces.for(fromPieceOrSide).forEach((fenPiece) => {
+  movesBy(pieceOrSide) {
+    let moves = U64(0);
+    Pieces.for(pieceOrSide).forEach((fenPiece) => {
       let pieceBoard = this.pieceBoardList[fenPiece];
       SquareHelper.indicesFor(pieceBoard.bb).forEach((sq) => {
         let bb = BitHelper.setBit(U64(0), sq);
-        attacks |= Attacks.for(fenPiece, bb, pieceBoard, this.epSqIdx, this.whiteBb, this.blackBb,
+        moves |= Attacks.for(fenPiece, bb, pieceBoard, this.epSqIdx, this.whiteBb, this.blackBb,
           this.whiteRookBb, this.blackRookBb, this.castleStatus);
       });
     });
+    return moves;
+  }
+
+  attacksTo(sq, pieceOrSide) {
+    const targetSq = BitHelper.setBit(U64(0), sq);
+    const attacks = this.movesBy(pieceOrSide);
     return (targetSq & attacks) === U64(0) ? false : true;
   }
 }

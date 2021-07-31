@@ -56,50 +56,46 @@ class WhitePawnBoard extends PieceBoard {
   constructor(bb) {
     super();
     this.bb = bb;
-    this.moveList = [];
-    this.moveBb = U64(0);
-    this.emptySq = U64(0);
   }
 
   atSecondRank(pieceBb) {
     return pieceBb & BoardHelper.secondRank();
   }
 
-  canDoublePush(pieceBb, emptySq) {
-    emptySq = emptySq;
-    return Direction.wDoublePush(pieceBb, emptySq);
+  canDoublePush(pieceBb) {
+    return Direction.wDoublePush(pieceBb, this.emptySq);
   }
 
-  canSinglePush(pieceBb, emptySq) {
-    emptySq = emptySq;
-    return Direction.wSinglePush(pieceBb, emptySq);
+  canSinglePush(pieceBb) {
+    return Direction.wSinglePush(pieceBb, this.emptySq);
   }
 
-  // TODO: looks like a duplicate for pawns
-  // but all pieceboards will be abstracted later
-  attacks(pieceBb, blackBb, epSqBb) {
-    blackBb = blackBb;
-    epSqBb = epSqBb;
-    return Direction.wPawnAttacks(pieceBb) & (blackBb | epSqBb);
+  pawnAttacks(pieceBb) {
+    return Direction.wPawnAttacks(pieceBb) & (this.blackBb | this.epSqBb);
   }
 
-  attacksBb(pieceBb, epIdx, theirBb, mainBoardBb, theirKingBb, theirMinorBb,
-    theirMajorBb) {
-    this.blackBb = theirBb;
-    this.epSqIdx = epIdx;
-    this.mainBoardBb = mainBoardBb;
-
-    this.emptySq = ~this.mainBoardBb;
-
-    this.blackKingBb = theirKingBb;
-    this.blackMinorBb = theirMinorBb;
-    this.blackMajorBb = theirMajorBb;
+  setContext(board) {
+    this.blackBb = board.blackBb;
+    this.mainBoardBb = board.bb;
+    this.emptySq = ~board.bb;
+    this.blackKingBb = board.blackKingBb;
+    this.blackMinorBb = board.blackMinorBb;
+    this.blackMajorBb = board.blackMajorBb;
+    this.epSqIdx = board.epSqIdx;
     this.epSqBb = this.epSqIdx === undefined ? U64(0) : BitHelper.setBit(U64(0), this.epSqIdx);
+  }
 
-    const singlePushBb = this.canSinglePush(pieceBb, this.emptySq);
-    const attacks = this.attacks(pieceBb, this.blackBb, this.epSqBb)
-    const doublePushBb = this.atSecondRank(pieceBb) ? this.canDoublePush(pieceBb, this.emptySq) : U64(0);
-    return singlePushBb | attacks | doublePushBb;
+  initialMoves(pieceBb) {
+    return this.canSinglePush(pieceBb) | this.pawnAttacks(pieceBb);
+  }
+
+  doublePushMoves(pieceBb) {
+    return this.atSecondRank(pieceBb) ? this.canDoublePush(pieceBb) : U64(0);
+  }
+
+  attacks(pieceBb, board) {
+    this.setContext(board);
+    return this.initialMoves(pieceBb) | this.doublePushMoves(pieceBb);
   }
 }
 
@@ -107,49 +103,46 @@ class BlackPawnBoard extends PieceBoard {
   constructor(bb) {
     super();
     this.bb = bb;
-    this.moveList = [];
-    this.moveBb = U64(0);
-    this.emptySq = U64(0);
   }
 
   atSeventhRank(pieceBb) {
     return pieceBb & BoardHelper.seventhRank();
   }
 
-  canDoublePush(pieceBb, emptySq) {
-    emptySq = emptySq;
-    return Direction.bDoublePush(pieceBb, emptySq);
+  canDoublePush(pieceBb) {
+    return Direction.bDoublePush(pieceBb, this.emptySq);
   }
 
-  canSinglePush(pieceBb, emptySq) {
-    emptySq = emptySq;
-    return Direction.bSinglePush(pieceBb, emptySq);
+  canSinglePush(pieceBb) {
+    return Direction.bSinglePush(pieceBb, this.emptySq);
   }
 
-  attacks(pieceBb, whiteBb, epSqBb) {
-    whiteBb = whiteBb;
-    epSqBb = epSqBb;
-    return Direction.bPawnAttacks(pieceBb) & (whiteBb | epSqBb);
+  pawnAttacks(pieceBb) {
+    return Direction.bPawnAttacks(pieceBb) & (this.whiteBb | this.epSqBb);
   }
 
-  attacksBb(pieceBb, epIdx, theirBb, mainBoardBb, theirKingBb, theirMinorBb,
-    theirMajorBb) {
-    this.whiteBb = theirBb;
-    this.epSqIdx = epIdx;
-    this.mainBoardBb = mainBoardBb;
-
-    this.emptySq = U64(~this.mainBoardBb);
-
-    this.whiteKingBb = theirKingBb;
-    this.whiteMinorBb = theirMinorBb;
-    this.whiteMajorBb = theirMajorBb;
-
+  setContext(board) {
+    this.whiteBb = board.whiteBb;
+    this.mainBoardBb = board.bb;
+    this.emptySq = ~board.bb;
+    this.whiteKingBb = board.whiteKingBb;
+    this.whiteMinorBb = board.whiteMinorBb;
+    this.whiteMajorBb = board.whiteMajorBb;
+    this.epSqIdx = board.epSqIdx;
     this.epSqBb = this.epSqIdx === undefined ? U64(0) : BitHelper.setBit(U64(0), this.epSqIdx);
+  }
 
-    const singlePushBb = this.canSinglePush(pieceBb, this.emptySq);
-    const attacks = this.attacks(pieceBb, this.whiteBb, this.epSqBb);
-    const doublePushBb = this.atSeventhRank(pieceBb) ? this.canDoublePush(pieceBb, this.emptySq) : U64(0);
-    return singlePushBb | attacks | doublePushBb;
+  initialMoves(pieceBb) {
+    return this.canSinglePush(pieceBb) | this.pawnAttacks(pieceBb);
+  }
+
+  doublePushMoves(pieceBb) {
+    return this.atSeventhRank(pieceBb) ? this.canDoublePush(pieceBb) : U64(0);
+  }
+
+  attacks(pieceBb, board) {
+    this.setContext(board);
+    return this.initialMoves(pieceBb) | this.doublePushMoves(pieceBb);
   }
 }
 
@@ -157,18 +150,18 @@ class WhiteKnightBoard extends PieceBoard {
   constructor(bb) {
     super();
     this.bb = bb;
-    this.moveList = [];
-    this.moveBb = U64(0);
-    this.occupiable = U64(0);
   }
 
-  attacksBb(pieceBb, occupiable, blackKingBb, blackMajorBb, blackBb) {
-    this.blackKingBb = blackKingBb;
-    this.blackMajorBb = blackMajorBb;
-    this.blackBb = blackBb;
-    this.occupiable = occupiable;
+  setContext(board) {
+    this.blackKingBb = board.blackKingBb;
+    this.blackMajorBb = board.blackMajorBb;
+    this.blackBb = board.blackBb;
+    this.occupiable = ~board.whiteBb;
+  }
 
-    return Direction.knightAttacks(pieceBb) & occupiable;
+  attacks(pieceBb, board) {
+    this.setContext(board);
+    return Direction.knightAttacks(pieceBb) & this.occupiable;
   }
 }
 
@@ -176,18 +169,18 @@ class BlackKnightBoard extends PieceBoard {
   constructor(bb) {
     super();
     this.bb = bb;
-    this.moveList = [];
-    this.moveBb = U64(0);
-    this.occupiable = U64(0);
   }
 
-  attacksBb(pieceBb, occupiable, whiteKingBb, whiteMajorBb, whiteBb) {
-    this.whiteKingBb = whiteKingBb;
-    this.whiteMajorBb = whiteMajorBb;
-    this.whiteBb = whiteBb;
-    this.occupiable = occupiable;
+  setContext(board) {
+    this.whiteKingBb = board.whiteKingBb;
+    this.whiteMajorBb = board.whiteMajorBb;
+    this.whiteBb = board.whiteBb;
+    this.occupiable = ~board.blackBb;
+  }
 
-    return Direction.knightAttacks(pieceBb) & occupiable;
+  attacks(pieceBb, board) {
+    this.setContext(board);
+    return Direction.knightAttacks(pieceBb) & this.occupiable;
   }
 }
 
@@ -195,20 +188,19 @@ class WhiteBishopBoard extends PieceBoard {
   constructor(bb) {
     super();
     this.bb = bb;
-    this.moveList = [];
-    this.moveBb = U64(0);
-    this.occupied = U64(0);
-    this.occupiable = U64(0);
   }
 
-  attacksBb(pieceBb, occupied, occupiable, blackKingBb, blackMajorBb, blackBb) {
-    this.blackKingBb = blackKingBb || this.blackKingBb;
-    this.blackMajorBb = blackMajorBb || this.blackMajorBb;
-    this.blackBb = blackBb || this.blackBb;
-    this.occupied = occupied;
-    this.occupiable = occupiable;
+  setContext(board) {
+    this.blackKingBb = board.blackKingBb;
+    this.blackMajorBb = board.blackMajorBb;
+    this.blackBb = board.blackBb;
+    this.occupied = board.bb;
+    this.occupiable = ~board.whiteBb;
+  }
 
-    return Direction.bishopRays(pieceBb, occupied, occupiable);
+  attacks(pieceBb, board) {
+    this.setContext(board);
+    return Direction.bishopRays(pieceBb, this.occupied, this.occupiable);
   }
 }
 
@@ -216,20 +208,19 @@ class BlackBishopBoard extends PieceBoard {
   constructor(bb) {
     super();
     this.bb = bb;
-    this.moveList = [];
-    this.moveBb = U64(0);
-    this.occupied = U64(0);
-    this.occupiable = U64(0);
   }
 
-  attacksBb(pieceBb, occupied, occupiable, whiteKingBb, whiteMajorBb, whiteBb) {
-    this.whiteKingBb = whiteKingBb || this.whiteKingBb;
-    this.whiteMajorBb = whiteMajorBb || this.whiteMajorBb;
-    this.whiteBb = whiteBb || this.whiteBb;
-    this.occupied = occupied;
-    this.occupiable = occupiable;
+  setContext(board) {
+    this.whiteKingBb = board.whiteKingBb;
+    this.whiteMajorBb = board.whiteMajorBb;
+    this.whiteBb = board.whiteBb;
+    this.occupied = board.bb;
+    this.occupiable = ~board.blackBb;
+  }
 
-    return Direction.bishopRays(pieceBb, occupied, occupiable);
+  attacks(pieceBb, board) {
+    this.setContext(board);
+    return Direction.bishopRays(pieceBb, this.occupied, this.occupiable);
   }
 }
 
@@ -237,19 +228,19 @@ class WhiteRookBoard extends PieceBoard {
   constructor(bb) {
     super();
     this.bb = bb;
-    this.moveList = [];
-    this.moveBb = U64(0);
-    this.occupied = U64(0);
-    this.occupiable = U64(0);
   }
 
-  attacksBb(pieceBb, occupied, occupiable, blackKingBb, blackQueenBb, blackBb) {
-    this.blackKingBb = blackKingBb;
-    this.blackQueenBb = blackQueenBb;
-    this.blackBb = blackBb;
-    this.occupied = occupied;
-    this.occupiable = occupiable;
-    return Direction.rookRays(pieceBb, occupied, occupiable);
+  setContext(board) {
+    this.blackKingBb = board.blackKingBb;
+    this.blackQueenBb = board.blackQueenBb;
+    this.blackBb = board.blackBb;
+    this.occupied = board.bb;
+    this.occupiable = ~board.whiteBb;
+  }
+
+  attacks(pieceBb, board) {
+    this.setContext(board);
+    return Direction.rookRays(pieceBb, this.occupied, this.occupiable);
   }
 }
 
@@ -257,18 +248,19 @@ class BlackRookBoard extends PieceBoard {
   constructor(bb) {
     super();
     this.bb = bb;
-    this.moveBb = U64(0);
-    this.occupied = U64(0);
-    this.occupiable = U64(0);
   }
 
-  attacksBb(pieceBb, occupied, occupiable, whiteKingBb, whiteQueenBb, whiteBb) {
-    this.whiteKingBb = whiteKingBb;
-    this.whiteQueenBb = whiteQueenBb;
-    this.whiteBb = whiteBb;
-    this.occupied = occupied;
-    this.occupiable = occupiable;
-    return Direction.rookRays(pieceBb, occupied, occupiable);
+  setContext(board) {
+    this.whiteKingBb = board.whiteKingBb;
+    this.whiteQueenBb = board.whiteQueenBb;
+    this.whiteBb = board.whiteBb;
+    this.occupied = board.bb;
+    this.occupiable = ~board.blackBb;
+  }
+
+  attacks(pieceBb, board) {
+    this.setContext(board);
+    return Direction.rookRays(pieceBb, this.occupied, this.occupiable);
   }
 }
 
@@ -276,19 +268,18 @@ class WhiteQueenBoard extends PieceBoard {
   constructor(bb) {
     super();
     this.bb = bb;
-    this.moveList = [];
-    this.moveBb = U64(0);
-    this.occupied = U64(0);
-    this.occupiable = U64(0);
   }
 
-  attacksBb(pieceBb, occupied, occupiable, blackKingBb, blackBb) {
-    this.occupied = occupied || this.occupied;
-    this.occupiable  = occupiable || this.occupiable;
-    this.blackKingBb = blackKingBb || this.blackKingBb;
-    this.blackBb = blackBb || this.blackBb;
+  setContext(board) {
+    this.occupied = board.bb;
+    this.occupiable  = ~board.whiteBb;
+    this.blackKingBb = board.blackKingBb;
+    this.blackBb = board.blackBb;
+  }
 
-    return Direction.queenRays(pieceBb, occupied, occupiable);
+  attacks(pieceBb, board) {
+    this.setContext(board);
+    return Direction.queenRays(pieceBb, this.occupied, this.occupiable);
   }
 }
 
@@ -296,19 +287,18 @@ class BlackQueenBoard extends PieceBoard {
   constructor(bb) {
     super();
     this.bb = bb;
-    this.moveList = [];
-    this.moveBb = U64(0);
-    this.occupied = U64(0);
-    this.occupiable = U64(0);
   }
 
-  attacksBb(pieceBb, occupied, occupiable, whiteKingBb, whiteBb) {
-    this.occupied = occupied || this.occupied;
-    this.occupiable  = occupiable || this.occupiable;
-    this.whiteKingBb = whiteKingBb || this.whiteKingBb;
-    this.whiteBb = whiteBb || this.whiteBb;
+  setContext(board) {
+    this.occupied = board.bb;
+    this.occupiable  = ~board.blackBb;
+    this.whiteKingBb = board.whiteKingBb;
+    this.whiteBb = board.whiteBb;
+  }
 
-    return Direction.queenRays(pieceBb, occupied, occupiable);
+  attacks(pieceBb, board) {
+    this.setContext(board);
+    return Direction.queenRays(pieceBb, this.occupied, this.occupiable);
   }
 }
 
@@ -317,15 +307,20 @@ class WhiteKingBoard extends PieceBoard {
   constructor(bb) {
     super();
     this.bb = bb;
-    this.moveList = [];
-    this.moveBb = U64(0);
-    this.occupied = U64(0);
-    this.occupiable = U64(0);
   }
 
-  attacksBb(pieceBb, occupied, occupiable, myRookBb, castleStatus, blackBb) {
-    this.blackBb = blackBb || this.blackBb;
-    return Direction.kingMoves(pieceBb, occupied, occupiable, myRookBb, castleStatus);
+  setContext(board) {
+    this.blackBb = board.blackBb;
+    this.occupied = board.bb;
+    this.occupiable = ~board.whiteBb;
+    this.whiteRookBb = board.whiteRookBb;
+    this.castleStatus = board.castleStatus;
+  }
+
+  attacks(pieceBb, board) {
+    this.setContext(board);
+    return Direction.kingMoves(pieceBb, this.occupied, this.occupiable, 
+        this.whiteRookBb, this.castleStatus);
   }
 }
 
@@ -333,15 +328,20 @@ class BlackKingBoard extends PieceBoard {
   constructor(bb) {
     super();
     this.bb = bb;
-    this.moveList = [];
-    this.moveBb = U64(0);
-    this.occupied = U64(0);
-    this.occupiable = U64(0);
   }
 
-  attacksBb(pieceBb, occupied, occupiable, myRookBb, castleStatus, whiteBb) {
-    this.whiteBb = whiteBb || this.whiteBb;
-    return Direction.kingMoves(pieceBb, occupied, occupiable, myRookBb, castleStatus);
+  setContext(board) {
+    this.whiteBb = board.whiteBb;
+    this.occupied = board.bb;
+    this.occupiable = ~board.blackBb;
+    this.blackRookBb = board.blackRookBb;
+    this.castleStatus = board.castleStatus;
+  }
+
+  attacks(pieceBb, board) {
+    this.setContext(board);
+    return Direction.kingMoves(pieceBb, this.occupied, this.occupiable, 
+      this.blackRookBb, this.castleStatus);
   }
 }
 

@@ -5,7 +5,6 @@ const PieceBoardList = require('./pieceboard.js').PieceBoardList;
 const ViewHelper = require('./helpers.js').ViewHelper;
 const SquareHelper = require('./helpers.js').SquareHelper;
 const U64 = require('./helpers.js').U64;
-const Attacks = require('./attack.js').Attacks;
 const Pieces = require('./pieces.js').Pieces;
 const MoveList = require('./move.js').MoveList;
 
@@ -135,10 +134,8 @@ class Board {
       for (const [piece, pboard] of Object.entries(this.pieceBoardList)) {
         const bit = BitHelper.getBit(pboard.bb, sq);
         const invertedBit = BitHelper.getBit(pboard.bb, sq ^ 56);
-
         pboard.bb = BitHelper.updateBit(pboard.bb, sq, invertedBit);
         pboard.bb = BitHelper.updateBit(pboard.bb, sq ^ 56, bit);
-
         this.pieceBoardList[piece] = pboard;
       }
     }
@@ -180,36 +177,28 @@ class Board {
       let pieceBoard = this.pieceBoardList[fenPiece];
       SquareHelper.indicesFor(pieceBoard.bb).forEach((sq) => {
         let bb = BitHelper.setBit(U64(0), sq);
-        moves |= Attacks.for(fenPiece, bb, pieceBoard, this.epSqIdx, this.whiteBb, this.blackBb,
-          this.whiteRookBb, this.blackRookBb, this.castleStatus, this.bb, this.whiteKingBb,
-          this.blackKingBb, this.whiteMinorBb, this.blackMinorBb, this.whiteMajorBb,
-          this.blackMajorBb);
+        moves |= pieceBoard.attacks(bb, this);
       });
     });
     return moves;
-  }
-
-  moves(fenPiece) {
-    const attacks = this.movesBb(fenPiece);
-    const pieceBoard = this.pieceBoardList[fenPiece];
-
-    const moveList = [];
-    SquareHelper.indicesFor(pieceBoard.bb).forEach((fromIdx) => {
-      const pieceBb = BitHelper.setBit(U64(0), fromIdx);
-      const toIdxs = SquareHelper.indicesFor(Attacks.for(fenPiece, pieceBb, pieceBoard, this.epSqIdx, this.whiteBb, this.blackBb,
-          this.whiteRookBb, this.blackRookBb, this.castleStatus, this.bb, this.whiteKingBb,
-          this.blackKingBb, this.whiteMinorBb, this.blackMinorBb, this.whiteMajorBb,
-          this.blackMajorBb, this.whiteQueenBb, this.blackQueenBb));
-      moveList.push(MoveList.for(fenPiece, fromIdx, toIdxs, pieceBoard));
-    });
-
-    return moveList.flat();
   }
 
   attacksTo(sq, byPieceOrSide) {
     const targetSq = BitHelper.setBit(U64(0), sq);
     const attacks = this.movesBb(byPieceOrSide);
     return (targetSq & attacks) === U64(0) ? false : true;
+  }
+
+  moves(fenPiece) {
+    const attacks = this.movesBb(fenPiece);
+    const pieceBoard = this.pieceBoardList[fenPiece];
+    const moveList = [];
+    SquareHelper.indicesFor(pieceBoard.bb).forEach((fromIdx) => {
+      const pieceBb = BitHelper.setBit(U64(0), fromIdx);
+      const toIdxs = SquareHelper.indicesFor(pieceBoard.attacks(pieceBb, this));
+      moveList.push(MoveList.for(fenPiece, fromIdx, toIdxs, pieceBoard));
+    });
+    return moveList.flat();
   }
 }
 

@@ -9,33 +9,36 @@ const Mask = require('./mask.js').Mask;
 
 class Attacks {
   static for(fenPiece, sqBb, pieceBoard, epSqIdx, whiteBb, blackBb, whiteRookBb,
-    blackRookBb, castleStatus) {
+    blackRookBb, castleStatus, mainBoardBb, whiteKingBb, blackKingBb, whiteMinorBb,
+    blackMinorBb, whiteMajorBb, blackMajorBb, whiteQueenBb, blackQueenBb) {
     const occupied = whiteBb | blackBb;
     switch (fenPiece) {
       case 'K':
-        return pieceBoard.attacksBb(sqBb, occupied, ~whiteBb, whiteRookBb, castleStatus);
+        return pieceBoard.attacksBb(sqBb, occupied, ~whiteBb, whiteRookBb, castleStatus, blackBb);
       case 'k':
-        return pieceBoard.attacksBb(sqBb, occupied, ~blackBb, blackRookBb, castleStatus);
+        return pieceBoard.attacksBb(sqBb, occupied, ~blackBb, blackRookBb, castleStatus, whiteBb);
       case 'Q':
-        return pieceBoard.attacksBb(sqBb, occupied, ~whiteBb);
+        return pieceBoard.attacksBb(sqBb, occupied, ~whiteBb, blackKingBb, blackBb);
       case 'q':
-        return pieceBoard.attacksBb(sqBb, occupied, ~blackBb);
+        return pieceBoard.attacksBb(sqBb, occupied, ~blackBb, whiteKingBb, whiteBb);
       case 'R':
-        return pieceBoard.attacksBb(sqBb, occupied, ~whiteBb);
+        return pieceBoard.attacksBb(sqBb, occupied, ~whiteBb, blackKingBb, blackQueenBb, blackBb);
       case 'r':
-        return pieceBoard.attacksBb(sqBb, occupied, ~blackBb);
+        return pieceBoard.attacksBb(sqBb, occupied, ~blackBb, whiteKingBb, whiteQueenBb, whiteBb);
       case 'B':
-        return pieceBoard.attacksBb(sqBb, occupied, ~whiteBb);
+        return pieceBoard.attacksBb(sqBb, occupied, ~whiteBb, blackKingBb, blackMajorBb, blackBb);
       case 'b':
-        return pieceBoard.attacksBb(sqBb, occupied, ~blackBb);
+        return pieceBoard.attacksBb(sqBb, occupied, ~blackBb, whiteKingBb, whiteMajorBb, whiteBb);
       case 'N':
-        return pieceBoard.attacksBb(sqBb, ~whiteBb);
+        return pieceBoard.attacksBb(sqBb, ~whiteBb, blackKingBb, blackMajorBb, blackBb);
       case 'n':
-        return pieceBoard.attacksBb(sqBb, ~blackBb);
+        return pieceBoard.attacksBb(sqBb, ~blackBb, whiteKingBb, whiteMajorBb, whiteBb);
       case 'P':
-        return pieceBoard.attacksBb(sqBb, epSqIdx, blackBb);
+        return pieceBoard.attacksBb(sqBb, epSqIdx, blackBb, mainBoardBb, blackKingBb,
+            blackMinorBb, blackMajorBb);
       case 'p':
-        return pieceBoard.attacksBb(sqBb, epSqIdx, whiteBb);
+        return pieceBoard.attacksBb(sqBb, epSqIdx, whiteBb, mainBoardBb, whiteKingBb,
+            whiteMinorBb, whiteMajorBb);
     }
   }
 }
@@ -154,6 +157,9 @@ class Direction {
   }
 
   static bSinglePush(bb, emptySq) {
+    if (typeof emptySq !== 'bigint') { throw new Error(`notbigint: ${emptySq}`)}
+    if (bb === undefined) {throw new Error()}
+    if (emptySq === undefined) {throw new Error()}
     return Mask.southOne(bb) & emptySq;
   }
 

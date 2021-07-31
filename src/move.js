@@ -202,6 +202,7 @@ class WhiteBishopMove {
 
   isThreat(toIdx, pieceBoard) {
     const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
+    // ViewHelper.display(pieceBoard.occupied, 'pieceBoard.occupied')
     return (Direction.bishopRays(pieceBb, pieceBoard.occupied, pieceBoard.occupiable) &
         pieceBoard.blackMajorBb) === U64(0) ? false : true;
   }

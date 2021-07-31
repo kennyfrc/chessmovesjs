@@ -7,6 +7,7 @@ const SquareHelper = require('./helpers.js').SquareHelper;
 const U64 = require('./helpers.js').U64;
 const Attacks = require('./attack.js').Attacks;
 const Pieces = require('./pieces.js').Pieces;
+const MoveList = require('./move.js').MoveList;
 
 class Board {
   constructor() {
@@ -173,22 +174,41 @@ class Board {
     this.bb = this.whiteBb | this.blackBb;
   }
 
-  movesBy(pieceOrSide) {
+  movesBb(byPieceOrSide) {
     let moves = U64(0);
-    Pieces.for(pieceOrSide).forEach((fenPiece) => {
+    Pieces.for(byPieceOrSide).forEach((fenPiece) => {
       let pieceBoard = this.pieceBoardList[fenPiece];
       SquareHelper.indicesFor(pieceBoard.bb).forEach((sq) => {
         let bb = BitHelper.setBit(U64(0), sq);
         moves |= Attacks.for(fenPiece, bb, pieceBoard, this.epSqIdx, this.whiteBb, this.blackBb,
-          this.whiteRookBb, this.blackRookBb, this.castleStatus);
+          this.whiteRookBb, this.blackRookBb, this.castleStatus, this.bb, this.whiteKingBb,
+          this.blackKingBb, this.whiteMinorBb, this.blackMinorBb, this.whiteMajorBb,
+          this.blackMajorBb);
       });
     });
     return moves;
   }
 
-  attacksTo(sq, pieceOrSide) {
+  moves(fenPiece) {
+    const attacks = this.movesBb(fenPiece);
+    const pieceBoard = this.pieceBoardList[fenPiece];
+
+    const moveList = [];
+    SquareHelper.indicesFor(pieceBoard.bb).forEach((fromIdx) => {
+      const pieceBb = BitHelper.setBit(U64(0), fromIdx);
+      const toIdxs = SquareHelper.indicesFor(Attacks.for(fenPiece, pieceBb, pieceBoard, this.epSqIdx, this.whiteBb, this.blackBb,
+          this.whiteRookBb, this.blackRookBb, this.castleStatus, this.bb, this.whiteKingBb,
+          this.blackKingBb, this.whiteMinorBb, this.blackMinorBb, this.whiteMajorBb,
+          this.blackMajorBb, this.whiteQueenBb, this.blackQueenBb));
+      moveList.push(MoveList.for(fenPiece, fromIdx, toIdxs, pieceBoard));
+    });
+
+    return moveList.flat();
+  }
+
+  attacksTo(sq, byPieceOrSide) {
     const targetSq = BitHelper.setBit(U64(0), sq);
-    const attacks = this.movesBy(pieceOrSide);
+    const attacks = this.movesBb(byPieceOrSide);
     return (targetSq & attacks) === U64(0) ? false : true;
   }
 }

@@ -176,10 +176,6 @@ describe('KnightBoard', function() {
     it('returns pseudo-legal moves', function() {
       const boardWManyKnightMoves = new Board();
       boardWManyKnightMoves.parseFenToBoard('rnbqkb1r/ppppp1pp/n7/5p2/3P1PN1/2P5/PP2P1PP/RNBQKB1R b KQkq - 1 6');
-      // const whiteKnight = boardWManyKnightMoves.pieceBoardList.N;
-      // const blackKnight = boardWManyKnightMoves.pieceBoardList.n;
-      // whiteKnight.on(boardWManyKnightMoves);
-      // blackKnight.on(boardWManyKnightMoves);
 
       let whiteKnightMoves = boardWManyKnightMoves.moves('N');
       let blackKnightMoves = boardWManyKnightMoves.moves('n');
@@ -209,11 +205,6 @@ describe('KnightBoard', function() {
       let whiteKnightMoves = boardWManyKnightAttacks.moves('N');
       let blackKnightMoves = boardWManyKnightAttacks.moves('n'); 
 
-      // const whiteKnight = boardWManyKnightAttacks.pieceBoardList.N;
-      // const blackKnight = boardWManyKnightAttacks.pieceBoardList.n;
-      // whiteKnight.on(boardWManyKnightAttacks);
-      // blackKnight.on(boardWManyKnightAttacks);
-
       assert.equal(whiteKnightMoves[8].threat, true);
       assert.equal(blackKnightMoves[1].threat, true);
 
@@ -222,10 +213,6 @@ describe('KnightBoard', function() {
     it('shows checks', function() {
       const boardWKnightChecks = new Board();
       boardWKnightChecks.parseFenToBoard('r1bqkb1r/pppp1ppp/5n2/3Np3/3nP3/5N2/PPPP1PPP/R1BQKB1R w KQkq - 6 5');
-      // const whiteKnight = boardWKnightChecks.pieceBoardList.N;
-      // const blackKnight = boardWKnightChecks.pieceBoardList.n;
-      // whiteKnight.on(boardWKnightChecks);
-      // blackKnight.on(boardWKnightChecks);
 
       let whiteKnightMoves = boardWKnightChecks.moves('N');
       let blackKnightMoves = boardWKnightChecks.moves('n'); 
@@ -242,17 +229,9 @@ describe('BishopBoard', function() {
   describe('#moves()', function() {
     const boardWManyBishopAttacks = new Board()
     boardWManyBishopAttacks.parseFenToBoard('rn2k2r/p1pq1ppp/1p1p1n2/2b1p3/2B1P1b1/BPNP4/P1PQ1PPP/R3K1NR w KQkq - 6 8');
-    // const whiteBishop = boardWManyBishopAttacks.pieceBoardList.B;
-    // const blackBishop = boardWManyBishopAttacks.pieceBoardList.b;
-    // whiteBishop.on(boardWManyBishopAttacks);
-    // blackBishop.on(boardWManyBishopAttacks);
-
-    // console.log(whiteBishop.moves())
-    // console.log(blackBishop.moves())
 
     let whiteBishopMoves = boardWManyBishopAttacks.moves('B');
     let blackBishopMoves = boardWManyBishopAttacks.moves('b');
-
 
     it('returns pseudo-legal moves', function() {
       assert.equal(whiteBishopMoves[0].from, 16);
@@ -315,10 +294,6 @@ describe('RookBoard', function() {
   describe('#moves()', function() {
     const boardWManyRookAttacks = new Board();
     boardWManyRookAttacks.parseFenToBoard('1nb1kb2/1pqpppp1/2pr1r1n/p6p/P3R2P/2R2P2/1PPPPKP1/1NBQ1BN1 b - - 5 10');
-    // const whiteRook = boardWManyRookAttacks.pieceBoardList.R;
-    // const blackRook = boardWManyRookAttacks.pieceBoardList.r;
-    // whiteRook.on(boardWManyRookAttacks);
-    // blackRook.on(boardWManyRookAttacks);
 
     let whiteRookMoves = boardWManyRookAttacks.moves('R');
     let blackRookMoves = boardWManyRookAttacks.moves('r');
@@ -394,10 +369,6 @@ describe('QueenBoard', function() {
   describe('#moves()', function() {
     const boardWManyQueenAttacks = new Board();
     boardWManyQueenAttacks.parseFenToBoard('rnb1kbnr/pp1p1ppp/8/q1p1p2Q/4P3/5N2/PPPP1PPP/RNB1KB1R w KQkq - 2 4');
-    // const whiteQueen = boardWManyQueenAttacks.pieceBoardList.Q;
-    // const blackQueen = boardWManyQueenAttacks.pieceBoardList.q;
-    // whiteQueen.on(boardWManyQueenAttacks);
-    // blackQueen.on(boardWManyQueenAttacks);
 
     let whiteQueenMoves = boardWManyQueenAttacks.moves('Q');
     let blackQueenMoves = boardWManyQueenAttacks.moves('q');
@@ -459,10 +430,6 @@ describe('KingBoard', function() {
     it('returns pseudo-legal moves (can leave king in check)', function() {
       const boardWManyKingMoves = new Board();
       boardWManyKingMoves.parseFenToBoard('1r3r2/p1pp3p/Pp1k2p1/3p1p2/5P1P/2K1P3/P1PP3P/R1B4R b - - 0 19');
-      // const whiteKing = boardWManyKingMoves.pieceBoardList.K;
-      // const blackKing = boardWManyKingMoves.pieceBoardList.k;
-      // whiteKing.on(boardWManyKingMoves);
-      // blackKing.on(boardWManyKingMoves);
 
       let whiteKingMoves = boardWManyKingMoves.moves('K');
       let blackKingMoves = boardWManyKingMoves.moves('k');
@@ -485,12 +452,6 @@ describe('KingBoard', function() {
     it('can castle', function() {
       const boardWCastles = new Board();
       boardWCastles.parseFenToBoard('r3k2r/ppqbbppp/3p1n2/4p1B1/2B1P3/2N4P/PPPQ1PP1/R3K2R w KQkq - 1 11');
-      // const whiteKing = boardWCastles.pieceBoardList.K;
-      // const blackKing = boardWCastles.pieceBoardList.k;
-      // whiteKing.on(boardWCastles);
-      // blackKing.on(boardWCastles);
-
-      // console.log(blackKing.moves())
 
       let whiteKingMoves = boardWCastles.moves('K');
       let blackKingMoves = boardWCastles.moves('k');

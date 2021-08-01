@@ -55,7 +55,7 @@ class Board {
     for (let i = 0; i < fen.length; i++) {
       if (FenReader.finishedReadingBoard(ranksRead, whiteSpace)) {
         if (FenReader.isSidetoMove(fen[i])) {
-          this.moveStatus = this.moveBit[fen[i]];
+          this.whiteToMove = fen[i] === 'w' ? true : false;
         }
 
         if (FenReader.isCastlingSymbol(fen[i])) {
@@ -180,10 +180,17 @@ class Board {
 
   moves(fenPiece) {
     return MoveList.for(fenPiece, this);
-  }
+  } 
 
   kingDangerBb(side) {
     return MoveBoard.kingDangerSqs(side, this);
+  }
+
+  inCheck() {
+    const kingDangerSqsBb = this.whiteToMove ? this.kingDangerBb('w') :
+      this.kingDangerBb('b');
+    const kingBb = this.whiteToMove ? this.whiteKingBb : this.blackKingBb;
+    return (kingDangerSqsBb & kingBb) !== U64(0) ? true : false;
   }
 }
 

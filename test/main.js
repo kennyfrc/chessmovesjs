@@ -70,6 +70,22 @@ describe('Board', function() {
     // TODO: add attackedbypiece?
   });
 
+  describe('inCheck()', function() {
+    const board = new Board();
+    const otherBoard = new Board();
+    board.parseFenToBoard('3K4/8/8/8/8/2N5/8/3k4 b - - 0 1');
+    otherBoard.parseFenToBoard('4k3/6N1/5b2/4R3/8/8/8/4K3 b - - 0 1');
+
+    it('should return true if side to move is in check', function() {
+      assert.equal(board.inCheck(), true);
+      assert.equal(otherBoard.inCheck(), true);
+    });
+
+    it('should return valid moves when in check', fucntion() {
+      
+    });
+  })
+
   // describe('king shouldnt be able to castle', function() {
   //   it('cant castle', function() {
   //     const board = new Board();

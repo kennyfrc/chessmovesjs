@@ -10,10 +10,15 @@ const Direction = require('./attack.js').Direction;
 const Mask = require('./mask.js').Mask;
 
 class MoveList {
-  static for(fenChar, fromIdx, toIdxs, pieceBoard) {
+  static for(fenPiece, board) {
     const moveList = [];
-    toIdxs.forEach((toIdx) => {
-      moveList.push(Move.for(fenChar, fromIdx, toIdx, pieceBoard));
+    const pieceBoard = board.pieceBoardList[fenPiece];
+    SquareHelper.indicesFor(pieceBoard.bb).forEach((fromIdx) => {
+      const pieceBb = BitHelper.setBit(U64(0), fromIdx);
+      const toIdxs = SquareHelper.indicesFor(pieceBoard.attacks(pieceBb, board));
+      toIdxs.forEach((toIdx) => {
+        moveList.push(Move.for(fenPiece, fromIdx, toIdx, pieceBoard));
+      })
     });
     return moveList;
   }

@@ -7,6 +7,7 @@ const SquareHelper = require('./helpers.js').SquareHelper;
 const U64 = require('./helpers.js').U64;
 const Pieces = require('./pieces.js').Pieces;
 const MoveList = require('./move.js').MoveList;
+const MoveBoard = require('./moveboard.js').MoveBoard;
 
 class Board {
   constructor() {
@@ -68,7 +69,7 @@ class Board {
         }
 
         /**
-         * there will be an external class that decides whether
+         * TODO: There will be an external class that decides whether
          * a pawn is advanced or there was a capture
          * both of the above require move history
          **/
@@ -171,34 +172,14 @@ class Board {
     this.bb = this.whiteBb | this.blackBb;
   }
 
-  movesBb(byPieceOrSide) {
-    let moves = U64(0);
-    Pieces.for(byPieceOrSide).forEach((fenPiece) => {
-      let pieceBoard = this.pieceBoardList[fenPiece];
-      SquareHelper.indicesFor(pieceBoard.bb).forEach((sq) => {
-        let bb = BitHelper.setBit(U64(0), sq);
-        moves |= pieceBoard.attacks(bb, this);
-      });
-    });
-    return moves;
-  }
-
   attacksTo(sq, byPieceOrSide) {
     const targetSq = BitHelper.setBit(U64(0), sq);
-    const attacks = this.movesBb(byPieceOrSide);
+    const attacks = MoveBoard.for(byPieceOrSide, this);
     return (targetSq & attacks) === U64(0) ? false : true;
   }
 
   moves(fenPiece) {
-    const attacks = this.movesBb(fenPiece);
-    const pieceBoard = this.pieceBoardList[fenPiece];
-    const moveList = [];
-    SquareHelper.indicesFor(pieceBoard.bb).forEach((fromIdx) => {
-      const pieceBb = BitHelper.setBit(U64(0), fromIdx);
-      const toIdxs = SquareHelper.indicesFor(pieceBoard.attacks(pieceBb, this));
-      moveList.push(MoveList.for(fenPiece, fromIdx, toIdxs, pieceBoard));
-    });
-    return moveList.flat();
+    return MoveList.for(fenPiece, this);
   }
 }
 

@@ -9,6 +9,7 @@ const ViewHelper = require('../src/helpers.js').ViewHelper;
 const board = new Board();
 board.parseFenToBoard('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'); // eslint-disable-line
 
+Error.stackTraceLimit = 10;
 
 // Boards should return BigInts
 describe('Board', function() {
@@ -427,7 +428,7 @@ describe('QueenBoard', function() {
 
 describe('KingBoard', function() {
   describe('#moves()', function() {
-    it('returns pseudo-legal moves (can leave king in check)', function() {
+    it('returns legal moves', function() {
       const boardWManyKingMoves = new Board();
       boardWManyKingMoves.parseFenToBoard('1r3r2/p1pp3p/Pp1k2p1/3p1p2/5P1P/2K1P3/P1PP3P/R1B4R b - - 0 19');
 
@@ -443,10 +444,15 @@ describe('KingBoard', function() {
       assert.equal(whiteKingMoves[3].from, 18)
       assert.equal(whiteKingMoves[3].to, 25)
       assert.equal(whiteKingMoves[4].from, 18)
-      assert.equal(whiteKingMoves[4].to, 26)
-      assert.equal(whiteKingMoves[5].from, 18)
-      assert.equal(whiteKingMoves[5].to, 27)
-      assert.equal(blackKingMoves.length, 5) 
+      assert.equal(whiteKingMoves[4].to, 27)
+      assert.equal(blackKingMoves[0].from, 43)
+      assert.equal(blackKingMoves[0].to, 34)
+      assert.equal(blackKingMoves[1].from, 43)
+      assert.equal(blackKingMoves[1].to, 42)
+      assert.equal(blackKingMoves[2].from, 43)
+      assert.equal(blackKingMoves[2].to, 44)
+      assert.equal(blackKingMoves[3].from, 43)
+      assert.equal(blackKingMoves[3].to, 52)
     });
 
     it('can castle', function() {
@@ -460,6 +466,24 @@ describe('KingBoard', function() {
       assert.equal(whiteKingMoves[3].castle, true)
       assert.equal(blackKingMoves[0].castle, true)
       assert.equal(blackKingMoves[3].castle, true)
+    });
+
+    it('cannot move to a square attacked by a rook', function() {
+      const boardWSqAttackedByRook = new Board();
+      boardWSqAttackedByRook.parseFenToBoard('4k3/8/8/5R2/8/8/8/4K3 b - - 0 1');
+
+      let blackKingMoves = boardWSqAttackedByRook.moves('k');
+
+      assert.equal(blackKingMoves.length, 3);
+    });
+
+    it('should not move to a blocked square', function() {
+      const boardWSqAttackedByRook = new Board();
+      boardWSqAttackedByRook.parseFenToBoard('8/4k3/8/8/4R3/8/8/4K3 b - - 0 1');
+
+      let blackKingMoves = boardWSqAttackedByRook.moves('k');
+
+      assert.equal(blackKingMoves.length, 6);
     })
   });
 });

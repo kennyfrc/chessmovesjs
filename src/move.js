@@ -8,19 +8,39 @@ const U64Neg = require('./helpers.js').U64Neg;
 const Ray = require('./attack.js').Ray;
 const Direction = require('./attack.js').Direction;
 const Mask = require('./mask.js').Mask;
+const MoveBoard = require('./moveboard.js').MoveBoard;
 
 class MoveList {
   static for(fenPiece, board) {
     const moveList = [];
     const pieceBoard = board.pieceBoardList[fenPiece];
+
     SquareHelper.indicesFor(pieceBoard.bb).forEach((fromIdx) => {
       const pieceBb = BitHelper.setBit(U64(0), fromIdx);
-      const toIdxs = SquareHelper.indicesFor(pieceBoard.attacks(pieceBb, board));
+      const attacks = this.attacks(fenPiece, pieceBoard, pieceBb, board);
+      const toIdxs = SquareHelper.indicesFor(attacks);
       toIdxs.forEach((toIdx) => {
         moveList.push(Move.for(fenPiece, fromIdx, toIdx, pieceBoard));
       })
     });
     return moveList;
+  }
+
+  static attacks(fenPiece, pieceBoard, pieceBb, board) {
+    let attacks = pieceBoard.attacks(pieceBb, board);
+    let inCheckMoves;
+    switch (fenPiece) {
+      case 'K':
+        const whiteKingDangerBoard = MoveBoard.kingDangerSqs('w', board);
+        inCheckMoves = attacks & whiteKingDangerBoard;
+        return attacks ^ inCheckMoves;
+      case 'k':
+        const blackKingDangerBoard = MoveBoard.kingDangerSqs('b', board);
+        inCheckMoves = attacks & blackKingDangerBoard;
+        return attacks ^ inCheckMoves;
+      default:
+        return attacks;
+    }
   }
 }
 

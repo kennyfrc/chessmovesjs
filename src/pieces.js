@@ -5,6 +5,10 @@ class Pieces {
         return ['K', 'Q', 'R', 'B', 'N', 'P'];
       case 'b':
         return ['k', 'q', 'r', 'b', 'n', 'p'];
+      case 'wnp':
+        return ['K', 'Q', 'R', 'B', 'N'];
+      case 'bnp':
+        return ['k', 'q', 'r', 'b', 'n'];
       case undefined:
         return ['K', 'Q', 'R', 'B', 'N', 'P', 'k', 'q', 'b', 'r', 'n', 'p'];
       default:

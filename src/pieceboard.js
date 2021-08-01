@@ -6,6 +6,7 @@ const Direction = require('./attack.js').Direction;
 const MoveList = require('./move.js').MoveList;
 const U64 = require('./helpers.js').U64;
 const U64Comp = require('./helpers.js').U64Comp;
+const MoveBoard = require('./moveboard.js').MoveBoard;
 
 class PieceBoard {
   static for(fenChar, pieceBit) {
@@ -302,7 +303,6 @@ class BlackQueenBoard extends PieceBoard {
   }
 }
 
-// does not factor situations where the king is in check
 class WhiteKingBoard extends PieceBoard {
   constructor(bb) {
     super();

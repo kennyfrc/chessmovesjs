@@ -181,6 +181,10 @@ class Board {
   moves(fenPiece) {
     return MoveList.for(fenPiece, this);
   }
+
+  kingDangerBb(side) {
+    return MoveBoard.kingDangerSqs(side, this);
+  }
 }
 
 module.exports = {

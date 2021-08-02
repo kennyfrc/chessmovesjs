@@ -34,10 +34,12 @@ class MoveList {
   static parseAttacksByChecks(fenPiece, pieceBoard, pieceBb, board) {
     let attacks = U64(0);
     if (this.isMultiCheckAndNotKing(board, fenPiece)) {
+      // ViewHelper.display(attacks, `fenPiece ${board.checkerCount}`)
       return attacks;
     } 
     if (this.isSingleCheckAndNotKing(board, fenPiece)) {
       attacks |= this.pieceAttacks(fenPiece, pieceBoard, pieceBb, board);
+      // ViewHelper.display(attacks, `fenPiece: ${fenPiece}`);
       attacks &= this.manageCheckers(fenPiece, board, attacks);
       return attacks;
     }
@@ -54,7 +56,7 @@ class MoveList {
 
   static manageCheckers(fenPiece, board, attacks) {
     const captureCheckers = this.findCheckersToCapture(fenPiece, board, attacks);
-    const blockCheckers = attacks & this.findWaysToBlockCheckers(board, attacks);
+    const blockCheckers = attacks & this.findWaysToBlockCheckers(fenPiece, board, attacks);
     return captureCheckers | blockCheckers;
   }
 
@@ -65,13 +67,14 @@ class MoveList {
     return (attacks & board.checkersBb);
   }
 
-  static findWaysToBlockCheckers(board, attacks) {
+  static findWaysToBlockCheckers(fenPiece, board, attacks) {
     const kingBb = board.whiteToMove ? board.whiteKingBb : board.blackKingBb;
     const kingSourceSq = BitHelper.bitScanFwd(kingBb);
     const occupiable = board.whiteToMove ? ~board.whiteBb : ~board.blackBb;
     const checkerDirectionFromKing = Mask.mooreNeighborhood(kingBb) & board.kingDangerSqsBb;
     const sqThatPointsToChecker = BitHelper.bitScanFwd(checkerDirectionFromKing);
     const checkerRay = Ray.for(kingSourceSq, sqThatPointsToChecker, board.bb);
+    // ViewHelper.display(checkerRay)
     return checkerRay;
   }
 

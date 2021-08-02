@@ -145,7 +145,7 @@ describe('Board', function() {
     it('knows how to handle en passant check evasions', function() {
       const board = new Board();
       board.parseFenToBoard('8/8/8/2k5/3Pp3/8/8/4K3 b - d3 0 1');
-
+      
       assert.equal(board.legalMoves()[0].from, 34);
       assert.equal(board.legalMoves()[0].to, 25);
       assert.equal(board.legalMoves()[1].from, 34);
@@ -164,8 +164,33 @@ describe('Board', function() {
       assert.equal(board.legalMoves()[7].to, 43);
       assert.equal(board.legalMoves()[8].from, 28);
       assert.equal(board.legalMoves()[8].to, 19);
-    })
+      
+    });
   });
+
+  describe('#pins()', function() {
+    it('should limit moves when pinned', function() {
+      const filePin = new Board();
+      const filePinPawn = new Board();
+      const rankPin = new Board();
+      const rankPinPawn = new Board();
+      const diagPin = new Board();
+      const diagPinPawn = new Board();
+      const antiDiagPin = new Board();
+      const antiDiagPinPawn = new Board();
+
+      filePin.parseFenToBoard('4k3/8/4r3/8/8/4Q3/8/2K5 b - - 0 1');
+      filePinPawn.parseFenToBoard('4k3/4p3/3P4/8/4Q3/8/8/2K5 b - - 0 1');
+      rankPin.parseFenToBoard('R2rk3/8/8/8/8/8/8/2K5 b - - 0 1');
+      rankPinPawn.parseFenToBoard('8/1R2pk2/8/8/8/8/8/2K5 b - - 0 1');
+      diagPin.parseFenToBoard('4k3/3r4/8/1B6/8/8/8/2K5 b - - 0 1');
+      diagPinPawn.parseFenToBoard('4k3/3p4/8/1B6/8/8/8/2K5 b - - 0 1');
+      antiDiagPin.parseFenToBoard('4k3/5r2/8/7B/8/8/8/2K5 b - - 0 1');
+      antiDiagPinPawn.parseFenToBoard('8/2k5/3p4/8/5Q2/8/8/2K5 b - - 0 1');
+
+      assert.equal(false, true);
+    })
+  })
 });
 
 // PieceBoard should return BigInts

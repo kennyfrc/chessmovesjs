@@ -3,17 +3,6 @@ const U64Comp = require('./helpers.js').U64Comp;
 const U64Neg = require('./helpers.js').U64Neg;
 const ViewHelper = require('./helpers.js').ViewHelper;
 
-/**
- * Mask
- *
- * noWe         nort         noEa
- *         +7    +8    +9
- *             \  |  /
- * west    -1 <-  0 -> +1    east
- *             /  |  \
- *         -9    -8    -7
- * soWe         sout         soEa
- **/
 class Mask {
   // basic Mask
   static northOne(bb) {

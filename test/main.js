@@ -6,15 +6,15 @@ const U64 = require('../src/helpers.js').U64;
 // const PieceBoard = require('../src/board.js').PieceBoard;
 const ViewHelper = require('../src/helpers.js').ViewHelper;
 
-const board = new Board();
-board.parseFenToBoard('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'); // eslint-disable-line
-
 Error.stackTraceLimit = 10;
 
 // Boards should return BigInts
 describe('Board', function() {
   describe('#parseFenToBoard()', function() {
     it('returns a bitboard for a given fen', function() {
+      const board = new Board();
+      board.parseFenToBoard('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'); // eslint-disable-line
+
       assert.equal(board.bb, 18446462598732906495n);
     });
   });
@@ -31,6 +31,9 @@ describe('Board', function() {
 
   describe('.displayCastleStatus', function() {
     it('returns the integer representing the castling status', function() {
+      const board = new Board();
+      board.parseFenToBoard('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'); // eslint-disable-line
+
       assert.equal(board.castleStatus, U64('0x8100000000000081'));
     });
   });
@@ -81,20 +84,88 @@ describe('Board', function() {
       assert.equal(otherBoard.inCheck(), true);
     });
 
-    it('should return valid moves when in check', fucntion() {
-      
+    it('should also return >0 checkerCount', function() {
+      assert.equal(board.checkerCount, 1);
+      assert.equal(otherBoard.checkerCount, 2);
+    })
+  });
+
+  describe('legalMoves()', function() {
+    it('should show moves that capture the checker', function() {
+      const board = new Board();
+      board.parseFenToBoard('3K4/8/8/8/8/2b5/1N6/3k4 b - - 0 1');
+
+      assert.equal(board.legalMoves()[0].from, 3);
+      assert.equal(board.legalMoves()[0].to, 2);
+      assert.equal(board.legalMoves()[1].from, 3);
+      assert.equal(board.legalMoves()[1].to, 4);
+      assert.equal(board.legalMoves()[2].from, 3);
+      assert.equal(board.legalMoves()[2].to, 10);
+      assert.equal(board.legalMoves()[3].from, 3);
+      assert.equal(board.legalMoves()[3].to, 11);
+      assert.equal(board.legalMoves()[4].from, 3);
+      assert.equal(board.legalMoves()[4].to, 12);
+      assert.equal(board.legalMoves()[5].from, 18);
+      assert.equal(board.legalMoves()[5].to, 9);
     });
-  })
 
-  // describe('king shouldnt be able to castle', function() {
-  //   it('cant castle', function() {
-  //     const board = new Board();
-  //     board.parseFenToBoard('r2qkb1r/p1ppnppp/bpn1p3/8/5P2/4PNP1/PPPP2BP/RNBQK2R w KQkq - 3 6');
-  //     // ViewHelper.display(board.movesFor('k'), 'blackkingmoves')
+    it('should show moves that can block the checker', function() {
+      const board = new Board();
+      board.parseFenToBoard('3K4/8/8/3Q4/8/2b5/8/3k4 b - - 0 1');
 
-  //     assert.equal(true, false)
-  //   })
-  // })
+      assert.equal(board.legalMoves()[0].from, 3);
+      assert.equal(board.legalMoves()[0].to, 2);
+      assert.equal(board.legalMoves()[1].from, 3);
+      assert.equal(board.legalMoves()[1].to, 4);
+      assert.equal(board.legalMoves()[2].from, 3);
+      assert.equal(board.legalMoves()[2].to, 10);
+      assert.equal(board.legalMoves()[3].from, 3);
+      assert.equal(board.legalMoves()[3].to, 12);
+      assert.equal(board.legalMoves()[4].from, 18);
+      assert.equal(board.legalMoves()[4].to, 11);
+      assert.equal(board.legalMoves()[5].from, 18);
+      assert.equal(board.legalMoves()[5].to, 27);
+    })
+
+    it('when in double check, can only do king moves', function() {
+      const board = new Board();
+      board.parseFenToBoard('4k3/6N1/5b2/4R3/8/8/8/4K3 b - - 0 1');
+
+      
+      assert.equal(board.legalMoves()[0].from, 60);
+      assert.equal(board.legalMoves()[0].to, 51);
+      assert.equal(board.legalMoves()[1].from, 60);
+      assert.equal(board.legalMoves()[1].to, 53);
+      assert.equal(board.legalMoves()[2].from, 60);
+      assert.equal(board.legalMoves()[2].to, 59);
+      assert.equal(board.legalMoves()[3].from, 60);
+      assert.equal(board.legalMoves()[3].to, 61);
+    });
+
+    it('knows how to handle en passant check evasions', function() {
+      const board = new Board();
+      board.parseFenToBoard('8/8/8/2k5/3Pp3/8/8/4K3 b - d3 0 1');
+
+      assert.equal(board.legalMoves()[0].from, 34);
+      assert.equal(board.legalMoves()[0].to, 25);
+      assert.equal(board.legalMoves()[1].from, 34);
+      assert.equal(board.legalMoves()[1].to, 26);
+      assert.equal(board.legalMoves()[2].from, 34);
+      assert.equal(board.legalMoves()[2].to, 27);
+      assert.equal(board.legalMoves()[3].from, 34);
+      assert.equal(board.legalMoves()[3].to, 33);
+      assert.equal(board.legalMoves()[4].from, 34);
+      assert.equal(board.legalMoves()[4].to, 35);
+      assert.equal(board.legalMoves()[5].from, 34);
+      assert.equal(board.legalMoves()[5].to, 41);
+      assert.equal(board.legalMoves()[6].from, 34);
+      assert.equal(board.legalMoves()[6].to, 42);
+      assert.equal(board.legalMoves()[7].from, 34);
+      assert.equal(board.legalMoves()[7].to, 43);
+      assert.equal(board.legalMoves()[8].from, 28);
+      assert.equal(board.legalMoves()[8].to, 19);
+    })
+  });
 });
 
 // PieceBoard should return BigInts
@@ -530,6 +601,9 @@ describe('BoardView', function() {
   // with this function, this makes it easier to understand for regular people
   describe('#display()', function() {
     it('shows the all the pieces on the board', function() {
+      const board = new Board();
+      board.parseFenToBoard('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'); // eslint-disable-line
+
       assert.equal(new BoardView(board.pieceBoardList).display(), '11111111\n11111111\n00000000\n00000000\n00000000\n00000000\n11111111\n11111111');
     });
 
@@ -547,6 +621,8 @@ describe('BoardView', function() {
 // SquareHelper should return integer indices
 describe('SquareHelper', function() {
   describe('#indicesFor', function() {
+    const board = new Board();
+    board.parseFenToBoard('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'); // eslint-disable-line
     const rookBoard = board.pieceBoardList.r;
     const bKingBoard = board.pieceBoardList.k;
     const wKingBoard = board.pieceBoardList.K;

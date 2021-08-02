@@ -10,16 +10,33 @@ class MoveBoard {
     return this.attacks(byPieceOrSide, board);
   }
 
-  static attacks(byPieceOrSide, board) {
+  static attacks(byPieceOrSide, board, findCheckers, boardToMutate) {
     let moves = U64(0);
     Pieces.for(byPieceOrSide).forEach((fenPiece) => {
       let pieceBoard = board.pieceBoardList[fenPiece];
       SquareHelper.indicesFor(pieceBoard.bb).forEach((sq) => {
         let bb = BitHelper.setBit(U64(0), sq);
-        moves |= pieceBoard.attacks(bb, board);
+        if (findCheckers) {
+          moves |= this.isPawn(fenPiece) ? this.setPawnAttacks(bb, boardToMutate, pieceBoard) : 
+            pieceBoard.attacks(bb, board);
+          const kingBb = board.whiteToMove ? board.whiteKingBb : board.blackKingBb;
+          boardToMutate.checkersBb |= (moves & kingBb) !== U64(0) ? bb : U64(0);
+          boardToMutate.checkingPiece = (moves & kingBb) !== U64(0) ? fenPiece : undefined;
+        } else {
+          moves |= pieceBoard.attacks(bb, board);
+        }
       });
     });
     return moves;
+  }
+
+  static isPawn(fenPiece) {
+    return 'Pp'.includes(fenPiece);
+  }
+
+  static setPawnAttacks(bb, board, pieceBoard) {
+    pieceBoard.setContext(board);
+    return pieceBoard.pawnAttacks(bb);
   }
 
   static kingDangerSqs(side, board) {
@@ -28,11 +45,11 @@ class MoveBoard {
     const pawnAttacks = sideToAttack === 'w' ?
       Direction.wPawnAttacks(board.pieceBoardList.P.bb) :
       Direction.bPawnAttacks(board.pieceBoardList.p.bb);
-    const piecesToCheckNoPawn = sideToAttack + 'np';
-    const boardWNoKingToMove = board;
+    const piecesToCheck = sideToAttack;
+    const boardWNoKingToMove = Object.assign({}, board);
     boardWNoKingToMove.bb ^= boardWNoKingToMove.pieceBoardList[kingToMove].bb;
 
-    return this.attacks(piecesToCheckNoPawn, boardWNoKingToMove) | pawnAttacks;
+    return this.attacks(piecesToCheck, boardWNoKingToMove, true, board) | pawnAttacks;
   }
 }
 

@@ -7,7 +7,59 @@ const U64Comp = require('./helpers.js').U64Comp;
 const U64Neg = require('./helpers.js').U64Neg;
 const Mask = require('./mask.js').Mask;
 
+
+/**
+ * RayCompass
+ *
+ * noWe         nort         noEa
+ *         +7    +8    +9
+ *             \  |  /
+ * west    -1 <-  0 -> +1    east
+ *             /  |  \
+ *         -9    -8    -7
+ * soWe         sout         soEa
+ **/
+
+class RayCompass {
+  static for(sourceSq, pointingSq, occupied) {
+    const direction = pointingSq - sourceSq;
+    sourceSq = U64(sourceSq);
+    switch (direction) {
+      case 8:
+        return Ray.sliderAttacks(sourceSq, occupied, 
+          BitHelper.bitScanFwd, Ray.posFile);
+      case 9:
+        return Ray.sliderAttacks(sourceSq, occupied, 
+          BitHelper.bitScanFwd, Ray.posDiag);
+      case 1:
+        return Ray.sliderAttacks(sourceSq, occupied, 
+          BitHelper.bitScanFwd, Ray.posRank);
+      case -7:
+        return Ray.sliderAttacks(sourceSq, occupied, 
+          BitHelper.bitScanRev, Ray.negAntiDiag);
+      case -8:
+        return Ray.sliderAttacks(sourceSq, occupied, 
+          BitHelper.bitScanRev, Ray.negFile);
+      case -9:
+        return Ray.sliderAttacks(sourceSq, occupied, 
+          BitHelper.bitScanRev, Ray.negDiag);
+      case -1:
+        return Ray.sliderAttacks(sourceSq, occupied, 
+          BitHelper.bitScanRev, Ray.negRank);
+      case 7:
+        return Ray.sliderAttacks(sourceSq, occupied, 
+          BitHelper.bitScanFwd, Ray.antiDiag);
+      default:
+        return U64(0);
+    }
+  }
+}
+
 class Ray {
+  static for(sourceSq, pointingSq, occupied) {
+    return RayCompass.for(sourceSq, pointingSq, occupied)
+  }
+
   // basic board rays
   static rank(sq) {
     return BoardHelper.firstRank() << (sq & U64(56));
@@ -51,6 +103,38 @@ class Ray {
       rayAttacks ^= rayBehindBlocker;
     }
     return rayAttacks;
+  }
+
+  static posFile(sq) {
+    return Ray.posRays(sq) & Ray.file(sq);
+  }
+
+  static posDiag(sq) {
+    return Ray.posRays(sq) & Ray.diag(sq);
+  }
+
+  static posRank(sq) {
+    return Ray.posRays(sq) & Ray.rank(sq);
+  }
+
+  static posAntiDiag(sq) {
+    return Ray.posRays(sq) & Ray.antiDiag(sq);
+  }
+
+  static negFile(sq) {
+    return Ray.negRays(sq) & Ray.file(sq);
+  }
+
+  static negDiag(sq) {
+    return Ray.negRays(sq) & Ray.diag(sq);
+  }
+
+  static negRank(sq) {
+    return Ray.negRays(sq) & Ray.rank(sq);
+  }
+
+  static negAntiDiag(sq) {
+    return Ray.negRays(sq) & Ray.antiDiag(sq);
   }
 
   static bishopPosAttacks(sq, occupied) {

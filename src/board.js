@@ -30,6 +30,11 @@ class Board {
     this.blackMinorBb = U64(0);
     this.whiteMajorBb = U64(0);
     this.blackMajorBb = U64(0);
+    this.kingDangerSqsBb = U64(0);
+    this.sideInCheck = false;
+    this.checkersBb = U64(0);
+    this.checkerCount = 0;
+    this.checkingPiece;
 
     this.pieceBoardList = new PieceBoardList();
 
@@ -41,8 +46,13 @@ class Board {
 
     this.epSqIdx = undefined;
     this.epSqBb = U64(0);
+    this.epCaptureBb = U64(0);
     this.halfMoveClock = 0;
     this.fullMoveNo = 0;
+  }
+
+  getEpCaptureBb() {
+    return this.whiteToMove ? this.epSqBb >> U64(8) : this.epSqBb << U64(8);
   }
 
   parseFenToBoard(fen) {
@@ -65,6 +75,8 @@ class Board {
         if (FenReader.isEnPassantChar(fen[i], whiteSpace)) {
           let epSq = fen[i] + fen[i+1]
           this.epSqIdx = SquareHelper.for(epSq);
+          this.epSqBb = BitHelper.setBit(U64(0), this.epSqIdx);
+          this.epCaptureBb = this.getEpCaptureBb();
           i += 1;
         }
 
@@ -120,6 +132,8 @@ class Board {
     this.setPieceBbs();
     this.setPieceSetBbs();
     this.setBoardBb();
+    this.setInCheck();
+    this.setCheckerCount();
   }
 
   resetBoard() {
@@ -172,6 +186,17 @@ class Board {
     this.bb = this.whiteBb | this.blackBb;
   }
 
+  setInCheck() {
+    this.kingDangerSqsBb = this.whiteToMove ? this.kingDangerBb('w') :
+      this.kingDangerBb('b');
+    const kingBb = this.whiteToMove ? this.whiteKingBb : this.blackKingBb;
+    this.sideInCheck = (this.kingDangerSqsBb & kingBb) !== U64(0) ? true : false;
+  }
+
+  setCheckerCount() {
+    this.checkerCount = this.sideInCheck ? BitHelper.popCount(this.checkersBb) : 0;
+  }
+
   attacksTo(sq, byPieceOrSide) {
     const targetSq = BitHelper.setBit(U64(0), sq);
     const attacks = MoveBoard.for(byPieceOrSide, this);
@@ -179,18 +204,29 @@ class Board {
   }
 
   moves(fenPiece) {
-    return MoveList.for(fenPiece, this);
-  } 
+    return fenPiece ? MoveList.for(fenPiece, this) : this.legalMoves()
+  }
+
+  legalMoves() {
+    const moveList = [];
+    if (this.whiteToMove) {
+      Pieces.for('w').forEach((piece) => {
+        moveList.push(MoveList.for(piece, this));
+      });
+    } else {
+      Pieces.for('b').forEach((piece) => {
+        moveList.push(MoveList.for(piece, this));
+      });
+    }
+    return moveList.flat();
+  }
 
   kingDangerBb(side) {
     return MoveBoard.kingDangerSqs(side, this);
   }
 
   inCheck() {
-    const kingDangerSqsBb = this.whiteToMove ? this.kingDangerBb('w') :
-      this.kingDangerBb('b');
-    const kingBb = this.whiteToMove ? this.whiteKingBb : this.blackKingBb;
-    return (kingDangerSqsBb & kingBb) !== U64(0) ? true : false;
+    return this.sideInCheck;
   }
 }
 

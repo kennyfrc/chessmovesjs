@@ -5,6 +5,7 @@ const U64 = require('./helpers.js').U64;
 const Direction = require('./attack.js').Direction;
 const ViewHelper = require('./helpers.js').ViewHelper;
 const PieceStatus = require('./pieces.js').PieceStatus;
+const BoardProxy = require('./boardproxy.js').BoardProxy;
 
 class ThreatBoard {
   static for(byPieceOrSide = 'all', board) {
@@ -50,12 +51,6 @@ class ThreatBoard {
     boardProxyNoBlockers.bb = boardProxyNoBlockers.bb ^ blockers;
     const xrayAttacks = this.for(opponentsSide, boardProxyNoBlockers);
     return xrayAttacks;
-  }
-}
-
-class BoardProxy {
-  constructor(board) {
-    Object.assign(this, board);
   }
 }
 

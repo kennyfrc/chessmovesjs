@@ -60,14 +60,14 @@ describe('Board', function() {
     });
   });
 
-  describe('attacksTo() & attackedByPiece()', function() {
+  describe('isSqAttacked()', function() {
     const board = new Board();
     board.parseFenToBoard('1n2kb1r/1bpp1ppp/3qpn1P/r6R/pp4P1/P1N1PQ2/1PPP1PB1/R1B1K1N1 w Qk - 1 11');
 
     it('should return true if attacked', function() {
-      assert.equal(board.attacksTo(SquareHelper.for('d5')), true);    
-      assert.equal(board.attacksTo(SquareHelper.for('b8')), false);     
-      assert.equal(board.attacksTo(SquareHelper.for('g1')), false);
+      assert.equal(board.isSqAttacked(SquareHelper.for('d5')), true);    
+      assert.equal(board.isSqAttacked(SquareHelper.for('b8')), false);     
+      assert.equal(board.isSqAttacked(SquareHelper.for('g1')), false);
     });
 
     // TODO: add attackedbypiece?
@@ -80,8 +80,8 @@ describe('Board', function() {
     otherBoard.parseFenToBoard('4k3/6N1/5b2/4R3/8/8/8/4K3 b - - 0 1');
 
     it('should return true if side to move is in check', function() {
-      assert.equal(board.inCheck(), true);
-      assert.equal(otherBoard.inCheck(), true);
+      assert.equal(board.isInCheck(), true);
+      assert.equal(otherBoard.isInCheck(), true);
     });
 
     it('should also return >0 checkerCount', function() {
@@ -168,29 +168,45 @@ describe('Board', function() {
     });
   });
 
-  describe('#pins()', function() {
-    it('should limit moves when pinned', function() {
-      const filePin = new Board();
-      const filePinPawn = new Board();
-      const rankPin = new Board();
-      const rankPinPawn = new Board();
-      const diagPin = new Board();
-      const diagPinPawn = new Board();
-      const antiDiagPin = new Board();
-      const antiDiagPinPawn = new Board();
+  describe('#xrayBb()', function() {
+    it('shows that king is xrayed', function() {
+      const board = new Board();
+      board.parseFenToBoard('rn2kbnr/ppp2ppp/3p4/4p3/2B1P1bq/P4N2/1PPP1PPP/RNBQK2R w KQkq - 1 5');
+      
+      assert.equal(board.isOurKingXrayed(), true);
+    });
 
-      filePin.parseFenToBoard('4k3/8/4r3/8/8/4Q3/8/2K5 b - - 0 1');
-      filePinPawn.parseFenToBoard('4k3/4p3/3P4/8/4Q3/8/8/2K5 b - - 0 1');
-      rankPin.parseFenToBoard('R2rk3/8/8/8/8/8/8/2K5 b - - 0 1');
-      rankPinPawn.parseFenToBoard('8/1R2pk2/8/8/8/8/8/2K5 b - - 0 1');
-      diagPin.parseFenToBoard('4k3/3r4/8/1B6/8/8/8/2K5 b - - 0 1');
-      diagPinPawn.parseFenToBoard('4k3/3p4/8/1B6/8/8/8/2K5 b - - 0 1');
-      antiDiagPin.parseFenToBoard('4k3/5r2/8/7B/8/8/8/2K5 b - - 0 1');
-      antiDiagPinPawn.parseFenToBoard('8/2k5/3p4/8/5Q2/8/8/2K5 b - - 0 1');
+    it('is aware of blockers', function() {
+      const board = new Board();
+      board.parseFenToBoard('5K2/8/3Q4/8/8/3r4/8/3k4 b - - 0 1');
+      assert.equal(board.isOurPiecePinnedToKing(), true);
+    });
+  });
 
-      assert.equal(false, true);
-    })
-  })
+  // describe('#pins()', function() {
+  //   it('should limit moves when pinned', function() {
+  //     const filePin = new Board();
+  //     const filePinPawn = new Board();
+  //     const rankPin = new Board();
+  //     const rankPinPawn = new Board();
+  //     const diagPin = new Board();
+  //     const diagPinPawn = new Board();
+  //     const antiDiagPin = new Board();
+  //     const antiDiagPinPawn = new Board();
+
+  //     filePin.parseFenToBoard('4k3/8/4r3/8/8/4Q3/8/2K5 b - - 0 1');
+  //     filePinPawn.parseFenToBoard('4k3/4p3/3P4/8/4Q3/8/8/2K5 b - - 0 1');
+  //     rankPin.parseFenToBoard('R2rk3/8/8/8/8/8/8/2K5 b - - 0 1');
+  //     rankPinPawn.parseFenToBoard('8/1R2pk2/8/8/8/8/8/2K5 b - - 0 1');
+  //     diagPin.parseFenToBoard('4k3/3r4/8/1B6/8/8/8/2K5 b - - 0 1');
+  //     diagPinPawn.parseFenToBoard('4k3/3p4/8/1B6/8/8/8/2K5 b - - 0 1');
+  //     antiDiagPin.parseFenToBoard('4k3/5r2/8/7B/8/8/8/2K5 b - - 0 1');
+  //     antiDiagPinPawn.parseFenToBoard('8/2k5/3p4/8/5Q2/8/8/2K5 b - - 0 1');
+
+  //     assert.equal(false, 'TODO: you need to code the slider direction');
+  //     assert.equal(false, 'TODO: best example is CheckEvasions.findWaysToBlockCheckers()');
+  //   });
+  // });
 });
 
 // PieceBoard should return BigInts

@@ -5,6 +5,10 @@ class Pieces {
         return ['K', 'Q', 'R', 'B', 'N', 'P'];
       case 'b':
         return ['k', 'q', 'r', 'b', 'n', 'p'];
+      case 'ws': // white sliders
+        return ['Q', 'R', 'B'];
+      case 'bs': // black sliders
+        return ['q', 'r', 'b'];
       case 'all':
         return ['K', 'Q', 'R', 'B', 'N', 'P', 'k', 'q', 'b', 'r', 'n', 'p'];
       default:
@@ -17,6 +21,13 @@ class Pieces {
   }
 }
 
+class PieceStatus {
+  static isPawn(fenPiece) {
+    return 'Pp'.includes(fenPiece);
+  }
+}
+
 module.exports = {
   Pieces: Pieces,
+  PieceStatus: PieceStatus,
 }

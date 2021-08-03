@@ -8,8 +8,9 @@ const U64Neg = require('./helpers.js').U64Neg;
 const Ray = require('./attack.js').Ray;
 const Direction = require('./attack.js').Direction;
 const Mask = require('./mask.js').Mask;
-const MoveBoard = require('./moveboard.js').MoveBoard;
+const ThreatBoard = require('./threatboard.js').ThreatBoard;
 const Pieces = require('./pieces.js').Pieces;
+const PieceStatus = require('./pieces.js').PieceStatus;
 
 class MoveList {
   static for(fenPiece, board) {
@@ -17,11 +18,21 @@ class MoveList {
     const pieceBoard = board.pieceBoardList[fenPiece];
     SquareHelper.indicesFor(pieceBoard.bb).forEach((fromIdx) => {
       const pieceBb = BitHelper.setBit(U64(0), fromIdx);
-      let attacks = CheckEvasions.for(fenPiece, pieceBoard, pieceBb, board);
+      const attacks = CheckEvasions.for(fenPiece, pieceBoard, pieceBb, board);
       const toIdxs = SquareHelper.indicesFor(attacks);
       this.updateMoveList(moveList, fenPiece, fromIdx, toIdxs, pieceBoard);
     });
     return moveList;
+  }
+
+  static legalMoves(board) {
+    const moveList = [];
+    if (board.whiteToMove) {
+      this.addLegalWhiteMoves(moveList, board);
+    } else {
+      this.addLegalBlackMoves(moveList, board);
+    }
+    return moveList.flat();
   }
 
   static updateMoveList(moveList, fenPiece, fromIdx, toIdxs, pieceBoard) {
@@ -36,11 +47,11 @@ class MoveList {
     let kingInCheckMoves;
     switch (fenPiece) {
       case 'K':
-        const whiteKingDangerBoard = MoveBoard.kingDangerSqs('w', board);
+        const whiteKingDangerBoard = ThreatBoard.kingDangerSqs('w', board);
         kingInCheckMoves = attacks & whiteKingDangerBoard;
         return attacks ^ kingInCheckMoves;
       case 'k':
-        const blackKingDangerBoard = MoveBoard.kingDangerSqs('b', board);
+        const blackKingDangerBoard = ThreatBoard.kingDangerSqs('b', board);
         kingInCheckMoves = attacks & blackKingDangerBoard;
         return attacks ^ kingInCheckMoves;
       default:
@@ -90,7 +101,7 @@ class CheckEvasions {
   }
 
   static findCheckersToCapture(fenPiece, board, attacks) {
-    if ('Pp'.includes(fenPiece)) {
+    if (PieceStatus.isPawn(fenPiece)) {
       return (attacks & board.epSqBb) | (attacks & board.checkersBb); 
     }
     return (attacks & board.checkersBb);

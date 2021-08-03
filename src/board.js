@@ -7,10 +7,11 @@ const SquareHelper = require('./helpers.js').SquareHelper;
 const U64 = require('./helpers.js').U64;
 const Pieces = require('./pieces.js').Pieces;
 const MoveList = require('./move.js').MoveList;
-const MoveBoard = require('./moveboard.js').MoveBoard;
+const ThreatBoard = require('./threatboard.js').ThreatBoard;
 
 class Board {
   constructor() {
+    // basic bitboards
     this.bb = U64(0);
     this.whiteBb = U64(0);
     this.blackBb = U64(0);
@@ -30,29 +31,34 @@ class Board {
     this.blackMinorBb = U64(0);
     this.whiteMajorBb = U64(0);
     this.blackMajorBb = U64(0);
+
+    // piece knowledge
+    this.pieceBoardList = new PieceBoardList();
+
+    // data for check evasion
     this.kingDangerSqsBb = U64(0);
     this.sideInCheck = false;
     this.checkersBb = U64(0);
     this.checkerCount = 0;
     this.checkingPiece;
 
-    this.pieceBoardList = new PieceBoardList();
+    // data for pins and xrays
+    this.whiteBlockers = U64(0);
+    this.blackBlockers = U64(0);
+    this.blockers = U64(0);
 
-    this.castleStatus = U64(0);
-    this.castleBit = {'K': U64('0x1'), 'Q': U64('0x80'), 'k': U64('0x100000000000000'), 'q': U64('0x8000000000000000')};
-
-    this.whiteToMove = true;
-    this.moveBit = {'w': U64(1), 'b': U64(0)};
-
+    // data for en passant
     this.epSqIdx = undefined;
     this.epSqBb = U64(0);
     this.epCaptureBb = U64(0);
+
+    // other critical data
+    this.castleStatus = U64(0);
+    this.castleBit = {'K': U64('0x1'), 'Q': U64('0x80'), 'k': U64('0x100000000000000'), 'q': U64('0x8000000000000000')};
+    this.whiteToMove = true;
+    this.moveBit = {'w': U64(1), 'b': U64(0)};
     this.halfMoveClock = 0;
     this.fullMoveNo = 0;
-  }
-
-  getEpCaptureBb() {
-    return this.whiteToMove ? this.epSqBb >> U64(8) : this.epSqBb << U64(8);
   }
 
   parseFenToBoard(fen) {
@@ -134,6 +140,7 @@ class Board {
     this.setBoardBb();
     this.setInCheck();
     this.setCheckerCount();
+    this.setBlockers();
   }
 
   resetBoard() {
@@ -197,32 +204,83 @@ class Board {
     this.checkerCount = this.sideInCheck ? BitHelper.popCount(this.checkersBb) : 0;
   }
 
-  attacksTo(sq, byPieceOrSide = 'all') {
-    const targetSq = BitHelper.setBit(U64(0), sq);
-    const attacks = MoveBoard.for(byPieceOrSide, this);
-    return (targetSq & attacks) === U64(0) ? false : true;
+  setCheckers(threats, fenPiece, pieceBb, boardProxyNoKing) {
+    const kingBb = boardProxyNoKing.whiteToMove ? boardProxyNoKing.whiteKingBb : boardProxyNoKing.blackKingBb;
+    this.checkersBb |= (threats & kingBb) !== U64(0) ? pieceBb : U64(0);
+    this.checkingPiece = (threats & kingBb) !== U64(0) ? fenPiece : undefined;
   }
 
-  moves(fenPiece = 'all') {
-    return fenPiece ? MoveList.for(fenPiece, this) : this.legalMoves()
+  setBlockers() {
+    const opponentsSide = this.whiteToMove ? 'bs' : 'ws';
+    const blockers = ThreatBoard.for(opponentsSide, this) & this.bb;
+    this.whiteBlockers = blockers & this.whiteBb;
+    this.blackBlockers = blockers & this.blackBb;
+    this.blockers = blockers;
+  }
+
+  getEpCaptureBb() {
+    return this.whiteToMove ? this.epSqBb >> U64(8) : this.epSqBb << U64(8);
+  }
+
+  getBlockers() {
+    return this.blockers;
   }
 
   legalMoves() {
-    const moveList = [];
-    if (this.whiteToMove) {
-      MoveList.addLegalWhiteMoves(moveList, this);
-    } else {
-      MoveList.addLegalBlackMoves(moveList, this);
-    }
-    return moveList.flat();
+    return MoveList.legalMoves(this);
+  }
+
+  moves(fenPiece = 'all') {
+    return fenPiece ? MoveList.for(fenPiece, this) : MoveList.legalMoves(this);
+  }
+
+  xrayDangerBb() {
+    return ThreatBoard.xrayDangerSqs(this); 
   }
 
   kingDangerBb(side) {
-    return MoveBoard.kingDangerSqs(side, this);
+    return ThreatBoard.kingDangerSqs(side, this);
   }
 
-  inCheck() {
-    return this.sideInCheck;
+  isSqAttacked(sq, byPieceOrSide = 'all') {
+    return BoardStatus.isSqAttacked(this, sq, byPieceOrSide);
+  }
+
+  isOurKingXrayed() {
+    return BoardStatus.isOurKingXrayed(this);
+  }
+
+  isOurPiecePinnedToKing() {
+    return BoardStatus.isOurPiecePinnedToKing(this);
+  }
+
+  isInCheck() {
+    return BoardStatus.isInCheck(this);
+  }
+}
+
+class BoardStatus {
+  static isSqAttacked(board, sq, byPieceOrSide = 'all') {
+    const targetSq = BitHelper.setBit(U64(0), sq);
+    const attacks = ThreatBoard.for(byPieceOrSide, board);
+    return (targetSq & attacks) === U64(0) ? false : true;
+  }
+
+  static isOurKingXrayed(board) {
+    const ourKingFen = board.whiteToMove ? 'K' : 'k';
+    const ourKing = board.pieceBoardList[ourKingFen].bb;
+    const opponentXrays = board.xrayDangerBb();
+    return (ourKing & opponentXrays) !== U64(0) ? true : false;
+  }
+
+  static isOurPiecePinnedToKing(board) {
+    const ourBb = board.whiteToMove ? board.whiteBb : board.blackBb;
+    const blockers = board.getBlockers();
+    return (ourBb & blockers) !== U64(0) ? true : false;
+  }
+
+  static isInCheck(board) {
+    return board.sideInCheck;
   }
 }
 

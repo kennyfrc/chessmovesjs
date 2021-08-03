@@ -10,18 +10,13 @@ const Direction = require('./attack.js').Direction;
 const Mask = require('./mask.js').Mask;
 const MoveBoard = require('./moveboard.js').MoveBoard;
 
-// TODO: This class needs some cleaning up
-// Check evasion handling code:
-// - king moves with single or multicheck
-// - when in single check, pieces to capture or block
-// - when in single check, pawn en passant check evasion
 class MoveList {
   static for(fenPiece, board) {
     const moveList = [];
     const pieceBoard = board.pieceBoardList[fenPiece];
     SquareHelper.indicesFor(pieceBoard.bb).forEach((fromIdx) => {
       const pieceBb = BitHelper.setBit(U64(0), fromIdx);
-      let attacks = this.parseAttacksByChecks(fenPiece, pieceBoard, pieceBb, board);
+      let attacks = CheckEvasions.for(fenPiece, pieceBoard, pieceBb, board);
       const toIdxs = SquareHelper.indicesFor(attacks);
       toIdxs.forEach((toIdx) => {
         const move = Move.for(fenPiece, fromIdx, toIdx, pieceBoard);
@@ -31,19 +26,36 @@ class MoveList {
     return moveList;
   }
 
-  static parseAttacksByChecks(fenPiece, pieceBoard, pieceBb, board) {
+  static pieceMoves(fenPiece, pieceBoard, pieceBb, board) {
+    let attacks = pieceBoard.attacks(pieceBb, board);
+    let kingInCheckMoves;
+    switch (fenPiece) {
+      case 'K':
+        const whiteKingDangerBoard = MoveBoard.kingDangerSqs('w', board);
+        kingInCheckMoves = attacks & whiteKingDangerBoard;
+        return attacks ^ kingInCheckMoves;
+      case 'k':
+        const blackKingDangerBoard = MoveBoard.kingDangerSqs('b', board);
+        kingInCheckMoves = attacks & blackKingDangerBoard;
+        return attacks ^ kingInCheckMoves;
+      default:
+        return attacks;
+    }
+  }
+}
+
+class CheckEvasions {
+  static for(fenPiece, pieceBoard, pieceBb, board) {
     let attacks = U64(0);
     if (this.isMultiCheckAndNotKing(board, fenPiece)) {
-      // ViewHelper.display(attacks, `fenPiece ${board.checkerCount}`)
       return attacks;
     } 
     if (this.isSingleCheckAndNotKing(board, fenPiece)) {
-      attacks |= this.pieceAttacks(fenPiece, pieceBoard, pieceBb, board);
-      // ViewHelper.display(attacks, `fenPiece: ${fenPiece}`);
+      attacks |= MoveList.pieceMoves(fenPiece, pieceBoard, pieceBb, board);
       attacks &= this.manageCheckers(fenPiece, board, attacks);
       return attacks;
     }
-    return this.pieceAttacks(fenPiece, pieceBoard, pieceBb, board);
+    return MoveList.pieceMoves(fenPiece, pieceBoard, pieceBb, board);
   }
 
   static isSingleCheckAndNotKing(board, fenPiece) {
@@ -74,25 +86,7 @@ class MoveList {
     const checkerDirectionFromKing = Mask.mooreNeighborhood(kingBb) & board.kingDangerSqsBb;
     const sqThatPointsToChecker = BitHelper.bitScanFwd(checkerDirectionFromKing);
     const checkerRay = Ray.for(kingSourceSq, sqThatPointsToChecker, board.bb);
-    // ViewHelper.display(checkerRay)
     return checkerRay;
-  }
-
-  static pieceAttacks(fenPiece, pieceBoard, pieceBb, board) {
-    let attacks = pieceBoard.attacks(pieceBb, board);
-    let kingInCheckMoves;
-    switch (fenPiece) {
-      case 'K':
-        const whiteKingDangerBoard = MoveBoard.kingDangerSqs('w', board);
-        kingInCheckMoves = attacks & whiteKingDangerBoard;
-        return attacks ^ kingInCheckMoves;
-      case 'k':
-        const blackKingDangerBoard = MoveBoard.kingDangerSqs('b', board);
-        kingInCheckMoves = attacks & blackKingDangerBoard;
-        return attacks ^ kingInCheckMoves;
-      default:
-        return attacks;
-    }
   }
 }
 

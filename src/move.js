@@ -9,6 +9,7 @@ const Ray = require('./attack.js').Ray;
 const Direction = require('./attack.js').Direction;
 const Mask = require('./mask.js').Mask;
 const MoveBoard = require('./moveboard.js').MoveBoard;
+const Pieces = require('./pieces.js').Pieces;
 
 class MoveList {
   static for(fenPiece, board) {
@@ -45,6 +46,18 @@ class MoveList {
       default:
         return attacks;
     }
+  }
+
+  static addLegalWhiteMoves(moveList, board) {
+    Pieces.for('w').forEach((piece) => {
+      moveList.push(MoveList.for(piece, board));
+    });
+  }
+
+  static addLegalBlackMoves(moveList, board) {
+    Pieces.for('b').forEach((piece) => {
+      moveList.push(MoveList.for(piece, board));
+    });
   }
 }
 

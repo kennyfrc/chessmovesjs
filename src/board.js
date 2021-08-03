@@ -210,13 +210,9 @@ class Board {
   legalMoves() {
     const moveList = [];
     if (this.whiteToMove) {
-      Pieces.for('w').forEach((piece) => {
-        moveList.push(MoveList.for(piece, this));
-      });
+      MoveList.addLegalWhiteMoves(moveList, this);
     } else {
-      Pieces.for('b').forEach((piece) => {
-        moveList.push(MoveList.for(piece, this));
-      });
+      MoveList.addLegalBlackMoves(moveList, this);
     }
     return moveList.flat();
   }

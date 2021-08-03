@@ -1,4 +1,4 @@
-# habitschess.js (v0.3)
+# dugongchess.js (v0.3)
 
 This is a chess engine under development that will use an evaluation function based on the [chessbrah chess habits series](https://imgur.com/a/342h1p0?nc=1).
 

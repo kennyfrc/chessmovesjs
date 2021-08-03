@@ -15,15 +15,15 @@ class MoveBoard {
     Pieces.for(byPieceOrSide).forEach((fenPiece) => {
       let pieceBoard = board.pieceBoardList[fenPiece];
       SquareHelper.indicesFor(pieceBoard.bb).forEach((sq) => {
-        let bb = BitHelper.setBit(U64(0), sq);
+        let pieceBb = BitHelper.setBit(U64(0), sq);
         if (findCheckers) {
-          moves |= this.isPawn(fenPiece) ? this.setPawnAttacks(bb, boardToMutate, pieceBoard) : 
-            pieceBoard.attacks(bb, board);
+          moves |= this.isPawn(fenPiece) ? this.setPawnAttacks(pieceBb, boardToMutate, pieceBoard) : 
+            pieceBoard.attacks(pieceBb, board);
           const kingBb = board.whiteToMove ? board.whiteKingBb : board.blackKingBb;
-          boardToMutate.checkersBb |= (moves & kingBb) !== U64(0) ? bb : U64(0);
+          boardToMutate.checkersBb |= (moves & kingBb) !== U64(0) ? pieceBb : U64(0);
           boardToMutate.checkingPiece = (moves & kingBb) !== U64(0) ? fenPiece : undefined;
         } else {
-          moves |= pieceBoard.attacks(bb, board);
+          moves |= pieceBoard.attacks(pieceBb, board);
         }
       });
     });

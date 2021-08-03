@@ -12,18 +12,22 @@ const MoveBoard = require('./moveboard.js').MoveBoard;
 
 class MoveList {
   static for(fenPiece, board) {
-    const moveList = [];
+    let moveList = [];
     const pieceBoard = board.pieceBoardList[fenPiece];
     SquareHelper.indicesFor(pieceBoard.bb).forEach((fromIdx) => {
       const pieceBb = BitHelper.setBit(U64(0), fromIdx);
       let attacks = CheckEvasions.for(fenPiece, pieceBoard, pieceBb, board);
       const toIdxs = SquareHelper.indicesFor(attacks);
-      toIdxs.forEach((toIdx) => {
-        const move = Move.for(fenPiece, fromIdx, toIdx, pieceBoard);
-        moveList.push(move);
-      })
+      this.updateMoveList(moveList, fenPiece, fromIdx, toIdxs, pieceBoard);
     });
     return moveList;
+  }
+
+  static updateMoveList(moveList, fenPiece, fromIdx, toIdxs, pieceBoard) {
+    toIdxs.forEach((toIdx) => {
+      const move = Move.for(fenPiece, fromIdx, toIdx, pieceBoard);
+      moveList.push(move);
+    });
   }
 
   static pieceMoves(fenPiece, pieceBoard, pieceBb, board) {
@@ -273,7 +277,6 @@ class WhiteBishopMove {
 
   isThreat(toIdx, pieceBoard) {
     const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
-    // ViewHelper.display(pieceBoard.occupied, 'pieceBoard.occupied')
     return (Direction.bishopRays(pieceBb, pieceBoard.occupied, pieceBoard.occupiable) &
         pieceBoard.blackMajorBb) === U64(0) ? false : true;
   }

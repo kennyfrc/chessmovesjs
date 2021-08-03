@@ -6,11 +6,11 @@ const Direction = require('./attack.js').Direction;
 const ViewHelper = require('./helpers.js').ViewHelper;
 
 class MoveBoard {
-  static for(byPieceOrSide, board) {
+  static for(byPieceOrSide = 'all', board) {
     return this.attacks(byPieceOrSide, board);
   }
 
-  static attacks(byPieceOrSide, board, findCheckers, boardToMutate) {
+  static attacks(byPieceOrSide, board, findCheckers = false, boardToMutate = U64(0)) {
     let moves = U64(0);
     Pieces.for(byPieceOrSide).forEach((fenPiece) => {
       let pieceBoard = board.pieceBoardList[fenPiece];

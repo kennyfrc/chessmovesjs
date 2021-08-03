@@ -197,13 +197,13 @@ class Board {
     this.checkerCount = this.sideInCheck ? BitHelper.popCount(this.checkersBb) : 0;
   }
 
-  attacksTo(sq, byPieceOrSide) {
+  attacksTo(sq, byPieceOrSide = 'all') {
     const targetSq = BitHelper.setBit(U64(0), sq);
     const attacks = MoveBoard.for(byPieceOrSide, this);
     return (targetSq & attacks) === U64(0) ? false : true;
   }
 
-  moves(fenPiece) {
+  moves(fenPiece = 'all') {
     return fenPiece ? MoveList.for(fenPiece, this) : this.legalMoves()
   }
 

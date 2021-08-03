@@ -5,7 +5,7 @@ class Pieces {
         return ['K', 'Q', 'R', 'B', 'N', 'P'];
       case 'b':
         return ['k', 'q', 'r', 'b', 'n', 'p'];
-      case undefined:
+      case 'all':
         return ['K', 'Q', 'R', 'B', 'N', 'P', 'k', 'q', 'b', 'r', 'n', 'p'];
       default:
         if ('KQRBNPkqrbnp'.includes(fromPieceOrSide)) {

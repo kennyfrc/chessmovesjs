@@ -34,7 +34,6 @@ class Board {
     this.blackMinorBb = U64(0);
     this.whiteMajorBb = U64(0);
     this.blackMajorBb = U64(0);
-    this.fen = "";
 
     // piece knowledge
     this.pieceBoardList = new PieceBoardList();
@@ -71,7 +70,6 @@ class Board {
 
   parseFenToBoard(fen) {
     this.resetBoard();
-    this.fen = fen;
 
     let boardIndex = 56; // fens start at a8
     let ranksRead = 1;
@@ -144,14 +142,7 @@ class Board {
       }
     }
 
-    this.setPieceBbs();
-    this.setPieceSetBbs();
-    this.setBoardBb();
-    this.setBlockers();
-    this.setThreats();
-    this.setInCheck();
-    this.setCheckerCount();
-    this.setXrayDangerSqs()
+    this.setPieceContext();
   }
 
   resetBoard() {
@@ -172,6 +163,17 @@ class Board {
         this.pieceBoardList[piece] = pboard;
       }
     }
+  }
+
+  setPieceContext() {
+    this.setPieceBbs();
+    this.setPieceSetBbs();
+    this.setBoardBb();
+    this.setBlockers();
+    this.setThreats();
+    this.setInCheck();
+    this.setCheckerCount();
+    this.setXrayDangerSqs();
   }
 
   setPieceBbs() {

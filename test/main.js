@@ -189,10 +189,10 @@ describe('Board', function() {
       const filePinPawn = new Board();
       const rankPin = new Board();
       const rankPinPawn = new Board();
-      const diagPin = new Board();
-      const diagPinPawn = new Board();
-      const antiDiagPin = new Board();
-      const antiDiagPinPawn = new Board();
+      // const diagPin = new Board();
+      // const diagPinPawn = new Board();
+      // const antiDiagPin = new Board();
+      // const antiDiagPinPawn = new Board();
 
       filePin.parseFenToBoard('4k3/8/4r3/8/8/4Q3/8/2K5 b - - 0 1');
       filePinMoves = filePin.legalMoves();

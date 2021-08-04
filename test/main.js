@@ -291,7 +291,7 @@ describe('PieceBoard', function() {
 // PawnBoards, RookBoards, etc are children of PieceBoard
 describe('PawnBoard', function() {
   describe('#moves()', function() {
-    it('returns pseudo-legal pawn moves', function() {
+    it('returns legal pawn moves', function() {
       const boardWManyPawnAttacks = new Board();
       boardWManyPawnAttacks.parseFenToBoard('rnbqkbnr/1p2pp1p/8/p1pp2p1/1P2PP1P/8/P1PP2P1/RNBQKBNR');
 
@@ -368,7 +368,7 @@ describe('PawnBoard', function() {
 
 describe('KnightBoard', function() {
   describe('#moves()', function() {
-    it('returns pseudo-legal moves', function() {
+    it('returns legal moves', function() {
       const boardWManyKnightMoves = new Board();
       boardWManyKnightMoves.parseFenToBoard('rnbqkb1r/ppppp1pp/n7/5p2/3P1PN1/2P5/PP2P1PP/RNBQKB1R b KQkq - 1 6');
 
@@ -411,7 +411,7 @@ describe('BishopBoard', function() {
 
     let whiteBishopMoves = boardWManyBishopAttacks.moves('B');
 
-    it('returns pseudo-legal moves', function() {
+    it('returns legal moves', function() {
       assert.equal(whiteBishopMoves[0].from, 16);
       assert.equal(whiteBishopMoves[0].to, 2);
       assert.equal(whiteBishopMoves[1].from, 16);
@@ -449,7 +449,7 @@ describe('RookBoard', function() {
 
     let blackRookMoves = boardWManyRookAttacks.moves('r');
 
-    it('returns pseudo-legal moves', function() {
+    it('returns legal moves', function() {
       assert.equal(blackRookMoves[0].from, 43);
       assert.equal(blackRookMoves[0].to, 11);
       assert.equal(blackRookMoves[1].from, 43);
@@ -489,7 +489,7 @@ describe('QueenBoard', function() {
 
     let whiteQueenMoves = boardWManyQueenAttacks.moves('Q');
 
-    it('returns pseudo-legal moves', function() {
+    it('returns legal moves', function() {
       assert.equal(whiteQueenMoves[0].from, 39)
       assert.equal(whiteQueenMoves[0].to, 23)
       assert.equal(whiteQueenMoves[1].from, 39)
@@ -547,6 +547,17 @@ describe('KingBoard', function() {
       assert.equal(whiteKingMoves[0].castle, true)
       assert.equal(whiteKingMoves[3].castle, true)
     });
+
+    it('cannot castle when in check', function() {
+      const board = new Board();
+      board.parseFenToBoard('r1bqk2r/pppp1ppp/2n1pn2/1B6/1b1PP3/5N2/PPP2PPP/RNBQK2R w KQkq - 5 5');
+      const kingMoves = board.legalMoves()
+
+      assert.equal(kingMoves[0].from, 4)
+      assert.equal(kingMoves[0].to, 5)
+      assert.equal(kingMoves[1].from, 4)
+      assert.equal(kingMoves[1].to, 12)
+    })
 
     it('cannot move to a square attacked by a rook', function() {
       const boardWSqAttackedByRook = new Board();

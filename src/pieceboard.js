@@ -333,12 +333,13 @@ class WhiteKingBoard extends PieceBoard {
     this.occupiable = ~board.whiteBb;
     this.whiteRookBb = board.whiteRookBb;
     this.castleStatus = board.castleStatus;
+    this.inCheck = board.sideInCheck;
   }
 
   attacks(pieceBb, board) {
     this.setContext(board);
     return Direction.kingMoves(pieceBb, this.occupied, this.occupiable, 
-        this.whiteRookBb, this.castleStatus);
+        this.whiteRookBb, this.castleStatus, this.inCheck);
   }
 }
 
@@ -354,12 +355,13 @@ class BlackKingBoard extends PieceBoard {
     this.occupiable = ~board.blackBb;
     this.blackRookBb = board.blackRookBb;
     this.castleStatus = board.castleStatus;
+    this.inCheck = board.sideInCheck;
   }
 
   attacks(pieceBb, board) {
     this.setContext(board);
     return Direction.kingMoves(pieceBb, this.occupied, this.occupiable, 
-      this.blackRookBb, this.castleStatus);
+      this.blackRookBb, this.castleStatus, this.inCheck);
   }
 }
 

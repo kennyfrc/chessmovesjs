@@ -253,8 +253,8 @@ class Direction {
     return this.rookRays(bb, occupied, occupiable) | this.bishopRays(bb, occupied, occupiable)
   }
 
-  static kingMoves(bb, occupied, occupiable, rookBb, castleStatus) {
-    const castlingMoves = this.castleCheck(bb, occupied, occupiable, rookBb, castleStatus);
+  static kingMoves(bb, occupied, occupiable, rookBb, castleStatus, inCheck) {
+    const castlingMoves = inCheck ? U64(0) : this.castleCheck(bb, occupied, occupiable, rookBb, castleStatus);
     return (Mask.mooreNeighborhood(bb) | castlingMoves) & occupiable;
   }
 

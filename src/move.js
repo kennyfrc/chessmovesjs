@@ -20,26 +20,18 @@ class MoveList {
       const pieceBb = BitHelper.setBit(U64(0), fromIdx);
       const attacks = CheckEvasions.for(fenPiece, pieceBoard, pieceBb, board);
       const toIdxs = SquareHelper.indicesFor(attacks);
-      this.updateMoveList(moveList, fenPiece, fromIdx, toIdxs, pieceBoard);
+      moveList.push(this.createMove(fenPiece, fromIdx, toIdxs, pieceBoard));
     });
-    return moveList;
-  }
-
-  static legalMoves(board) {
-    const moveList = [];
-    if (board.whiteToMove) {
-      this.addLegalWhiteMoves(moveList, board);
-    } else {
-      this.addLegalBlackMoves(moveList, board);
-    }
     return moveList.flat();
   }
 
-  static updateMoveList(moveList, fenPiece, fromIdx, toIdxs, pieceBoard) {
-    toIdxs.forEach((toIdx) => {
-      const move = Move.for(fenPiece, fromIdx, toIdx, pieceBoard);
-      moveList.push(move);
-    });
+  static legalMoves(board) {
+    return board.whiteToMove ? this.addLegalWhiteMoves(board) :
+      this.addLegalBlackMoves(board)
+  }
+
+  static createMove(fenPiece, fromIdx, toIdxs, pieceBoard) {
+    return toIdxs.map((toIdx) => Move.for(fenPiece, fromIdx, toIdx, pieceBoard))
   }
 
   static pieceMoves(fenPiece, pieceBoard, pieceBb, board) {
@@ -59,25 +51,19 @@ class MoveList {
     }
   }
 
-  static addLegalWhiteMoves(moveList, board) {
-    Pieces.for('w').forEach((piece) => {
-      moveList.push(MoveList.for(piece, board));
-    });
+  static addLegalWhiteMoves(board) {
+    return Pieces.for('w').map((piece) => MoveList.for(piece, board)).flat()
   }
 
-  static addLegalBlackMoves(moveList, board) {
-    Pieces.for('b').forEach((piece) => {
-      moveList.push(MoveList.for(piece, board));
-    });
+  static addLegalBlackMoves(board) {
+    return Pieces.for('b').map((piece) => MoveList.for(piece, board)).flat()
   }
 }
 
 class CheckEvasions {
   static for(fenPiece, pieceBoard, pieceBb, board) {
     let attacks = U64(0);
-    if (this.isMultiCheckAndNotKing(board, fenPiece)) {
-      return attacks;
-    } 
+    if (this.isMultiCheckAndNotKing(board, fenPiece)) { return attacks }; 
     if (this.isSingleCheckAndNotKing(board, fenPiece)) {
       attacks |= MoveList.pieceMoves(fenPiece, pieceBoard, pieceBb, board);
       attacks &= this.manageCheckers(fenPiece, board, attacks);

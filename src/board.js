@@ -36,7 +36,6 @@ class Board {
     this.pieceBoardList = new PieceBoardList();
 
     // data for check evasion
-    this.kingDangerSqsBb = U64(0);
     this.sideInCheck = false;
     this.checkersBb = U64(0);
     this.checkerCount = 0;
@@ -204,10 +203,9 @@ class Board {
     this.checkerCount = this.sideInCheck ? BitHelper.popCount(this.checkersBb) : 0;
   }
 
-  setCheckers(threats, fenPiece, pieceBb, boardProxyNoKing) {
+  setCheckers(threats, pieceBb, boardProxyNoKing) {
     const kingBb = boardProxyNoKing.whiteToMove ? boardProxyNoKing.whiteKingBb : boardProxyNoKing.blackKingBb;
     this.checkersBb |= (threats & kingBb) !== U64(0) ? pieceBb : U64(0);
-    this.checkingPiece = (threats & kingBb) !== U64(0) ? fenPiece : undefined;
   }
 
   setBlockers() {

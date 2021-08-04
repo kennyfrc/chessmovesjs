@@ -12,22 +12,46 @@ class ThreatBoard {
     return this.threats(byPieceOrSide, board);
   }
 
-  static threats(byPieceOrSide, boardProxyNoKing, findCheckers = false, board = U64(0)) {
-    let threats = U64(0);
-    Pieces.for(byPieceOrSide).forEach((fenPiece) => {
-      const pieceBoard = boardProxyNoKing.pieceBoardList[fenPiece];
-      SquareHelper.indicesFor(pieceBoard.bb).forEach((sq) => {
-        const pieceBb = BitHelper.setBit(U64(0), sq);
-        if (findCheckers) {
-          threats |= PieceStatus.isPawn(fenPiece) ? pieceBoard.rawPawnAttacks(pieceBb, board) : 
-            pieceBoard.attacks(pieceBb, boardProxyNoKing);
-          board.setCheckers(threats, fenPiece, pieceBb, boardProxyNoKing);
-        } else {
-          threats |= pieceBoard.attacks(pieceBb, boardProxyNoKing);
-        }
-      });
-    });
-    return threats;
+  static threats(byPieceOrSide, board) {
+    return Pieces.for(byPieceOrSide)
+            .map((fenPiece) => board.pieceBoardList[fenPiece])
+            .map((pieceBoard) => SquareHelper.indicesFor(pieceBoard.bb)
+              .map((sq) => BitHelper.setBit(U64(0), sq))
+              .map((pieceBb) => pieceBoard.attacks(pieceBb, board))
+              .reduce((accThreats, currThreats) => accThreats | currThreats, U64(0)))
+            .reduce((accThreats, currThreats) => accThreats | currThreats, U64(0))
+  }
+
+  // not sure how to best remove / extract setCheckers()
+  static pawnThreats(boardProxy, board, fenPiece) {
+    const pieceBoard = boardProxy.pieceBoardList[fenPiece];
+    return SquareHelper.indicesFor(pieceBoard.bb)
+      .map((sq) => BitHelper.setBit(U64(0), sq))
+      .map((pieceBb) => {
+        const threats = pieceBoard.rawPawnAttacks(pieceBb, boardProxy);
+        board.setCheckers(threats, pieceBb, boardProxy);
+        return threats;
+      })
+      .reduce((accThreats, currThreats) => accThreats | currThreats, U64(0))
+  }
+
+  static pieceThreats(boardProxy, board, fenPiece) {
+    const pieceBoard = boardProxy.pieceBoardList[fenPiece];
+    return SquareHelper.indicesFor(pieceBoard.bb)
+      .map((sq) => BitHelper.setBit(U64(0), sq))
+      .map((pieceBb) => {
+        const threats = pieceBoard.attacks(pieceBb, boardProxy);
+        board.setCheckers(threats, pieceBb, boardProxy);
+        return threats;
+      })
+      .reduce((accThreats, currThreats) => accThreats | currThreats, U64(0))
+  }
+
+  static kingDangerThreats(byPieceOrSide, boardProxyNoKing, findCheckers = false, board = U64(0)) {
+    return Pieces.for(byPieceOrSide)
+            .map((fenPiece) => PieceStatus.isPawn(fenPiece) ? this.pawnThreats(boardProxyNoKing, board, fenPiece) :
+                this.pieceThreats(boardProxyNoKing, board, fenPiece))
+            .reduce((accThreats, currThreats) => accThreats | currThreats, U64(0));;
   }
 
   static kingDangerSqs(side, board) {
@@ -40,7 +64,7 @@ class ThreatBoard {
     const boardProxyNoKing = new BoardProxy(board);
     boardProxyNoKing.bb ^= boardProxyNoKing.pieceBoardList[kingToMove].bb;
 
-    return this.threats(opponentsSide, boardProxyNoKing, true, board) | pawnAttacks;
+    return this.kingDangerThreats(opponentsSide, boardProxyNoKing, true, board) | pawnAttacks;
   }
 
   static xrayDangerSqs(board) {

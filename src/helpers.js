@@ -33,11 +33,9 @@ class BitHelper {
   }
 
   static bitsFor(indices) {
-    let parsedBit = U64(0);
-    indices.forEach((idx) => {
-      parsedBit |= BitHelper.setBit(parsedBit, idx);
-    });
-    return parsedBit;
+    return indices
+            .map((idx) => BitHelper.setBit(parsedBit, idx))
+            .reduce((accBit, currBit) => accBit | currBit, U64(0))
   }
 
   static deBruijnMagicNum() {

@@ -18,7 +18,8 @@ class MoveList {
     const pieceBoard = board.pieceBoardList[fenPiece];
     SquareHelper.indicesFor(pieceBoard.bb).forEach((fromIdx) => {
       const pieceBb = BitHelper.setBit(U64(0), fromIdx);
-      const attacks = CheckEvasions.for(fenPiece, pieceBoard, pieceBb, board);
+      let attacks = CheckEvasions.filter(fenPiece, pieceBoard, pieceBb, board);
+      attacks = Pins.filter(fenPiece, attacks, pieceBb, board)
       const toIdxs = SquareHelper.indicesFor(attacks);
       moveList.push(this.createMove(fenPiece, fromIdx, toIdxs, pieceBoard));
     });
@@ -35,17 +36,17 @@ class MoveList {
   }
 
   static pieceMoves(fenPiece, pieceBoard, pieceBb, board) {
-    let attacks = pieceBoard.attacks(pieceBb, board);
+    let moves = pieceBoard.attacks(pieceBb, board);
     let kingInCheckMoves;
     switch (fenPiece) {
       case 'K':
-        kingInCheckMoves = attacks & board.whiteKingDangerSquares;
-        return attacks ^ kingInCheckMoves;
+        kingInCheckMoves = moves & board.whiteKingDangerSquares;
+        return moves ^ kingInCheckMoves;
       case 'k':
-        kingInCheckMoves = attacks & board.blackKingDangerSquares;
-        return attacks ^ kingInCheckMoves;
+        kingInCheckMoves = moves & board.blackKingDangerSquares;
+        return moves ^ kingInCheckMoves;
       default:
-        return attacks;
+        return moves;
     }
   }
 
@@ -58,14 +59,30 @@ class MoveList {
   }
 }
 
+class Pins {
+  static filter(fenPiece, attacks, pieceBb, board) {
+    if (board.isOurKingXrayed) {
+      const ourKingBb = board.whiteToMove ? board.whiteKingBb : board.blackKingBb;
+      const theyOccupied = board.whiteToMove ? board.blackBb : board.whiteBb
+      const kingSourceSq = BitHelper.bitScanFwd(ourKingBb);
+      const pinnerDirectionFromKing = Mask.mooreNeighborhood(ourKingBb) & board.xrayDangerSqs;
+      const sqThatPointsToPinner = BitHelper.bitScanFwd(pinnerDirectionFromKing);
+      const pinnerRay = Ray.for(kingSourceSq, sqThatPointsToPinner, theyOccupied);
+      const pinnedPiece = pinnerRay & pieceBb ? pieceBb : U64(0);
+      return pinnedPiece ? attacks & pinnerRay : attacks;
+    }
+    return attacks;
+  }
+}
+
 class CheckEvasions {
-  static for(fenPiece, pieceBoard, pieceBb, board) {
-    let attacks = U64(0);
-    if (this.isMultiCheckAndNotKing(board, fenPiece)) { return attacks }; 
+  static filter(fenPiece, pieceBoard, pieceBb, board) {
+    let pieceMoves = U64(0);
+    if (this.isMultiCheckAndNotKing(board, fenPiece)) { return pieceMoves }; 
     if (this.isSingleCheckAndNotKing(board, fenPiece)) {
-      attacks |= MoveList.pieceMoves(fenPiece, pieceBoard, pieceBb, board);
-      attacks &= this.manageCheckers(fenPiece, board, attacks);
-      return attacks;
+      pieceMoves |= MoveList.pieceMoves(fenPiece, pieceBoard, pieceBb, board);
+      pieceMoves &= this.manageCheckers(fenPiece, board, pieceMoves);
+      return pieceMoves;
     }
     return MoveList.pieceMoves(fenPiece, pieceBoard, pieceBb, board);
   }

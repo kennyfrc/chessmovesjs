@@ -34,6 +34,7 @@ class Board {
     this.blackMinorBb = U64(0);
     this.whiteMajorBb = U64(0);
     this.blackMajorBb = U64(0);
+    this.fen = "";
 
     // piece knowledge
     this.pieceBoardList = new PieceBoardList();
@@ -69,6 +70,7 @@ class Board {
 
   parseFenToBoard(fen) {
     this.resetBoard();
+    this.fen = fen;
 
     let boardIndex = 56; // fens start at a8
     let ranksRead = 1;

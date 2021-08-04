@@ -39,12 +39,10 @@ class MoveList {
     let kingInCheckMoves;
     switch (fenPiece) {
       case 'K':
-        const whiteKingDangerBoard = ThreatBoard.kingDangerSqs('w', board);
-        kingInCheckMoves = attacks & whiteKingDangerBoard;
+        kingInCheckMoves = attacks & board.whiteKingDangerSquares;
         return attacks ^ kingInCheckMoves;
       case 'k':
-        const blackKingDangerBoard = ThreatBoard.kingDangerSqs('b', board);
-        kingInCheckMoves = attacks & blackKingDangerBoard;
+        kingInCheckMoves = attacks & board.blackKingDangerSquares;
         return attacks ^ kingInCheckMoves;
       default:
         return attacks;
@@ -97,7 +95,7 @@ class CheckEvasions {
     const kingBb = board.whiteToMove ? board.whiteKingBb : board.blackKingBb;
     const kingSourceSq = BitHelper.bitScanFwd(kingBb);
     const occupiable = board.whiteToMove ? ~board.whiteBb : ~board.blackBb;
-    const checkerDirectionFromKing = Mask.mooreNeighborhood(kingBb) & board.kingDangerSqsBb;
+    const checkerDirectionFromKing = Mask.mooreNeighborhood(kingBb) & board.kingDangerSquares;
     const sqThatPointsToChecker = BitHelper.bitScanFwd(checkerDirectionFromKing);
     const checkerRay = Ray.for(kingSourceSq, sqThatPointsToChecker, board.bb);
     return checkerRay;

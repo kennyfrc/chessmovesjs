@@ -8,6 +8,9 @@ const U64 = require('./helpers.js').U64;
 const Pieces = require('./pieces.js').Pieces;
 const MoveList = require('./move.js').MoveList;
 const ThreatBoard = require('./threatboard.js').ThreatBoard;
+const BoardProxy = require('./boardproxy.js').BoardProxy;
+const PieceStatus = require('./pieces.js').PieceStatus;
+const Direction = require('./attack.js').Direction;
 
 class Board {
   constructor() {
@@ -40,8 +43,12 @@ class Board {
     this.checkersBb = U64(0);
     this.checkerCount = 0;
     this.checkingPiece;
+    this.kingDangerSquares = U64(0);
+    this.whiteKingDangerSquares = U64(0);
+    this.blackKingDangerSquares = U64(0);
 
     // data for pins and xrays
+    this.xrayDangerSqs = U64(0);
     this.whiteBlockers = U64(0);
     this.blackBlockers = U64(0);
     this.blockers = U64(0);
@@ -137,9 +144,11 @@ class Board {
     this.setPieceBbs();
     this.setPieceSetBbs();
     this.setBoardBb();
+    this.setBlockers();
+    this.setThreats();
     this.setInCheck();
     this.setCheckerCount();
-    this.setBlockers();
+    this.setXrayDangerSqs()
   }
 
   resetBoard() {
@@ -193,18 +202,68 @@ class Board {
   }
 
   setInCheck() {
-    this.kingDangerSqsBb = this.whiteToMove ? this.kingDangerBb('w') :
-      this.kingDangerBb('b');
     const kingBb = this.whiteToMove ? this.whiteKingBb : this.blackKingBb;
-    this.sideInCheck = (this.kingDangerSqsBb & kingBb) !== U64(0) ? true : false;
+    this.sideInCheck = (this.kingDangerSquares & kingBb) !== U64(0) ? true : false;
   }
 
   setCheckerCount() {
     this.checkerCount = this.sideInCheck ? BitHelper.popCount(this.checkersBb) : 0;
   }
 
-  setCheckers(threats, pieceBb, boardProxyNoKing) {
-    const kingBb = boardProxyNoKing.whiteToMove ? boardProxyNoKing.whiteKingBb : boardProxyNoKing.blackKingBb;
+  setThreats() {
+    const sideToAttack = this.whiteToMove ? 'b' : 'w';
+    const kingToMove = this.whiteToMove ? 'K' : 'k';
+    const boardProxyNoKing = new BoardProxy(this);
+    boardProxyNoKing.bb ^= boardProxyNoKing.pieceBoardList[kingToMove].bb;
+
+    this.setKingDangerThreats(sideToAttack, boardProxyNoKing, true);
+  }
+
+  setKingDangerThreats(byPieceOrSide, boardProxy, findCheckers = false) {
+    Pieces.for(byPieceOrSide)
+      .forEach((fenPiece) => {
+        PieceStatus.isPawn(fenPiece) ? this.setPawnThreats(boardProxy, fenPiece) :
+        this.setPieceThreats(boardProxy, fenPiece)
+      })
+  }
+
+  setPawnThreats(boardProxy, fenPiece) {
+    const pieceBoard = boardProxy.pieceBoardList[fenPiece];
+    SquareHelper.indicesFor(pieceBoard.bb)
+      .map((sq) => BitHelper.setBit(U64(0), sq))
+      .forEach((pieceBb) => {
+          const threats = pieceBoard.rawPawnAttacks(pieceBb, boardProxy);
+          this.setCheckers(threats, pieceBb, boardProxy);
+          this.setDangerSquares(threats, pieceBb)
+      });
+  }
+
+  setPieceThreats(boardProxy, fenPiece) {
+    const pieceBoard = boardProxy.pieceBoardList[fenPiece];
+    SquareHelper.indicesFor(pieceBoard.bb)
+      .map((sq) => BitHelper.setBit(U64(0), sq))
+      .forEach((pieceBb) => {
+        const threats = pieceBoard.attacks(pieceBb, boardProxy);
+        this.setCheckers(threats, pieceBb, boardProxy);
+        this.setDangerSquares(threats);
+      });
+  }
+
+  setDangerSquares(threats, pieceBb) {
+    let pawnAttacks = U64(0);
+    if (this.whiteToMove) {
+      pawnAttacks = Direction.bPawnAttacks(this.pieceBoardList.p.bb)
+      this.whiteKingDangerSquares |= (threats | pawnAttacks);
+      this.kingDangerSquares |= this.whiteKingDangerSquares;
+    } else {
+      pawnAttacks = Direction.wPawnAttacks(this.pieceBoardList.P.bb)
+      this.blackKingDangerSquares |= (threats | pawnAttacks);
+      this.kingDangerSquares |= this.blackKingDangerSquares;
+    }
+  }
+
+  setCheckers(threats, pieceBb, boardProxy) {
+    const kingBb = boardProxy.whiteToMove ? boardProxy.whiteKingBb : boardProxy.blackKingBb;
     this.checkersBb |= (threats & kingBb) !== U64(0) ? pieceBb : U64(0);
   }
 
@@ -216,6 +275,15 @@ class Board {
     this.blockers = blockers;
   }
 
+  setXrayDangerSqs() {
+    const opponentsSide = this.whiteToMove ? 'bs' : 'ws';
+    const blockers = this.getBlockers();
+    const boardProxyNoBlockers = new BoardProxy(this);
+    if (blockers === U64(0)) { return U64(0) };
+    boardProxyNoBlockers.bb = boardProxyNoBlockers.bb ^ blockers;
+    this.xrayDangerSqs = ThreatBoard.for(opponentsSide, boardProxyNoBlockers);
+  }
+
   getEpCaptureBb() {
     return this.whiteToMove ? this.epSqBb >> U64(8) : this.epSqBb << U64(8);
   }
@@ -224,20 +292,16 @@ class Board {
     return this.blockers;
   }
 
+  getXrayDangerBb() {
+    return this.xrayDangerSqs; 
+  }
+
   legalMoves() {
     return MoveList.legalMoves(this);
   }
 
   moves(fenPiece = 'all') {
     return fenPiece ? MoveList.for(fenPiece, this) : MoveList.legalMoves(this);
-  }
-
-  xrayDangerBb() {
-    return ThreatBoard.xrayDangerSqs(this); 
-  }
-
-  kingDangerBb(side) {
-    return ThreatBoard.kingDangerSqs(side, this);
   }
 
   isSqAttacked(sq, byPieceOrSide = 'all') {
@@ -267,7 +331,7 @@ class BoardStatus {
   static isOurKingXrayed(board) {
     const ourKingFen = board.whiteToMove ? 'K' : 'k';
     const ourKing = board.pieceBoardList[ourKingFen].bb;
-    const opponentXrays = board.xrayDangerBb();
+    const opponentXrays = board.getXrayDangerBb();
     return (ourKing & opponentXrays) !== U64(0) ? true : false;
   }
 

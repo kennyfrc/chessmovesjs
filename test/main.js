@@ -558,10 +558,9 @@ describe('KingBoard', function() {
   describe('#moves()', function() {
     it('returns legal moves', function() {
       const boardWManyKingMoves = new Board();
-      boardWManyKingMoves.parseFenToBoard('1r3r2/p1pp3p/Pp1k2p1/3p1p2/5P1P/2K1P3/P1PP3P/R1B4R b - - 0 19');
+      boardWManyKingMoves.parseFenToBoard('1r3r2/p1pp3p/Pp1k2p1/3p1p2/5P1P/2K1P3/P1PP3P/R1B4R w - - 0 19');
 
       let whiteKingMoves = boardWManyKingMoves.moves('K');
-      let blackKingMoves = boardWManyKingMoves.moves('k');
 
       assert.equal(whiteKingMoves[0].from, 18)
       assert.equal(whiteKingMoves[0].to, 9)
@@ -573,14 +572,6 @@ describe('KingBoard', function() {
       assert.equal(whiteKingMoves[3].to, 25)
       assert.equal(whiteKingMoves[4].from, 18)
       assert.equal(whiteKingMoves[4].to, 27)
-      assert.equal(blackKingMoves[0].from, 43)
-      assert.equal(blackKingMoves[0].to, 34)
-      assert.equal(blackKingMoves[1].from, 43)
-      assert.equal(blackKingMoves[1].to, 42)
-      assert.equal(blackKingMoves[2].from, 43)
-      assert.equal(blackKingMoves[2].to, 44)
-      assert.equal(blackKingMoves[3].from, 43)
-      assert.equal(blackKingMoves[3].to, 52)
     });
 
     it('can castle', function() {

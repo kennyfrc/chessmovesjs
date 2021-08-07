@@ -17,7 +17,7 @@
   init[1] = U64('0x23456');
   init[2] = U64('0x34567');
   init[3] = U64('0x45678');
-  m.init_by_array(init, 4);
+  m.init_by_array(init);
 
   Both of the above will produce the same random sequence.
 
@@ -103,7 +103,7 @@ var MersenneTwister = function(seed) {
   this.mt = new BigUint64Array(this.N); /* the array for the state vector */
   this.mti=this.N+1; /* mti==N+1 means mt[N] is not initialized */
 
-  if (seed.constructor === Array) {
+  if (seed.constructor === BigUint64Array) {
     this.init_by_array(seed, seed.length);
   }
   else {
@@ -124,9 +124,13 @@ MersenneTwister.prototype.init_seed = function(s) {
 /* initialize by an array with array-length */
 /* init_key is the array for initializing keys */
 /* key_length is its length */
-MersenneTwister.prototype.init_by_array = function(init_key, key_length) {
-  var i, j, k;
+MersenneTwister.prototype.init_by_array = function(init_key) {
+  if (init_key.constructor !== BigUint64Array) {
+    throw new Error('You must use BigUint64Array for your input array');
+  }
   this.init_seed(U64(19650218));
+  var i, j, k;
+  const key_length = init_key.length;
   i=1; j=0;
   k = (this.N>key_length ? this.N : key_length);
   for (; k; k--) {

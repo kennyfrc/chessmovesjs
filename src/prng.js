@@ -84,143 +84,141 @@
    email: m-mat @ math.sci.hiroshima-u.ac.jp (remove spaces)
 */
 
-var U64 = function(int) {
+const U64 = function(int) {
   return BigInt.asUintN(64, BigInt(int));
 }
 
-var MersenneTwister = function(seed) {
-  if (seed == undefined) {
-    seed = new Date().getTime();
+class MersenneTwister {
+  constructor(seed) {
+    this.seed = seed || U64(new Date().getTime());
+
+    this.N = 312;
+    this.M = 156;
+    this.MATRIX_A = U64('0xB5026F5AA96619E9');   /* constant vector a */
+    this.UPPER_MASK = U64('0xFFFFFFFF80000000'); /* Most significant 33 bits */
+    this.LOWER_MASK = U64('0x7FFFFFFF'); /* Least significant 31 bits */
+
+    this.mt = new BigUint64Array(this.N); /* the array for the state vector */
+    this.mti=this.N+1; /* mti==N+1 means mt[N] is not initialized */
+
+    this.#seedIsBigUint64Array() ? this.init_by_array(this.seed) :
+      this.init_seed();
   }
 
-  /* Period parameters */
-  this.N = 312;
-  this.M = 156;
-  this.MATRIX_A = U64('0xB5026F5AA96619E9');   /* constant vector a */
-  this.UPPER_MASK = U64('0xFFFFFFFF80000000'); /* Most significant 33 bits */
-  this.LOWER_MASK = U64('0x7FFFFFFF'); /* Least significant 31 bits */
-
-  this.mt = new BigUint64Array(this.N); /* the array for the state vector */
-  this.mti=this.N+1; /* mti==N+1 means mt[N] is not initialized */
-
-  if (seed.constructor === BigUint64Array) {
-    this.init_by_array(seed, seed.length);
+  /* initialize by an array with array-length */
+  /* init_key is the array for initializing keys */
+  init_by_array(init_key) {
+    if (init_key.constructor !== BigUint64Array) {
+      throw new Error('You must use BigUint64Array for your input array');
+    }
+    this.init_seed(U64(19650218));
+    var i, j, k;
+    const key_length = init_key.length;
+    i=1; j=0;
+    k = (this.N>key_length ? this.N : key_length);
+    for (; k; k--) {
+      this.mt[i] = (this.mt[i] ^ ((this.mt[i-1] ^ (this.mt[i-1] >> U64(62))) * U64(3935559000370003845)))
+        + init_key[j] + U64(j);  /* non linear */
+      i++; j++;
+      if (i>=this.N) {this.mt[0] = this.mt[this.N-1]; i=1;}
+      if (j>=key_length) j=0;
+    }
+    for (k=this.N-1; k; k--) {
+      this.mt[i] = (this.mt[i] ^ ((this.mt[i-1] ^ (this.mt[i-1] >> U64(62))) * U64(2862933555777941757)))
+        - U64(i); /* non linear */
+      i++;
+      if (i>=this.N) {this.mt[0] = this.mt[this.N-1]; i=1;}
+    }
+    this.mt[0] = U64(1) << U64(63); /* MSB is 1; assuring non-zero initial array */
   }
-  else {
-    this.init_seed(seed);
-  }
-}
 
-/* initializes mt[NN] with a seed */
-MersenneTwister.prototype.init_seed = function(s) {
-  s = U64(s);
-  this.mt[0] = s;
-  for (this.mti=1; this.mti<this.N; this.mti++) {
-    this.mt[this.mti] = (U64(6364136223846793005) *
-        (this.mt[this.mti-1] ^ (this.mt[this.mti-1] >> 62n)) + U64(this.mti));
+  /* initializes mt[NN] with a seed */
+  init_seed(seed) {
+    this.seed = U64(seed);
+    this.mt[0] = this.seed;
+    for (this.mti=1; this.mti<this.N; this.mti++) {
+      this.mt[this.mti] = (U64(6364136223846793005) *
+          (this.mt[this.mti-1] ^ (this.mt[this.mti-1] >> U64(62))) + U64(this.mti));
+    }
   }
-}
 
-/* initialize by an array with array-length */
-/* init_key is the array for initializing keys */
-/* key_length is its length */
-MersenneTwister.prototype.init_by_array = function(init_key) {
-  if (init_key.constructor !== BigUint64Array) {
-    throw new Error('You must use BigUint64Array for your input array');
-  }
-  this.init_seed(U64(19650218));
-  var i, j, k;
-  const key_length = init_key.length;
-  i=1; j=0;
-  k = (this.N>key_length ? this.N : key_length);
-  for (; k; k--) {
-    this.mt[i] = (this.mt[i] ^ ((this.mt[i-1] ^ (this.mt[i-1] >> U64(62))) * U64(3935559000370003845)))
-      + init_key[j] + U64(j);  /* non linear */
-    i++; j++;
-    if (i>=this.N) {this.mt[0] = this.mt[this.N-1]; i=1;}
-    if (j>=key_length) j=0;
-  }
-  for (k=this.N-1; k; k--) {
-    this.mt[i] = (this.mt[i] ^ ((this.mt[i-1] ^ (this.mt[i-1] >> U64(62))) * U64(2862933555777941757)))
-      - U64(i); /* non linear */
-    i++;
-    if (i>=this.N) {this.mt[0] = this.mt[this.N-1]; i=1;}
-  }
-  this.mt[0] = U64(1) << U64(63); /* MSB is 1; assuring non-zero initial array */ 
-}
-
-/* generates a random number on [0, 2^64-1]-interval */
-/* origin name genrand64_int64 */
-MersenneTwister.prototype.random_int = function() {
-  var i;
-  var x = U64(0);
-  var mag01 = new BigUint64Array(2)
-  mag01[0] = (U64(0));
-  mag01[1] = this.MATRIX_A;
+  /* generates a random number on [0, 2^64-1]-interval */
+  /* origin name genrand64_int64 */
+  random_bigint(seed) {
+    var i;
+    var x = U64(0);
+    var mag01 = new BigUint64Array(2)
+    mag01[0] = (U64(0));
+    mag01[1] = this.MATRIX_A;
 
 
-  if (this.mti>=this.N) { /* generate N words at one time */
-    /* if init_seed() has not been called, */
-    /* a default initial seed is used     */
-    if (this.mti === this.N+1) {
-      this.init_seed(U64(5489));
+    if (this.mti>=this.N) { /* generate N words at one time */
+      /* if init_seed() has not been called, */
+      /* a default initial seed is used     */
+      if (this.mti === this.N+1) {
+        this.init_seed(U64(5489));
+      }
+
+      for (i=0;i<this.N-this.M;i++) {
+        x = (this.mt[i] & this.UPPER_MASK) | (this.mt[i+1] & this.LOWER_MASK);
+        this.mt[i] = this.mt[i+this.M] ^ (x>>U64(1))^mag01[Number(x&U64(1))];
+      }
+
+      for (;i<this.N-1;i++) {
+        x = (this.mt[i] & this.UPPER_MASK) | (this.mt[i+1] & this.LOWER_MASK);
+        this.mt[i] = this.mt[i+(this.M-this.N)] ^ (x>>U64(1))^mag01[Number(x&U64(1))];
+      }
+
+      x = (this.mt[this.N-1]&this.UPPER_MASK) | (this.mt[0]&this.LOWER_MASK);
+      this.mt[this.N-1] = this.mt[this.M-1] ^ (x>>U64(1)^mag01[Number(x&U64(1))]);
+
+      this.mti = 0;
     }
 
-    for (i=0;i<this.N-this.M;i++) {
-      x = (this.mt[i] & this.UPPER_MASK) | (this.mt[i+1] & this.LOWER_MASK);
-      this.mt[i] = this.mt[i+this.M] ^ (x>>U64(1))^mag01[Number(x&U64(1))];
-    }
+    x = this.mt[this.mti++];
 
-    for (;i<this.N-1;i++) {
-      x = (this.mt[i] & this.UPPER_MASK) | (this.mt[i+1] & this.LOWER_MASK);
-      this.mt[i] = this.mt[i+(this.M-this.N)] ^ (x>>U64(1))^mag01[Number(x&U64(1))];
-    }
+    x ^= (x >> U64(29) & U64('0x5555555555555555'));
+    x ^= (x << U64(17) & U64('0x71D67FFFEDA60000'));
+    x ^= (x << U64(37) & U64('0xFFF7EEE000000000'));
+    x ^= (x >> U64(43));
 
-    x = (this.mt[this.N-1]&this.UPPER_MASK) | (this.mt[0]&this.LOWER_MASK);
-    this.mt[this.N-1] = this.mt[this.M-1] ^ (x>>U64(1)^mag01[Number(x&U64(1))]);
-
-    this.mti = 0;
+    return x;
   }
 
-  x = this.mt[this.mti++];
+  random_int() {
+    return Number(this.random_bigint() >> U64(11));
+  }
 
-  x ^= (x >> U64(29) & U64('0x5555555555555555'));
-  x ^= (x << U64(17) & U64('0x71D67FFFEDA60000'));
-  x ^= (x << U64(37) & U64('0xFFF7EEE000000000'));
-  x ^= (x >> U64(43));
+  /* generates a random number on [0, 2^63-1]-interval */
+  /* origin name genrand64_int63 */
+  random_int63() {
+    return this.random_bigint() >> U64(1);
+  }
 
-  return x;
-}
+  /* generates a random number on [0,1]-real-interval */
+  /* origin name genrand64_real1 */
+  random_incl() {
+    return Number(this.random_bigint() >> U64(11)) * (1.0/9007199254740991.0);
+  }
 
-/* generates a random number on [0, 2^63-1]-interval */
-/* origin name genrand64_int63 */
-MersenneTwister.prototype.random_int63 = function() {
-  return this.random_int() >> U64(1);
-}
+  /* generates a random number on [0,1]-real-interval */
+  /* origin name genrand64_real2 */
+  random() {
+    return Number(this.random_bigint() >> U64(11)) * (1.0/9007199254740992.0);
+  }
 
-/* generates a random number on [0,1]-real-interval */
-/* origin name genrand64_real1 */
-MersenneTwister.prototype.random_incl = function() {
-  return Number(this.random_int() >> U64(11)) * (1.0/9007199254740991.0);
-  /* divided by 2^53-1 */
-}
+  /* generates a random number on (0,1)-real-interval */
+  /* origin name genrand64_real3 */
+  random_excl() {
+    return (Number(this.random_bigint() >> U64(12)) + 0.5) * (1.0/4503599627370496.0);
+  }
 
-/* generates a random number on [0,1]-real-interval */
-/* origin name genrand64_real2 */
-MersenneTwister.prototype.random = function() {
-  return Number(this.random_int() >> U64(11)) * (1.0/9007199254740992.0);
-  /* both C and javascript follow the IEEE 754 standard float format */
-  /* divided by 2^53 */
-}
-
-/* generates a random number on (0,1)-real-interval */
-/* origin name genrand64_real3 */
-MersenneTwister.prototype.random_excl = function() {
-  return (Number(this.random_int() >> U64(12)) + 0.5) * (1.0/4503599627370496.0);
-  /* divided by 2^52 */
+  #seedIsBigUint64Array() {
+    return this.seed.constructor === BigUint64Array;
+  }
 }
 
 module.exports = {
-  MersenneTwister: MersenneTwister,
   U64: U64,
+  MersenneTwister: MersenneTwister,
 };

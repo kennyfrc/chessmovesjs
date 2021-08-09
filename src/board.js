@@ -11,10 +11,12 @@ const ThreatBoard = require('./threatboard.js').ThreatBoard;
 const BoardProxy = require('./boardproxy.js').BoardProxy;
 const PieceStatus = require('./pieces.js').PieceStatus;
 const Direction = require('./attack.js').Direction;
+const MersenneTwister = require('./prng.js').MersenneTwister;
 
 class Board {
-  constructor() {
+  constructor(fen) {
     // basic bitboards
+    this.startPos = fen || 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
     this.bb = U64(0);
     this.whiteBb = U64(0);
     this.blackBb = U64(0);
@@ -58,6 +60,13 @@ class Board {
     this.epSqBb = U64(0);
     this.epCaptureBb = U64(0);
 
+    // keys
+    this.posKey = U64(0);
+    this.pieceKeys = new PieceKeys();
+    this.enPassantKeys = new BigUint64Array(64);
+    this.sideKey = new BigUint64Array(2);
+    this.castleKeys = new BigUint64Array(64);
+
     // other critical data
     this.castleStatus = U64(0);
     this.castleBit = {'K': U64('0x1'), 'Q': U64('0x80'),
@@ -68,8 +77,13 @@ class Board {
     this.fullMoveNo = 0;
   }
 
+  initializePos() {
+    this.parseFenToBoard(this.startPos);
+  }
+
   parseFenToBoard(fen) {
     this.resetBoard();
+    this.initKeys();
 
     let boardIndex = 56; // fens start at a8
     let ranksRead = 1;
@@ -79,10 +93,14 @@ class Board {
       if (FenReader.finishedReadingBoard(ranksRead, whiteSpace)) {
         if (FenReader.isSidetoMove(fen[i])) {
           this.whiteToMove = fen[i] === 'w' ? true : false;
+          this.posKey ^= fen[i] === 'w' ? this.sideKey[0] : this.sideKey[1];
         }
 
         if (FenReader.isCastlingSymbol(fen[i])) {
-          this.castleStatus |= this.castleBit[fen[i]];
+          const castleBit = this.castleBit[fen[i]];
+          const castleIdx = BitHelper.bitScanFwd(castleBit);
+          this.castleStatus |= castleBit;
+          this.posKey ^= this.castleKeys[castleIdx];
         }
 
         if (FenReader.isEnPassantChar(fen[i], whiteSpace)) {
@@ -90,6 +108,7 @@ class Board {
           this.epSqIdx = SquareHelper.for(epSq);
           this.epSqBb = BitHelper.setBit(U64(0), this.epSqIdx);
           this.epCaptureBb = this.getEpCaptureBb();
+          this.posKey ^= this.enPassantKeys[this.epSqIdx];
           i += 1;
         }
 
@@ -119,12 +138,14 @@ class Board {
         if (FenReader.isWhitePiece(fen[i])) {
           const pieceBit = BitHelper.setBit(this.pieceBoardList[fen[i]].bb, boardIndex);
           this.pieceBoardList[fen[i]] = PieceBoard.for(fen[i], pieceBit);
+          this.posKey ^= this.pieceKeys[fen[i]][boardIndex];
           boardIndex += 1;
         }
 
         if (FenReader.isBlackPiece(fen[i])) {
           const pieceBit = BitHelper.setBit(this.pieceBoardList[fen[i]].bb, boardIndex);
           this.pieceBoardList[fen[i]] = PieceBoard.for(fen[i], pieceBit);
+          this.posKey ^= this.pieceKeys[fen[i]][boardIndex];
           boardIndex += 1;
         }
 
@@ -289,6 +310,26 @@ class Board {
     this.xrayDangerSqs = ThreatBoard.for(opponentsSide, boardProxyNoBlockers);
   }
 
+  initKeys() {
+    Pieces.for('all').forEach((piece) => {
+      [...Array(64).keys()].forEach((sq) => {
+        this.pieceKeys[piece][sq] = new MersenneTwister().random_bigint();
+      });
+    });
+
+    [...Array(64).keys()].forEach((sq) => {
+      this.enPassantKeys[sq] = new MersenneTwister().random_bigint();
+    });
+
+    [...Array(64).keys()].forEach((sq) => {
+      this.castleKeys[sq] = new MersenneTwister().random_bigint();
+    });
+
+    [...Array(2).keys()].forEach((sq) => {
+      this.sideKey[sq] = new MersenneTwister().random_bigint();
+    });
+  }
+
   getEpCaptureBb() {
     return this.whiteToMove ? this.epSqBb >> U64(8) : this.epSqBb << U64(8);
   }
@@ -348,6 +389,23 @@ class BoardStatus {
 
   static isInCheck(board) {
     return board.sideInCheck;
+  }
+}
+
+class PieceKeys {
+  constructor() {
+    this.K = new BigUint64Array(64);
+    this.Q = new BigUint64Array(64);
+    this.R = new BigUint64Array(64);
+    this.B = new BigUint64Array(64);
+    this.N = new BigUint64Array(64);
+    this.P = new BigUint64Array(64);
+    this.k = new BigUint64Array(64);
+    this.q = new BigUint64Array(64);
+    this.r = new BigUint64Array(64);
+    this.b = new BigUint64Array(64);
+    this.n = new BigUint64Array(64);
+    this.p = new BigUint64Array(64);
   }
 }
 

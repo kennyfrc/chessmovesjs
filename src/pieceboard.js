@@ -6,6 +6,7 @@ const Direction = require('./attack.js').Direction;
 const MoveList = require('./move.js').MoveList;
 const U64 = require('./helpers.js').U64;
 const U64Comp = require('./helpers.js').U64Comp;
+const MersenneTwister = require('./prng.js').MersenneTwister;
 
 class PieceBoard {
   static for(fenChar, pieceBit) {
@@ -212,15 +213,6 @@ class WhiteBishopBoard extends PieceBoard {
     this.setContext(board);
     return Direction.bishopRays(pieceBb, this.occupied, this.occupiable);
   }
-
-  // xrays(pieceBb, board) {
-  //   this.setContext(board);
-  //   const attacks = Direction.bishopRays(pieceBb, this.occupied, this.occupiable);
-  //   const blockers = attacks & occupied;
-  //   const occupiable = ~board.whiteBb;
-  //   const boardWithoutBlockers = board.bb ^ blockers;
-  //   return Direction.bishopRays(pieceBb, boardWithoutBlockers, occupiable);
-  // }
 }
 
 class BlackBishopBoard extends PieceBoard {

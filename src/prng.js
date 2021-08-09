@@ -102,7 +102,7 @@ class MersenneTwister {
     this.mti=this.N+1; /* mti==N+1 means mt[N] is not initialized */
 
     this.#seedIsBigUint64Array() ? this.init_by_array(this.seed) :
-      this.init_seed();
+      this.init_seed(this.seed);
   }
 
   /* initialize by an array with array-length */

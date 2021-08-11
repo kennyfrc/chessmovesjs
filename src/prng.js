@@ -11,10 +11,12 @@ const U64 = require('./helpers.js').U64;
 class LCG {
   constructor(seed) {
     this.seed = U64(seed || new Date().getTime());
+    this.a = U64(257);
+    this.m = U64(2**61-1);
   }
 
   random_bigint() {
-    this.seed = (U64(257) * this.seed) % U64(2**61-1);
+    this.seed = (this.a * this.seed) % this.m;
     return this.seed;
   }
 }

@@ -11,7 +11,7 @@ const ThreatBoard = require('./threatboard.js').ThreatBoard;
 const BoardProxy = require('./boardproxy.js').BoardProxy;
 const PieceStatus = require('./pieces.js').PieceStatus;
 const Direction = require('./attack.js').Direction;
-const MersenneTwister = require('./prng.js').MersenneTwister;
+const LCG = require('./prng.js').LCG;
 
 class Board {
   constructor(fen) {
@@ -61,6 +61,7 @@ class Board {
     this.epCaptureBb = U64(0);
 
     // keys
+    this.lcg = new LCG();
     this.posKey = U64(0);
     this.pieceKeys = new PieceKeys();
     this.enPassantKeys = new BigUint64Array(64);
@@ -313,20 +314,20 @@ class Board {
   initKeys() {
     Pieces.for('all').forEach((piece) => {
       [...Array(64).keys()].forEach((sq) => {
-        this.pieceKeys[piece][sq] = new MersenneTwister().random_bigint();
+        this.pieceKeys[piece][sq] = this.lcg.random_bigint();
       });
     });
 
     [...Array(64).keys()].forEach((sq) => {
-      this.enPassantKeys[sq] = new MersenneTwister().random_bigint();
+      this.enPassantKeys[sq] = this.lcg.random_bigint();
     });
 
     [...Array(64).keys()].forEach((sq) => {
-      this.castleKeys[sq] = new MersenneTwister().random_bigint();
+      this.castleKeys[sq] = this.lcg.random_bigint();
     });
 
     [...Array(2).keys()].forEach((sq) => {
-      this.sideKey[sq] = new MersenneTwister().random_bigint();
+      this.sideKey[sq] = this.lcg.random_bigint();
     });
   }
 

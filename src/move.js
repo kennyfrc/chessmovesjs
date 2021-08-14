@@ -168,29 +168,27 @@ class WhitePawnMove {
   constructor(fromIdx, toIdx, pieceBoard) {
     this.from = fromIdx;
     this.to = toIdx;
+    this.toBit = BitHelper.setBit(U64(0), U64(toIdx));
     this.ep = false;
-    this.check = this.isCheck(toIdx, pieceBoard);
-    this.capture = this.isCapture(toIdx, pieceBoard);
-    this.threat = this.isThreat(toIdx, pieceBoard);
+    this.check = this.isCheck(pieceBoard);
+    this.capture = this.isCapture(pieceBoard);
+    this.threat = this.isThreat(pieceBoard);
   }
 
-  isCheck(toIdx, pieceBoard) {
-    const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
-    return ((Direction.wPawnAttacks(pieceBb) & pieceBoard.blackKingBb) ===
+  isCheck(pieceBoard) {
+    return ((Direction.wPawnAttacks(this.toBit) & pieceBoard.blackKingBb) ===
       U64(0) ? false : true);
   }
 
-  isCapture(toIdx, pieceBoard) {
-    const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
-    const capOrEp = pieceBb & (pieceBoard.blackBb | pieceBoard.epSqBb);
-    const enPassant = pieceBb & pieceBoard.epSqBb;
+  isCapture(pieceBoard) {
+    const capOrEp = this.toBit & (pieceBoard.blackBb | pieceBoard.epSqBb);
+    const enPassant = this.toBit & pieceBoard.epSqBb;
     this.ep = enPassant === U64(0) ? false : true;
     return (capOrEp === U64(0) ? false : true );
   }
 
-  isThreat(toIdx, pieceBoard) {
-    const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
-    return (Direction.wPawnAttacks(pieceBb) & (pieceBoard.blackMinorBb |
+  isThreat(pieceBoard) {
+    return (Direction.wPawnAttacks(this.toBit) & (pieceBoard.blackMinorBb |
       pieceBoard.blackMajorBb)) === U64(0) ? false : true;
   }
 }
@@ -199,29 +197,27 @@ class BlackPawnMove {
   constructor(fromIdx, toIdx, pieceBoard) {
     this.from = fromIdx;
     this.to = toIdx;
+    this.toBit = BitHelper.setBit(U64(0), U64(toIdx));
     this.ep = false;
-    this.check = this.isCheck(toIdx, pieceBoard);
-    this.capture = this.isCapture(toIdx, pieceBoard);
-    this.threat = this.isThreat(toIdx, pieceBoard);
+    this.check = this.isCheck(pieceBoard);
+    this.capture = this.isCapture(pieceBoard);
+    this.threat = this.isThreat(pieceBoard);
   }
 
-  isCheck(toIdx, pieceBoard) {
-    const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
-    return ((Direction.bPawnAttacks(pieceBb) & pieceBoard.whiteKingBb) ===
+  isCheck(pieceBoard) {
+    return ((Direction.bPawnAttacks(this.toBit) & pieceBoard.whiteKingBb) ===
       U64(0) ? false : true);
   }
 
-  isCapture(toIdx, pieceBoard) {
-    const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
-    const capOrEp = pieceBb & (pieceBoard.whiteBb | pieceBoard.epSqBb);
-    const enPassant = pieceBb & pieceBoard.epSqBb;
+  isCapture(pieceBoard) {
+    const capOrEp = this.toBit & (pieceBoard.whiteBb | pieceBoard.epSqBb);
+    const enPassant = this.toBit & pieceBoard.epSqBb;
     this.ep = enPassant === U64(0) ? false : true;
     return (capOrEp === U64(0) ? false : true );
   }
 
-  isThreat(toIdx, pieceBoard) {
-    const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
-    return (Direction.bPawnAttacks(pieceBb) & (pieceBoard.whiteMinorBb |
+  isThreat(pieceBoard) {
+    return (Direction.bPawnAttacks(this.toBit) & (pieceBoard.whiteMinorBb |
       pieceBoard.whiteMajorBb)) === U64(0) ? false : true;
   }
 }
@@ -230,25 +226,23 @@ class WhiteKnightMove {
   constructor(fromIdx, toIdx, pieceBoard) {
     this.from = fromIdx;
     this.to = toIdx;
-    this.check = this.isCheck(toIdx, pieceBoard);
-    this.capture = this.isCapture(toIdx, pieceBoard);
-    this.threat = this.isThreat(toIdx, pieceBoard);
+    this.toBit = BitHelper.setBit(U64(0), U64(toIdx));
+    this.check = this.isCheck(pieceBoard);
+    this.capture = this.isCapture(pieceBoard);
+    this.threat = this.isThreat(pieceBoard);
   }
 
-  isCheck(toIdx, pieceBoard) {
-    const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
-    return ((Direction.knightAttacks(pieceBb) & pieceBoard.blackKingBb) ===
+  isCheck(pieceBoard) {
+    return ((Direction.knightAttacks(this.toBit) & pieceBoard.blackKingBb) ===
       U64(0) ? false : true);
   }
 
-  isCapture(toIdx, pieceBoard) {
-    const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
-    return ((pieceBb & pieceBoard.blackBb) === U64(0) ? false : true );
+  isCapture(pieceBoard) {
+    return ((this.toBit & pieceBoard.blackBb) === U64(0) ? false : true );
   }
 
-  isThreat(toIdx, pieceBoard) {
-    const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
-    return (Direction.knightAttacks(pieceBb) & pieceBoard.blackMajorBb) ===
+  isThreat(pieceBoard) {
+    return (Direction.knightAttacks(this.toBit) & pieceBoard.blackMajorBb) ===
       U64(0) ? false : true;
   }
 }
@@ -257,25 +251,23 @@ class BlackKnightMove {
   constructor(fromIdx, toIdx, pieceBoard) {
     this.from = fromIdx;
     this.to = toIdx;
-    this.check = this.isCheck(toIdx, pieceBoard);
-    this.capture = this.isCapture(toIdx, pieceBoard);
-    this.threat = this.isThreat(toIdx, pieceBoard);
+    this.toBit = BitHelper.setBit(U64(0), U64(toIdx));
+    this.check = this.isCheck(pieceBoard);
+    this.capture = this.isCapture(pieceBoard);
+    this.threat = this.isThreat(pieceBoard);
   }
 
-  isCheck(toIdx, pieceBoard) {
-    const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
-    return ((Direction.knightAttacks(pieceBb) & pieceBoard.whiteKingBb) ===
+  isCheck(pieceBoard) {
+    return ((Direction.knightAttacks(this.toBit) & pieceBoard.whiteKingBb) ===
       U64(0) ? false : true);
   }
 
-  isCapture(toIdx, pieceBoard) {
-    const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
-    return ((pieceBb & pieceBoard.whiteBb) === U64(0) ? false : true );
+  isCapture(pieceBoard) {
+    return ((this.toBit & pieceBoard.whiteBb) === U64(0) ? false : true );
   }
 
-  isThreat(toIdx, pieceBoard) {
-    const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
-    return (Direction.knightAttacks(pieceBb) & pieceBoard.whiteMajorBb) ===
+  isThreat(pieceBoard) {
+    return (Direction.knightAttacks(this.toBit) & pieceBoard.whiteMajorBb) ===
       U64(0) ? false : true;
   }
 }
@@ -284,25 +276,23 @@ class WhiteBishopMove {
   constructor(fromIdx, toIdx, pieceBoard) {
     this.from = fromIdx;
     this.to = toIdx;
-    this.check = this.isCheck(toIdx, pieceBoard);
-    this.capture = this.isCapture(toIdx, pieceBoard);
-    this.threat = this.isThreat(toIdx, pieceBoard);
+    this.toBit = BitHelper.setBit(U64(0), U64(toIdx));
+    this.check = this.isCheck(pieceBoard);
+    this.capture = this.isCapture(pieceBoard);
+    this.threat = this.isThreat(pieceBoard);
   }
 
-  isCheck(toIdx, pieceBoard) {
-    const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
-    return ((Direction.bishopRays(pieceBb, pieceBoard.occupied, pieceBoard.occupiable) &
+  isCheck(pieceBoard) {
+    return ((Direction.bishopRays(this.toBit, pieceBoard.occupied, pieceBoard.occupiable) &
         pieceBoard.blackKingBb) === U64(0) ? false : true);
   }
 
-  isCapture(toIdx, pieceBoard) {
-    const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
-    return ((pieceBb & pieceBoard.blackBb) === U64(0) ? false : true );
+  isCapture(pieceBoard) {
+    return ((this.toBit & pieceBoard.blackBb) === U64(0) ? false : true );
   }
 
-  isThreat(toIdx, pieceBoard) {
-    const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
-    return (Direction.bishopRays(pieceBb, pieceBoard.occupied, pieceBoard.occupiable) &
+  isThreat(pieceBoard) {
+    return (Direction.bishopRays(this.toBit, pieceBoard.occupied, pieceBoard.occupiable) &
         pieceBoard.blackMajorBb) === U64(0) ? false : true;
   }
 }
@@ -311,25 +301,23 @@ class BlackBishopMove {
   constructor(fromIdx, toIdx, pieceBoard) {
     this.from = fromIdx;
     this.to = toIdx;
-    this.check = this.isCheck(toIdx, pieceBoard);
-    this.capture = this.isCapture(toIdx, pieceBoard);
-    this.threat = this.isThreat(toIdx, pieceBoard);
+    this.toBit = BitHelper.setBit(U64(0), U64(toIdx));
+    this.check = this.isCheck(pieceBoard);
+    this.capture = this.isCapture(pieceBoard);
+    this.threat = this.isThreat(pieceBoard);
   }
 
-  isCheck(toIdx, pieceBoard) {
-    const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
-    return ((Direction.bishopRays(pieceBb, pieceBoard.occupied, pieceBoard.occupiable) &
+  isCheck(pieceBoard) {
+    return ((Direction.bishopRays(this.toBit, pieceBoard.occupied, pieceBoard.occupiable) &
       pieceBoard.whiteKingBb) === U64(0) ? false : true);
   }
 
-  isCapture(toIdx, pieceBoard) {
-    const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
-    return ((pieceBb & pieceBoard.whiteBb) === U64(0) ? false : true );
+  isCapture(pieceBoard) {
+    return ((this.toBit & pieceBoard.whiteBb) === U64(0) ? false : true );
   }
 
-  isThreat(toIdx, pieceBoard) {
-    const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
-    return (Direction.bishopRays(pieceBb, pieceBoard.occupied, pieceBoard.occupiable) &
+  isThreat(pieceBoard) {
+    return (Direction.bishopRays(this.toBit, pieceBoard.occupied, pieceBoard.occupiable) &
       pieceBoard.whiteMajorBb) === U64(0) ? false : true;
   }
 }
@@ -338,25 +326,23 @@ class WhiteRookMove {
   constructor(fromIdx, toIdx, pieceBoard) {
     this.from = fromIdx;
     this.to = toIdx;
-    this.check = this.isCheck(toIdx, pieceBoard);
-    this.capture = this.isCapture(toIdx, pieceBoard);
-    this.threat = this.isThreat(toIdx, pieceBoard);
+    this.toBit = BitHelper.setBit(U64(0), U64(toIdx));
+    this.check = this.isCheck(pieceBoard);
+    this.capture = this.isCapture(pieceBoard);
+    this.threat = this.isThreat(pieceBoard);
   }
 
-  isCheck(toIdx, pieceBoard) {
-    const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
-    return ((Direction.rookRays(pieceBb, pieceBoard.occupied, pieceBoard.occupiable) &
+  isCheck(pieceBoard) {
+    return ((Direction.rookRays(this.toBit, pieceBoard.occupied, pieceBoard.occupiable) &
           pieceBoard.blackKingBb) === U64(0) ? false : true);
   }
 
-  isCapture(toIdx, pieceBoard) {
-    const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
-    return ((pieceBb & pieceBoard.blackBb) === U64(0) ? false : true );
+  isCapture(pieceBoard) {
+    return ((this.toBit & pieceBoard.blackBb) === U64(0) ? false : true );
   }
 
-  isThreat(toIdx, pieceBoard) {
-    const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
-    return (Direction.rookRays(pieceBb, pieceBoard.occupied, pieceBoard.occupiable) &
+  isThreat(pieceBoard) {
+    return (Direction.rookRays(this.toBit, pieceBoard.occupied, pieceBoard.occupiable) &
       pieceBoard.blackQueenBb) === U64(0) ? false : true;
   }
 }
@@ -365,25 +351,23 @@ class BlackRookMove {
   constructor(fromIdx, toIdx, pieceBoard) {
     this.from = fromIdx;
     this.to = toIdx;
-    this.check = this.isCheck(toIdx, pieceBoard);
-    this.capture = this.isCapture(toIdx, pieceBoard);
-    this.threat = this.isThreat(toIdx, pieceBoard);
+    this.toBit = BitHelper.setBit(U64(0), U64(toIdx));
+    this.check = this.isCheck(pieceBoard);
+    this.capture = this.isCapture(pieceBoard);
+    this.threat = this.isThreat(pieceBoard);
   }
 
-  isCheck(toIdx, pieceBoard) {
-    const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
-    return ((Direction.rookRays(pieceBb, pieceBoard.occupied, pieceBoard.occupiable) &
+  isCheck(pieceBoard) {
+    return ((Direction.rookRays(this.toBit, pieceBoard.occupied, pieceBoard.occupiable) &
           pieceBoard.whiteKingBb) === U64(0) ? false : true);
   }
 
-  isCapture(toIdx, pieceBoard) {
-    const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
-    return ((pieceBb & pieceBoard.whiteBb) === U64(0) ? false : true );
+  isCapture(pieceBoard) {
+    return ((this.toBit & pieceBoard.whiteBb) === U64(0) ? false : true );
   }
 
-  isThreat(toIdx, pieceBoard) {
-    const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
-    return (Direction.rookRays(pieceBb, pieceBoard.occupied, pieceBoard.occupiable) &
+  isThreat(pieceBoard) {
+    return (Direction.rookRays(this.toBit, pieceBoard.occupied, pieceBoard.occupiable) &
       pieceBoard.whiteQueenBb) === U64(0) ? false : true;
   }
 }
@@ -392,20 +376,19 @@ class WhiteQueenMove {
   constructor(fromIdx, toIdx, pieceBoard) {
     this.from = fromIdx;
     this.to = toIdx;
-    this.check = this.isCheck(toIdx, pieceBoard);
-    this.capture = this.isCapture(toIdx, pieceBoard);
+    this.toBit = BitHelper.setBit(U64(0), U64(toIdx));
+    this.check = this.isCheck(pieceBoard);
+    this.capture = this.isCapture(pieceBoard);
     this.threat = false;
   }
 
-  isCheck(toIdx, pieceBoard) {
-    const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
-    return ((Direction.queenRays(pieceBb, pieceBoard.occupied, pieceBoard.occupiable) &
+  isCheck(pieceBoard) {
+    return ((Direction.queenRays(this.toBit, pieceBoard.occupied, pieceBoard.occupiable) &
           pieceBoard.blackKingBb) === U64(0) ? false : true);
   }
 
-  isCapture(toIdx, pieceBoard) {
-    const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
-    return ((pieceBb & pieceBoard.blackBb) === U64(0) ? false : true );
+  isCapture(pieceBoard) {
+    return ((this.toBit & pieceBoard.blackBb) === U64(0) ? false : true );
   }
 }
 
@@ -413,20 +396,19 @@ class BlackQueenMove {
   constructor(fromIdx, toIdx, pieceBoard) {
     this.to = toIdx;
     this.from = fromIdx;
-    this.check = this.isCheck(toIdx, pieceBoard);
-    this.capture = this.isCapture(toIdx, pieceBoard);
+    this.toBit = BitHelper.setBit(U64(0), U64(toIdx));
+    this.check = this.isCheck(pieceBoard);
+    this.capture = this.isCapture(pieceBoard);
     this.threat = false;
   }
 
-  isCheck(toIdx, pieceBoard) {
-    const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
-    return ((Direction.queenRays(pieceBb, pieceBoard.occupied, pieceBoard.occupiable) &
+  isCheck(pieceBoard) {
+    return ((Direction.queenRays(this.toBit, pieceBoard.occupied, pieceBoard.occupiable) &
           pieceBoard.whiteKingBb) === U64(0) ? false : true);
   }
 
-  isCapture(toIdx, pieceBoard) {
-    const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
-    return ((pieceBb & pieceBoard.whiteBb) === U64(0) ? false : true );
+  isCapture(pieceBoard) {
+    return ((this.toBit & pieceBoard.whiteBb) === U64(0) ? false : true );
   }
 }
 
@@ -434,18 +416,18 @@ class WhiteKingMove {
   constructor(fromIdx, toIdx, pieceBoard) {
     this.from = fromIdx;
     this.to = toIdx;
+    this.toBit = BitHelper.setBit(U64(0), U64(toIdx));
     this.castle = this.isCastle(fromIdx, toIdx);
     this.check = false;
-    this.capture = this.isCapture(toIdx, pieceBoard);
+    this.capture = this.isCapture(pieceBoard);
     this.threat = false;
   }
 
   // TODO: isCheck for castling with rook
   // TODO: isThreat for threats against other pawns / pieces
 
-  isCapture(toIdx, pieceBoard) {
-    const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
-    return ((pieceBb & pieceBoard.blackBb) === U64(0) ? false : true );
+  isCapture(pieceBoard) {
+    return ((this.toBit & pieceBoard.blackBb) === U64(0) ? false : true );
   }
 
   isCastle(fromIdx, toIdx) {
@@ -458,15 +440,15 @@ class BlackKingMove {
   constructor(fromIdx, toIdx, pieceBoard) {
     this.from = fromIdx;
     this.to = toIdx;
+    this.toBit = BitHelper.setBit(U64(0), U64(toIdx));
     this.castle = this.isCastle(fromIdx, toIdx);
     this.check = false;
-    this.capture = this.isCapture(toIdx, pieceBoard);
+    this.capture = this.isCapture(pieceBoard);
     this.threat = false;
   }
 
-  isCapture(toIdx, pieceBoard) {
-    const pieceBb = BitHelper.setBit(U64(0), U64(toIdx));
-    return ((pieceBb & pieceBoard.whiteBb) === U64(0) ? false : true );
+  isCapture(pieceBoard) {
+    return ((this.toBit & pieceBoard.whiteBb) === U64(0) ? false : true );
   }
 
   isCastle(fromIdx, toIdx) {

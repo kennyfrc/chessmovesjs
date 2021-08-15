@@ -1,6 +1,5 @@
 const U64 = require('./helpers.js').U64;
 
-
 /**
  * We're using a Linear Congruential Generator
  * where m is Mersenne Prime 2**61-1,

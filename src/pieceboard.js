@@ -89,6 +89,8 @@ class WhitePawnBoard extends PieceBoard {
     this.blackMajorBb = board.blackMajorBb;
     this.epSqIdx = board.epSqIdx;
     this.epSqBb = this.epSqIdx === undefined ? U64(0) : BitHelper.setBit(U64(0), this.epSqIdx);
+    this.occupied = board.bb;
+    this.occupiable = ~board.whiteBb;
   }
 
   initialMoves(pieceBb) {
@@ -141,6 +143,8 @@ class BlackPawnBoard extends PieceBoard {
     this.whiteMajorBb = board.whiteMajorBb;
     this.epSqIdx = board.epSqIdx;
     this.epSqBb = this.epSqIdx === undefined ? U64(0) : BitHelper.setBit(U64(0), this.epSqIdx);
+    this.occupied = board.bb;
+    this.occupiable = ~board.blackBb;
   }
 
   initialMoves(pieceBb) {
@@ -167,6 +171,7 @@ class WhiteKnightBoard extends PieceBoard {
     this.blackKingBb = board.blackKingBb;
     this.blackMajorBb = board.blackMajorBb;
     this.blackBb = board.blackBb;
+    this.occupied = board.bb;
     this.occupiable = ~board.whiteBb;
   }
 
@@ -186,6 +191,7 @@ class BlackKnightBoard extends PieceBoard {
     this.whiteKingBb = board.whiteKingBb;
     this.whiteMajorBb = board.whiteMajorBb;
     this.whiteBb = board.whiteBb;
+    this.occupied = board.bb;
     this.occupiable = ~board.blackBb;
   }
 
@@ -357,6 +363,12 @@ class BlackKingBoard extends PieceBoard {
   }
 }
 
+class NullPieceBoard {
+  constructor() {
+    this.bb = U64(0);
+  }
+}
+
 class PieceBoardList {
   constructor() {
     this.K = PieceBoard.for('K', U64(0));
@@ -371,6 +383,21 @@ class PieceBoardList {
     this.b = PieceBoard.for('b', U64(0));
     this.n = PieceBoard.for('n', U64(0));
     this.p = PieceBoard.for('p', U64(0));
+  }
+
+  forEach(callback) {
+    for (const piece in this) {
+      callback(this[piece]);
+    }
+  }
+
+  firstMatch(callback) {
+    for (const piece in this) {
+      if (callback(this[piece])) {
+        return this[piece];
+      }
+    }
+    return new NullPieceBoard();
   }
 }
 

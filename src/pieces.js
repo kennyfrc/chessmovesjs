@@ -9,6 +9,10 @@ class Pieces {
         return ['Q', 'R', 'B'];
       case 'bs': // black sliders
         return ['q', 'r', 'b'];
+      case 'wp': // promotion pieces white
+        return ['Q', 'R', 'B', 'N'];
+      case 'bp': // promotion pieces black
+        return ['q', 'r', 'b', 'n'];
       case 'all':
         return ['K', 'Q', 'R', 'B', 'N', 'P', 'k', 'q', 'b', 'r', 'n', 'p'];
       default:

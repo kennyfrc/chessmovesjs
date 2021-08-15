@@ -5,6 +5,7 @@ const SquareHelper = require('../src/helpers.js').SquareHelper;
 const U64 = require('../src/helpers.js').U64;
 // const PieceBoard = require('../src/board.js').PieceBoard;
 const ViewHelper = require('../src/helpers.js').ViewHelper;
+const PieceBoardList = require('../src/pieceboard.js').PieceBoardList;
 
 Error.stackTraceLimit = 10;
 
@@ -362,6 +363,21 @@ describe('PawnBoard', function() {
       assert.equal(whitePawnMoves[13].ep, true);
       assert.equal(blackPawnMoves[0].capture, true);
       assert.equal(blackPawnMoves[0].ep, true);
+    });
+
+    it('knows promotions', function() {
+      const board = new Board();
+      board.parseFenToBoard('r2qkb1r/pP1b1ppp/2n2n2/4p3/8/2N2N2/PPPP1PPP/R1BQKB1R w KQkq - 3 7');
+      const whitePawnMoves = board.legalMoves();
+      
+      assert.equal(whitePawnMoves[30].promoteTo, 'Q');
+      assert.equal(whitePawnMoves[31].promoteTo, 'R');
+      assert.equal(whitePawnMoves[32].promoteTo, 'B');
+      assert.equal(whitePawnMoves[33].promoteTo, 'N');
+      assert.equal(whitePawnMoves[34].promoteTo, 'Q');
+      assert.equal(whitePawnMoves[35].promoteTo, 'R');
+      assert.equal(whitePawnMoves[36].promoteTo, 'B');
+      assert.equal(whitePawnMoves[37].promoteTo, 'N');
     });
   });
 });

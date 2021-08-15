@@ -19,20 +19,52 @@ class MoveList {
     SquareHelper.indicesFor(pieceBoard.bb).forEach((fromIdx) => {
       const pieceBb = BitHelper.setBit(U64(0), fromIdx);
       let attacks = CheckEvasions.filter(fenPiece, pieceBoard, pieceBb, board);
-      attacks = Pins.filter(fenPiece, attacks, pieceBb, board)
+      attacks = Pins.filter(fenPiece, attacks, pieceBb, board);
       const toIdxs = SquareHelper.indicesFor(attacks);
-      moveList.push(this.createMove(fenPiece, fromIdx, toIdxs, pieceBoard));
+      if (this.isPawnAndPromotable(fenPiece, pieceBb)) {
+        moveList.push(this.createPromotions(fenPiece, pieceBb, fromIdx, toIdxs, pieceBoard));
+      } else {
+        moveList.push(this.createMoves(fenPiece, pieceBb, fromIdx, toIdxs, pieceBoard));
+      }
     });
     return moveList.flat();
+  }
+
+  static createPromotions(fenPiece, fromBit, fromIdx, toIdxs, pieceBoard) {
+    const promotionList = [];
+    if (fenPiece === 'P') {
+      toIdxs.forEach((toIdx) => {
+        Pieces.for('wp').forEach((promoteTo) => {
+          promotionList.push(Move.for(fenPiece, fromBit, fromIdx, toIdx, pieceBoard, true, promoteTo));
+        });
+      });
+    } else {
+      toIdxs.forEach((toIdx) => {
+        Pieces.for('bp').forEach((promoteTo) => {
+          promotionList.push(Move.for(fenPiece, fromBit, fromIdx, toIdx, pieceBoard, true, promoteTo));
+        });
+      });
+    }
+    return promotionList;
+  }
+
+  static createMoves(fenPiece, fromBit, fromIdx, toIdxs, pieceBoard, promotion=false, promoteTo=null) {
+    return toIdxs.map((toIdx) => Move.for(fenPiece, fromBit, fromIdx, toIdx, pieceBoard, promotion, promoteTo))
+  }
+
+  static isPawnAndPromotable(fenPiece, pieceBb) {
+    return 'Pp'.includes(fenPiece) && this.isPromotable(fenPiece, pieceBb);
+  }
+
+  static isPromotable(fenPiece, pieceBb) {
+    return fenPiece === 'P' ?
+      (BoardHelper.seventhRank() & pieceBb) !== U64(0) :
+      (BoardHelper.secondRank() & pieceBb) !== U64(0);
   }
 
   static legalMoves(board) {
     return board.whiteToMove ? this.addLegalWhiteMoves(board) :
       this.addLegalBlackMoves(board)
-  }
-
-  static createMove(fenPiece, fromIdx, toIdxs, pieceBoard) {
-    return toIdxs.map((toIdx) => Move.for(fenPiece, fromIdx, toIdx, pieceBoard))
   }
 
   static pieceMoves(fenPiece, pieceBoard, pieceBb, board) {
@@ -120,7 +152,7 @@ class CheckEvasions {
 }
 
 class Move {
-  static for(fenChar, fromIdx, toIdx, pieceBoard) {
+  static for(fenChar, fromBit, fromIdx, toIdx, pieceBoard, promotion, promoteTo) {
     let MoveClass;
     switch (fenChar) {
       case 'P':
@@ -160,23 +192,28 @@ class Move {
         MoveClass = BlackKingMove;
         break;
     }
-    return new MoveClass(fromIdx, toIdx, pieceBoard);
+    return 'Pp'.includes(fenChar) ?
+      new MoveClass(fromBit, fromIdx, toIdx, pieceBoard, promotion, promoteTo) :
+      new MoveClass(fromBit, fromIdx, toIdx, pieceBoard);
   }
 }
 
 class WhitePawnMove {
-  constructor(fromIdx, toIdx, pieceBoard) {
+  constructor(fromBit, fromIdx, toIdx, pieceBoard, promotion, promoteTo) {
     this.from = fromIdx;
     this.to = toIdx;
+    this.fromBit = fromBit || U64(0);
     this.toBit = BitHelper.setBit(U64(0), U64(toIdx));
     this.ep = false;
+    this.promotion = promotion;
+    this.promoteTo = promoteTo;
     this.check = this.isCheck(pieceBoard);
     this.capture = this.isCapture(pieceBoard);
     this.threat = this.isThreat(pieceBoard);
   }
 
   isCheck(pieceBoard) {
-    return ((Direction.wPawnAttacks(this.toBit) & pieceBoard.blackKingBb) ===
+    return ((this.parsePawnAttacks(pieceBoard, this.toBit) & pieceBoard.blackKingBb) ===
       U64(0) ? false : true);
   }
 
@@ -188,24 +225,42 @@ class WhitePawnMove {
   }
 
   isThreat(pieceBoard) {
-    return (Direction.wPawnAttacks(this.toBit) & (pieceBoard.blackMinorBb |
+    return (this.parsePawnAttacks(pieceBoard, this.toBit) & (pieceBoard.blackMinorBb |
       pieceBoard.blackMajorBb)) === U64(0) ? false : true;
+  }
+
+  parsePawnAttacks(pieceBoard, toBit) {
+    switch(this.promoteTo) {
+      case 'Q':
+        return Direction.queenRays(toBit, pieceBoard.occupied, pieceBoard.occupiable)
+      case 'R':
+        return Direction.rookRays(toBit, pieceBoard.occupied, pieceBoard.occupiable);
+      case 'B':
+        return Direction.bishopRays(toBit, pieceBoard.occupied, pieceBoard.occupiable);
+      case 'N':
+        return Direction.knightAttacks(toBit);
+      default:
+        return Direction.wPawnAttacks(toBit);
+    }
   }
 }
 
 class BlackPawnMove {
-  constructor(fromIdx, toIdx, pieceBoard) {
+  constructor(fromBit, fromIdx, toIdx, pieceBoard, promotion, promoteTo) {
     this.from = fromIdx;
     this.to = toIdx;
+    this.fromBit = fromBit || U64(0);
     this.toBit = BitHelper.setBit(U64(0), U64(toIdx));
     this.ep = false;
+    this.promotion = promotion;
+    this.promoteTo = promoteTo;
     this.check = this.isCheck(pieceBoard);
     this.capture = this.isCapture(pieceBoard);
     this.threat = this.isThreat(pieceBoard);
   }
 
   isCheck(pieceBoard) {
-    return ((Direction.bPawnAttacks(this.toBit) & pieceBoard.whiteKingBb) ===
+    return ((this.parsePawnAttacks(pieceBoard, this.toBit) & pieceBoard.whiteKingBb) ===
       U64(0) ? false : true);
   }
 
@@ -217,15 +272,31 @@ class BlackPawnMove {
   }
 
   isThreat(pieceBoard) {
-    return (Direction.bPawnAttacks(this.toBit) & (pieceBoard.whiteMinorBb |
+    return (this.parsePawnAttacks(pieceBoard, this.toBit) & (pieceBoard.whiteMinorBb |
       pieceBoard.whiteMajorBb)) === U64(0) ? false : true;
+  }
+
+  parsePawnAttacks(pieceBoard, toBit) {
+    switch(this.promoteTo) {
+      case 'q':
+        return Direction.queenRays(toBit, pieceBoard.occupied, pieceBoard.occupiable)
+      case 'r':
+        return Direction.rookRays(toBit, pieceBoard.occupied, pieceBoard.occupiable);
+      case 'n':
+        return Direction.bishopRays(toBit, pieceBoard.occupied, pieceBoard.occupiable);
+      case 'n':
+        return Direction.knightAttacks(toBit);
+      default:
+        return Direction.bPawnAttacks(toBit);
+    }
   }
 }
 
 class WhiteKnightMove {
-  constructor(fromIdx, toIdx, pieceBoard) {
+  constructor(fromBit, fromIdx, toIdx, pieceBoard) {
     this.from = fromIdx;
     this.to = toIdx;
+    this.fromBit = fromBit || U64(0);
     this.toBit = BitHelper.setBit(U64(0), U64(toIdx));
     this.check = this.isCheck(pieceBoard);
     this.capture = this.isCapture(pieceBoard);
@@ -248,9 +319,10 @@ class WhiteKnightMove {
 }
 
 class BlackKnightMove {
-  constructor(fromIdx, toIdx, pieceBoard) {
+  constructor(fromBit, fromIdx, toIdx, pieceBoard) {
     this.from = fromIdx;
     this.to = toIdx;
+    this.fromBit = fromBit || U64(0);
     this.toBit = BitHelper.setBit(U64(0), U64(toIdx));
     this.check = this.isCheck(pieceBoard);
     this.capture = this.isCapture(pieceBoard);
@@ -273,9 +345,10 @@ class BlackKnightMove {
 }
 
 class WhiteBishopMove {
-  constructor(fromIdx, toIdx, pieceBoard) {
+  constructor(fromBit, fromIdx, toIdx, pieceBoard) {
     this.from = fromIdx;
     this.to = toIdx;
+    this.fromBit = fromBit || U64(0);
     this.toBit = BitHelper.setBit(U64(0), U64(toIdx));
     this.check = this.isCheck(pieceBoard);
     this.capture = this.isCapture(pieceBoard);
@@ -298,9 +371,10 @@ class WhiteBishopMove {
 }
 
 class BlackBishopMove {
-  constructor(fromIdx, toIdx, pieceBoard) {
+  constructor(fromBit, fromIdx, toIdx, pieceBoard) {
     this.from = fromIdx;
     this.to = toIdx;
+    this.fromBit = fromBit || U64(0);
     this.toBit = BitHelper.setBit(U64(0), U64(toIdx));
     this.check = this.isCheck(pieceBoard);
     this.capture = this.isCapture(pieceBoard);
@@ -323,9 +397,10 @@ class BlackBishopMove {
 }
 
 class WhiteRookMove {
-  constructor(fromIdx, toIdx, pieceBoard) {
+  constructor(fromBit, fromIdx, toIdx, pieceBoard) {
     this.from = fromIdx;
     this.to = toIdx;
+    this.fromBit = fromBit || U64(0);
     this.toBit = BitHelper.setBit(U64(0), U64(toIdx));
     this.check = this.isCheck(pieceBoard);
     this.capture = this.isCapture(pieceBoard);
@@ -348,9 +423,10 @@ class WhiteRookMove {
 }
 
 class BlackRookMove {
-  constructor(fromIdx, toIdx, pieceBoard) {
+  constructor(fromBit, fromIdx, toIdx, pieceBoard) {
     this.from = fromIdx;
     this.to = toIdx;
+    this.fromBit = fromBit || U64(0);
     this.toBit = BitHelper.setBit(U64(0), U64(toIdx));
     this.check = this.isCheck(pieceBoard);
     this.capture = this.isCapture(pieceBoard);
@@ -373,9 +449,10 @@ class BlackRookMove {
 }
 
 class WhiteQueenMove {
-  constructor(fromIdx, toIdx, pieceBoard) {
+  constructor(fromBit, fromIdx, toIdx, pieceBoard) {
     this.from = fromIdx;
     this.to = toIdx;
+    this.fromBit = fromBit || U64(0);
     this.toBit = BitHelper.setBit(U64(0), U64(toIdx));
     this.check = this.isCheck(pieceBoard);
     this.capture = this.isCapture(pieceBoard);
@@ -393,9 +470,10 @@ class WhiteQueenMove {
 }
 
 class BlackQueenMove {
-  constructor(fromIdx, toIdx, pieceBoard) {
+  constructor(fromBit, fromIdx, toIdx, pieceBoard) {
     this.to = toIdx;
     this.from = fromIdx;
+    this.fromBit = fromBit || U64(0);
     this.toBit = BitHelper.setBit(U64(0), U64(toIdx));
     this.check = this.isCheck(pieceBoard);
     this.capture = this.isCapture(pieceBoard);
@@ -413,9 +491,10 @@ class BlackQueenMove {
 }
 
 class WhiteKingMove {
-  constructor(fromIdx, toIdx, pieceBoard) {
+  constructor(fromBit, fromIdx, toIdx, pieceBoard) {
     this.from = fromIdx;
     this.to = toIdx;
+    this.fromBit = fromBit || U64(0);
     this.toBit = BitHelper.setBit(U64(0), U64(toIdx));
     this.castle = this.isCastle(fromIdx, toIdx);
     this.check = false;
@@ -437,9 +516,10 @@ class WhiteKingMove {
 }
 
 class BlackKingMove {
-  constructor(fromIdx, toIdx, pieceBoard) {
+  constructor(fromBit, fromIdx, toIdx, pieceBoard) {
     this.from = fromIdx;
     this.to = toIdx;
+    this.fromBit = fromBit || U64(0);
     this.toBit = BitHelper.setBit(U64(0), U64(toIdx));
     this.castle = this.isCastle(fromIdx, toIdx);
     this.check = false;

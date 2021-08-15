@@ -16,7 +16,6 @@ const LCG = require('./prng.js').LCG;
 class Board {
   constructor(fen) {
     // basic bitboards
-    this.startPos = fen || 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
     this.bb = U64(0);
     this.whiteBb = U64(0);
     this.blackBb = U64(0);
@@ -76,10 +75,6 @@ class Board {
     this.moveBit = {'w': U64(1), 'b': U64(0)};
     this.halfMoveClock = 0;
     this.fullMoveNo = 0;
-  }
-
-  initializePos() {
-    this.parseFenToBoard(this.startPos);
   }
 
   parseFenToBoard(fen) {

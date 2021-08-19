@@ -6,14 +6,11 @@
         "node": true
     },
     "extends": [
-        "google"
+        "standard"
     ],
-    "parser": "@babel/eslint-parser",
     "parserOptions": {
         "ecmaVersion": 12
     },
     "rules": {
-        "require-jsdoc": "off",
-        "valid-jsdoc": "off"
     }
 }

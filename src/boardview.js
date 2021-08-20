@@ -1,34 +1,34 @@
-const Board = require('./board.js').Board;
-const BitHelper = require('./helpers.js').BitHelper;
-const SquareHelper = require('./helpers.js').SquareHelper;
+const Board = require('./board.js').Board
+const BitHelper = require('./helpers.js').BitHelper
+const SquareHelper = require('./helpers.js').SquareHelper
 
 class BoardView extends Board {
-  constructor(pieceBoardList) {
-    super();
-    this.pieceBoardList = pieceBoardList;
-    this.bb = this.parsePlToBb(pieceBoardList, this.bb);
-    this.userView = this.parseToUserView();
+  constructor (pieceBoardList) {
+    super()
+    this.pieceBoardList = pieceBoardList
+    this.bb = this.parsePlToBb(pieceBoardList, this.bb)
+    this.userView = this.parseToUserView()
   }
 
-  parsePlToBb(pieceBoardList, bb) {
+  parsePlToBb (pieceBoardList, bb) {
     if (pieceBoardList) {
       Object.keys(pieceBoardList).forEach((piece) => {
-        bb |= pieceBoardList[piece].bb;
-      });
+        bb |= pieceBoardList[piece].bb
+      })
     }
-    return bb;
+    return bb
   }
 
-  parseToUserView(bb) {
-    const bbToView = bb || this.bb;
-    const userView = [];
+  parseToUserView (bb) {
+    const bbToView = bb || this.bb
+    const userView = []
     for (let i = 0; i < 64; i++) {
-      userView[i] = BitHelper.getBit(bbToView, i);
+      userView[i] = BitHelper.getBit(bbToView, i)
     }
-    return userView;
+    return userView
   }
 
-  display() {
+  display () {
     return '' +
       this.userView[SquareHelper.for('a8')] + this.userView[SquareHelper.for('b8')] +
       this.userView[SquareHelper.for('c8')] + this.userView[SquareHelper.for('d8')] +
@@ -61,10 +61,10 @@ class BoardView extends Board {
       this.userView[SquareHelper.for('a1')] + this.userView[SquareHelper.for('b1')] +
       this.userView[SquareHelper.for('c1')] + this.userView[SquareHelper.for('d1')] +
       this.userView[SquareHelper.for('e1')] + this.userView[SquareHelper.for('f1')] +
-      this.userView[SquareHelper.for('g1')] + this.userView[SquareHelper.for('h1')];
+      this.userView[SquareHelper.for('g1')] + this.userView[SquareHelper.for('h1')]
   }
 }
 
 module.exports = {
-  BoardView: BoardView,
-};
+  BoardView: BoardView
+}

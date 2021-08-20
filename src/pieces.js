@@ -1,37 +1,41 @@
 class Pieces {
-  static for(fromPieceOrSide) {
+  static for (fromPieceOrSide) {
     switch (fromPieceOrSide) {
       case 'w':
-        return ['K', 'Q', 'R', 'B', 'N', 'P'];
+        return ['K', 'Q', 'R', 'B', 'N', 'P']
       case 'b':
-        return ['k', 'q', 'r', 'b', 'n', 'p'];
+        return ['k', 'q', 'r', 'b', 'n', 'p']
       case 'ws': // white sliders
-        return ['Q', 'R', 'B'];
+        return ['Q', 'R', 'B']
       case 'bs': // black sliders
-        return ['q', 'r', 'b'];
+        return ['q', 'r', 'b']
       case 'wp': // promotion pieces white
-        return ['Q', 'R', 'B', 'N'];
+        return ['Q', 'R', 'B', 'N']
       case 'bp': // promotion pieces black
-        return ['q', 'r', 'b', 'n'];
+        return ['q', 'r', 'b', 'n']
       case 'all':
-        return ['K', 'Q', 'R', 'B', 'N', 'P', 'k', 'q', 'b', 'r', 'n', 'p'];
+        return ['K', 'Q', 'R', 'B', 'N', 'P', 'k', 'q', 'b', 'r', 'n', 'p']
       default:
         if ('KQRBNPkqrbnp'.includes(fromPieceOrSide)) {
-          return [fromPieceOrSide];
+          return [fromPieceOrSide]
         } else {
-          throw new Error('Invalid Piece or Side');
+          throw new Error('Invalid Piece or Side')
         }
     }
   }
 }
 
 class PieceStatus {
-  static isPawn(fenPiece) {
-    return 'Pp'.includes(fenPiece);
+  static isPawn (fenPiece) {
+    return 'Pp'.includes(fenPiece)
+  }
+
+  static isNotPawn (fenPiece) {
+    return 'KQRBNkqrbn'.includes(fenPiece)
   }
 }
 
 module.exports = {
   Pieces: Pieces,
-  PieceStatus: PieceStatus,
+  PieceStatus: PieceStatus
 }

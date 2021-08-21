@@ -5,6 +5,19 @@ const ViewHelper = require('./helpers.js').ViewHelper
 const BoardHelper = require('./helpers.js').BoardHelper
 const BitHelper = require('./helpers.js').BitHelper
 const PieceStatus = require('./pieces.js').PieceStatus
+const SquareHelper = require('./helpers.js').SquareHelper
+
+class ObjectUtils {
+  static orderKeys (unorderedObj) {
+    return Object.keys(unorderedObj).sort().reduce(
+      (obj, key) => { 
+        obj[key] = unorderedObj[key]; 
+        return obj;
+      }, 
+      {}
+    )
+  }
+}
 
 class Engine {
   constructor (fen) {
@@ -15,6 +28,41 @@ class Engine {
     this.halfMoveStack = new LinkedList()
     this.epStack = new LinkedList()
     this.posKeys = []
+  }
+
+  perft (depth, root=true) {
+    const divide = {}
+    let count = 0
+    let nodes = 0
+    let debugMoves;
+    const leaf = (depth === 2)
+    const moves = this.board.legalMoves()
+
+    for (let i = 0; i < moves.length; i++) {
+      if (root && depth <= 1) {
+        count = 1
+        nodes += 1
+      } else {
+        this.make(moves[i])
+        count = leaf ? this.board.legalMoves().length : this.perft(depth - 1, false)
+        nodes += count
+        this.unmake()
+      }
+      if (root) {
+        divide[SquareHelper.uciFor(moves[i])] = count
+      }
+    }
+
+    if (root) {
+      const orderedMoves = ObjectUtils.orderKeys(divide)
+      console.log(`go perft ${depth}`)
+      Object.keys(orderedMoves).forEach((san) => {
+        console.log(`${san}: ${orderedMoves[san]}`)
+      })
+      console.log(`\n` + `Nodes searched: ${nodes}` + `\n`)
+    }
+
+    return nodes
   }
 
   make (move) {
@@ -41,9 +89,12 @@ class Engine {
     const rookCastleFrom = null
     const rookCastleTo = null
 
+    this.board.initWhiteBitBoards()
+    this.board.initBlackBitBoards()
     this.board.initCheckEvasionData()
     this.board.initPinAndXrayData()
-    this.handleMakeCaptureMoves(capture, pieceList, toBit, toIdx, ep)
+    this.board.initMoveCounters()
+    this.handleMakeCaptureMoves(capture, pieceList, toBit, toIdx, ep, move)
     this.handleMakeEpCaptureMoves(move, capture, pieceList, toBit, ep, epCaptureBb)
     this.updateEpStack()
     this.handleMoveWithEpRisk(epRisk, toBit) // buggy due to eprisk?
@@ -87,8 +138,11 @@ class Engine {
     const pieceBoard = null
     const capturedPieceBoard = null
 
+    this.board.initWhiteBitBoards()
+    this.board.initBlackBitBoards()
     this.board.initCheckEvasionData()
     this.board.initPinAndXrayData()
+    this.board.initMoveCounters()
     this.handleUnMakeCaptureMoves(lastMove, pieceList, toBit, toIdx, ep)
     this.handleUnMakeEpCaptureMoves(lastMove, pieceList, ep, epCaptureBb, toIdx)
     this.handleUnMakeEpRisks(epSqIdx, this.board, epNode)
@@ -139,15 +193,19 @@ class Engine {
 
   decrementFullMoveNo () {
     this.board.fullMoveNo = this.board.whiteToMove 
-      ? this.board.fullMoveNo
-      : this.board.fullMoveNo - 1
+      ? this.board.fullMoveNo - 1
+      : this.board.fullMoveNo
   }
 
   // make() helper functions
-  makeCaptures (pieceList, toBit, toIdx) {
+  makeCaptures (pieceList, toBit, toIdx, move) {
     const pieceBoardWCapture = pieceList.firstMatch((pieceBoard) => { return (pieceBoard.bb & toBit) !== U64(0) })
     pieceBoardWCapture.bb ^= toBit
     const capturedFenChar = pieceBoardWCapture.fenChar
+    // if (this.board.pieceKeys[capturedFenChar] === undefined) {
+    //   ViewHelper.inspect(this.board, toIdx, 'hello')
+    //   console.log(this.moveStack)
+    // }
     this.board.posKey ^= this.board.pieceKeys[capturedFenChar][toIdx]
     this.captureStack.append(capturedFenChar)
     this.resetHalfMoveNo()
@@ -400,9 +458,9 @@ class Engine {
     }
   }
 
-  handleMakeCaptureMoves (capture, pieceList, toBit, toIdx, ep) {
+  handleMakeCaptureMoves (capture, pieceList, toBit, toIdx, ep, move) {
     if (capture && !ep) {
-      this.makeCaptures(pieceList, toBit, toIdx)
+      this.makeCaptures(pieceList, toBit, toIdx, move)
     }
   }
 

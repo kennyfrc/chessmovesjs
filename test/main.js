@@ -1,5 +1,3 @@
-const describe = require('mocha').describe
-const it = require('mocha').it
 const assert = require('assert')
 const Board = require('../src/board.js').Board
 const BoardView = require('../src/boardview.js').BoardView
@@ -18,6 +16,7 @@ describe('Board', function () {
     it('returns a bitboard for a given fen', function () {
       const board = new Board()
       board.parseFenToBoard('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1')
+
 
       assert.equal(board.bb, 18446462598732906495n)
     })
@@ -940,18 +939,8 @@ describe('Engine', function () {
       const engine = new Engine('8/8/8/2k5/3Pp3/8/8/4K3 b - d3 0 1')
       const originalMoves = engine.board.legalMoves()
 
-      // console.log(originalMoves)
-      // console.log(engine.board.epSqBb)
-      // console.log(engine.board.epSqIdx)
-      // console.log(engine.board.epCaptureBb)
-
       engine.make(originalMoves[1])
       engine.unmake()
-
-      // console.log(engine.board.legalMoves())
-      // console.log(engine.board.epSqBb)
-      // console.log(engine.board.epSqIdx)
-      // console.log(engine.board.epCaptureBb)
 
       assert.equal(engine.board.legalMoves().length, originalMoves.length)
     })
@@ -1009,7 +998,7 @@ describe('Engine', function () {
       engine.make(engine.board.legalMoves()[0])
       engine.make(engine.board.legalMoves()[35])
       engine.make(engine.board.legalMoves()[0])
-      
+
       assert.equal(engine.board.isThreeFoldRepetition, true)
     })
   })

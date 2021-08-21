@@ -1,3 +1,5 @@
+const Pieces = require('./pieces.js').Pieces
+
 function U64 (int) {
   return BigInt.asUintN(64, BigInt(int))
 }
@@ -254,6 +256,53 @@ class ViewHelper {
       userView[SquareHelper.for('g1')] + userView[SquareHelper.for('h1')] + '\n' +
       '=END')
   }
+
+  static inspect (board, viewIdx, message) {
+    const userView = new Array(64).fill('·', 0, 64)
+    Pieces.for('all').forEach((piece) => {
+      const indices = SquareHelper.indicesFor(board.pieceBoardList[piece].bb)
+      indices.forEach((index) => {
+        userView[index] = piece
+      })
+    })
+
+    console.log(`=BEGIN ${message}` + '\n' +
+      `piece on index: ${userView[viewIdx]}` + '\n' +
+      `board` + `\n` +
+      userView[SquareHelper.for('a8')] + userView[SquareHelper.for('b8')] +
+      userView[SquareHelper.for('c8')] + userView[SquareHelper.for('d8')] +
+      userView[SquareHelper.for('e8')] + userView[SquareHelper.for('f8')] +
+      userView[SquareHelper.for('g8')] + userView[SquareHelper.for('h8')] + '\n' +
+      userView[SquareHelper.for('a7')] + userView[SquareHelper.for('b7')] +
+      userView[SquareHelper.for('c7')] + userView[SquareHelper.for('d7')] +
+      userView[SquareHelper.for('e7')] + userView[SquareHelper.for('f7')] +
+      userView[SquareHelper.for('g7')] + userView[SquareHelper.for('h7')] + '\n' +
+      userView[SquareHelper.for('a6')] + userView[SquareHelper.for('b6')] +
+      userView[SquareHelper.for('c6')] + userView[SquareHelper.for('d6')] +
+      userView[SquareHelper.for('e6')] + userView[SquareHelper.for('f6')] +
+      userView[SquareHelper.for('g6')] + userView[SquareHelper.for('h6')] + '\n' +
+      userView[SquareHelper.for('a5')] + userView[SquareHelper.for('b5')] +
+      userView[SquareHelper.for('c5')] + userView[SquareHelper.for('d5')] +
+      userView[SquareHelper.for('e5')] + userView[SquareHelper.for('f5')] +
+      userView[SquareHelper.for('g5')] + userView[SquareHelper.for('h5')] + '\n' +
+      userView[SquareHelper.for('a4')] + userView[SquareHelper.for('b4')] +
+      userView[SquareHelper.for('c4')] + userView[SquareHelper.for('d4')] +
+      userView[SquareHelper.for('e4')] + userView[SquareHelper.for('f4')] +
+      userView[SquareHelper.for('g4')] + userView[SquareHelper.for('h4')] + '\n' +
+      userView[SquareHelper.for('a3')] + userView[SquareHelper.for('b3')] +
+      userView[SquareHelper.for('c3')] + userView[SquareHelper.for('d3')] +
+      userView[SquareHelper.for('e3')] + userView[SquareHelper.for('f3')] +
+      userView[SquareHelper.for('g3')] + userView[SquareHelper.for('h3')] + '\n' +
+      userView[SquareHelper.for('a2')] + userView[SquareHelper.for('b2')] +
+      userView[SquareHelper.for('c2')] + userView[SquareHelper.for('d2')] +
+      userView[SquareHelper.for('e2')] + userView[SquareHelper.for('f2')] +
+      userView[SquareHelper.for('g2')] + userView[SquareHelper.for('h2')] + '\n' +
+      userView[SquareHelper.for('a1')] + userView[SquareHelper.for('b1')] +
+      userView[SquareHelper.for('c1')] + userView[SquareHelper.for('d1')] +
+      userView[SquareHelper.for('e1')] + userView[SquareHelper.for('f1')] +
+      userView[SquareHelper.for('g1')] + userView[SquareHelper.for('h1')] + '\n' +
+      '=END')
+  }
 }
 
 class SquareHelper {
@@ -272,6 +321,24 @@ class SquareHelper {
     }
     /* eslint-enable object-property-newline, key-spacing */
     return indexMap[rankFile]
+  }
+
+  static uciFor (move) {
+    const from = move.from
+    const to = move.to
+    /* eslint-disable object-property-newline, key-spacing */
+    const indexMap = [
+      'a1', 'b1', 'c1', 'd1', 'e1', 'f1', 'g1', 'h1',
+      'a2', 'b2', 'c2', 'd2', 'e2', 'f2', 'g2', 'h2',
+      'a3', 'b3', 'c3', 'd3', 'e3', 'f3', 'g3', 'h3',
+      'a4', 'b4', 'c4', 'd4', 'e4', 'f4', 'g4', 'h4',
+      'a5', 'b5', 'c5', 'd5', 'e5', 'f5', 'g5', 'h5',
+      'a6', 'b6', 'c6', 'd6', 'e6', 'f6', 'g6', 'h6',
+      'a7', 'b7', 'c7', 'd7', 'e7', 'f7', 'g7', 'h7',
+      'a8', 'b8', 'c8', 'd8', 'e8', 'f8', 'g8', 'h8'
+    ]
+    /* eslint-enable object-property-newline, key-spacing */
+    return indexMap[from] + indexMap[to]
   }
 
   /* eslint-disable no-cond-assign */

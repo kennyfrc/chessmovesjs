@@ -18,6 +18,7 @@ class MoveList {
     const pieceBoard = board.pieceBoardList[fenPiece]
     SquareHelper.indicesFor(pieceBoard.bb).forEach((fromIdx) => {
       const pieceBb = BitHelper.setBit(U64(0), fromIdx)
+
       let attacks = CheckEvasions.filter(fenPiece, pieceBoard, pieceBb, board)
       attacks = Pins.filter(fenPiece, attacks, pieceBb, board)
       const toIdxs = SquareHelper.indicesFor(attacks)

@@ -189,6 +189,13 @@ describe('Board', function () {
       board.parseFenToBoard('5K2/8/3Q4/8/8/3r4/8/3k4 b - - 0 1')
       assert.equal(board.isOurPiecePinnedToKing(), true)
     })
+
+    it('aware of various moves to block', function () {
+      const board = new Board()
+      board.parseFenToBoard('r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1')
+
+      assert.equal(board.legalMoves().length, 6)
+    })
   })
 
   describe('#pins()', function () {
@@ -591,6 +598,13 @@ describe('KingBoard', function () {
       const blackKingMoves = boardWSqAttackedByRook.moves('k')
 
       assert.equal(blackKingMoves.length, 6)
+    })
+
+    it('should not castle when castling sq is attacked', function () {
+      const board = new Board()
+      board.parseFenToBoard('r3k2r/p1ppqpb1/bnN1pnp1/3P4/1p2P3/2N2Q1p/PPPBBPPP/R3K2R b KQkq - 1 1')
+
+      assert.equal(board.legalMoves().length, 41)
     })
   })
 })

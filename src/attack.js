@@ -22,7 +22,6 @@ const Mask = require('./mask.js').Mask
 class RayCompass {
   static for (sourceSq, pointingSq, occupied) {
     const direction = pointingSq - sourceSq
-    sourceSq = U64(sourceSq)
     switch (direction) {
       case 8:
         return Ray.sliderAttacks(sourceSq, occupied,
@@ -47,7 +46,7 @@ class RayCompass {
           BitHelper.bitScanRev, Ray.negRank)
       case 7:
         return Ray.sliderAttacks(sourceSq, occupied,
-          BitHelper.bitScanFwd, Ray.antiDiag)
+          BitHelper.bitScanFwd, Ray.posAntiDiag)
       default:
         return U64(0)
     }

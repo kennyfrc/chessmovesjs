@@ -17,7 +17,6 @@ describe('Board', function () {
       const board = new Board()
       board.parseFenToBoard('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1')
 
-
       assert.equal(board.bb, 18446462598732906495n)
     })
   })

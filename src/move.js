@@ -18,7 +18,6 @@ class MoveList {
     const pieceBoard = board.pieceBoardList[fenPiece]
     SquareHelper.indicesFor(pieceBoard.bb).forEach((fromIdx) => {
       const pieceBb = BitHelper.setBit(U64(0), fromIdx)
-
       let attacks = CheckEvasions.filter(fenPiece, pieceBoard, pieceBb, board)
       attacks = Pins.filter(fenPiece, attacks, pieceBb, board)
       const toIdxs = SquareHelper.indicesFor(attacks)
@@ -70,18 +69,18 @@ class MoveList {
   }
 
   static pieceMoves (fenPiece, pieceBoard, pieceBb, board) {
-    const moves = pieceBoard.attacks(pieceBb, board)
     let kingInCheckMoves
-    switch (fenPiece) {
-      case 'K':
-        kingInCheckMoves = moves & board.whiteKingDangerSquares
-        return moves ^ kingInCheckMoves
-      case 'k':
-        kingInCheckMoves = moves & board.blackKingDangerSquares
-        return moves ^ kingInCheckMoves
-      default:
-        return moves
+    if (fenPiece === 'K') {
+      const moves = pieceBoard.attacks(pieceBb, board)
+      kingInCheckMoves = moves & board.whiteKingDangerSquares
+      return moves ^ kingInCheckMoves
     }
+    if (fenPiece === 'k') {
+      const moves = pieceBoard.attacks(pieceBb, board)
+      kingInCheckMoves = moves & board.blackKingDangerSquares
+      return moves ^ kingInCheckMoves
+    }
+    return pieceBoard.attacks(pieceBb, board)
   }
 
   static addLegalWhiteMoves (board) {

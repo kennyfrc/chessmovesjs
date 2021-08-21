@@ -8,6 +8,7 @@
     "dev": "webpack --mode development",
     "build": "webpack --mode production",
     "test": "mocha test",
+    "perft": "mocha test/perft.js",
     "lint all": "eslint src test",
     "lint": "eslint",
     "reload": "webpack --mode development && npx webpack serve"

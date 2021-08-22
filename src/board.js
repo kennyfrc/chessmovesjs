@@ -70,6 +70,10 @@ class Board {
     this.xrayAttackSqs = U64(0)
     this.theirBlockers = U64(0)
     this.ourBlockers = U64(0)
+    this.theirKingPinnerBb = U64(0)
+    this.ourKingPinnerBb = U64(0)
+    this.theirPinnersRay = U64(0)
+    this.ourPinnersRay = U64(0)
   }
 
   initPieceBoardList () {
@@ -354,7 +358,9 @@ class Board {
     const blockers = this.getTheirBlockers() | this.getOurBlockers()
     const boardProxyNoBlockers = new BoardProxy(this)
     boardProxyNoBlockers.bb = boardProxyNoBlockers.bb ^ blockers
-    this.xrayDangerSqs = ThreatBoard.for(opponentsSide, boardProxyNoBlockers)
+    this.xrayDangerSqs = ThreatBoard.for(opponentsSide, boardProxyNoBlockers, true)
+    this.theirKingPinnerBb = boardProxyNoBlockers.theirKingPinnerBb
+    this.theirPinnersRay = boardProxyNoBlockers.theirPinnersRay 
   }
 
   setXrayAttackSqs () {
@@ -362,7 +368,9 @@ class Board {
     const blockers = this.getTheirBlockers() | this.getOurBlockers()
     const boardProxyNoBlockers = new BoardProxy(this)
     boardProxyNoBlockers.bb = boardProxyNoBlockers.bb ^ blockers
-    this.xrayAttackSqs = ThreatBoard.for(ourSide, boardProxyNoBlockers)
+    this.xrayAttackSqs = ThreatBoard.for(ourSide, boardProxyNoBlockers, false)
+    this.ourKingPinnerBb = boardProxyNoBlockers.ourKingPinnerBb
+    this.ourPinnersRay = boardProxyNoBlockers.ourPinnersRay 
   }
 
   initKeys () {

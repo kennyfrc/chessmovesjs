@@ -1048,19 +1048,11 @@ describe('Perft Tricky Positions', function () {
   it('tc3 2', function () {
     const engine = new Engine('rnbq1k1r/pp1Pbppp/2p4B/8/2B5/8/PPP1NnPP/RN1QK2R b KQ - 2 8')
 
-    // bug: black pawn doesn't see pin
-    console.log(engine.board.legalMoves())
-    PerftHelper.countMoves(engine.board.legalMoves())
-
     assert.equal(engine.board.legalMoves().length, 31)
   })
 
   it('tc3 3', function () {
     const engine = new Engine('rnbq1k1r/pp1Pbppp/2pQ4/8/2B5/8/PPP1NnPP/RNB1K2R b KQ - 2 8')
-
-    // bug: bishop doesn't see pin
-    console.log(engine.board.legalMoves())
-    PerftHelper.countMoves(engine.board.legalMoves())
 
     assert.equal(engine.board.legalMoves().length, 28)
   })
@@ -1068,7 +1060,8 @@ describe('Perft Tricky Positions', function () {
   it('tc3 4', function () {
     const engine = new Engine('rnQq1k1r/pp2bppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R b KQ - 0 8')
 
-    // bug: queen doesn't see pin
+    assert.equal(engine.board.legalMoves().length, 31)
+  })
     console.log(engine.board.legalMoves())
     PerftHelper.countMoves(engine.board.legalMoves())
 

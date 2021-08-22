@@ -14,7 +14,7 @@ const Direction = require('./attack.js').Direction
 const LCG = require('./prng.js').LCG
 
 class Board {
-  constructor (fen) {
+  constructor (seed=91289) {
     this.bb = U64(0)
     this.initWhiteBitBoards()
     this.initBlackBitBoards()
@@ -22,7 +22,7 @@ class Board {
     this.initCheckEvasionData()
     this.initPinAndXrayData()
     this.initEnPassantData()
-    this.initZobristKey()
+    this.initZobristKey(seed)
     this.initMoveCounters()
     this.initCastleData()
     this.whiteToMove = true
@@ -67,9 +67,9 @@ class Board {
 
   initPinAndXrayData () {
     this.xrayDangerSqs = U64(0)
-    this.whiteBlockers = U64(0)
-    this.blackBlockers = U64(0)
-    this.blockers = U64(0)
+    this.xrayAttackSqs = U64(0)
+    this.theirBlockers = U64(0)
+    this.ourBlockers = U64(0)
   }
 
   initPieceBoardList () {
@@ -92,8 +92,8 @@ class Board {
     }
   }
 
-  initZobristKey () {
-    this.lcg = new LCG(91289)
+  initZobristKey (seed) {
+    this.lcg = new LCG(seed)
     this.posKey = U64(0)
     this.pieceKeys = new PieceKeys()
     this.enPassantKeys = new BigUint64Array(64)
@@ -239,6 +239,7 @@ class Board {
     this.setInCheck()
     this.setCheckerCount()
     this.setXrayDangerSqs()
+    this.setXrayAttackSqs()
   }
 
   setPieceBbs () {
@@ -341,19 +342,27 @@ class Board {
 
   setBlockers () {
     const opponentsSide = this.whiteToMove ? 'bs' : 'ws'
-    const theirBlockers = ThreatBoard.for(opponentsSide, this) & this.bb
-    this.whiteBlockers = theirBlockers & this.whiteBb
-    this.blackBlockers = theirBlockers & this.blackBb
-    this.blockers = theirBlockers
+    const ourSide = opponentsSide === 'ws' ? 'bs' : 'ws'
+    const theirBlockers = ThreatBoard.for(opponentsSide, this) & this.bb 
+    const ourBlockers = ThreatBoard.for(ourSide, this) & this.bb
+    this.theirBlockers = theirBlockers
+    this.ourBlockers = ourBlockers
   }
 
   setXrayDangerSqs () {
     const opponentsSide = this.whiteToMove ? 'bs' : 'ws'
-    const blockers = this.getBlockers()
+    const blockers = this.getTheirBlockers() | this.getOurBlockers()
     const boardProxyNoBlockers = new BoardProxy(this)
-    if (blockers === U64(0)) { return U64(0) };
     boardProxyNoBlockers.bb = boardProxyNoBlockers.bb ^ blockers
     this.xrayDangerSqs = ThreatBoard.for(opponentsSide, boardProxyNoBlockers)
+  }
+
+  setXrayAttackSqs () {
+    const ourSide = this.whiteToMove ? 'ws' : 'bs'
+    const blockers = this.getTheirBlockers() | this.getOurBlockers()
+    const boardProxyNoBlockers = new BoardProxy(this)
+    boardProxyNoBlockers.bb = boardProxyNoBlockers.bb ^ blockers
+    this.xrayAttackSqs = ThreatBoard.for(ourSide, boardProxyNoBlockers)
   }
 
   initKeys () {
@@ -379,12 +388,20 @@ class Board {
     return this.whiteToMove ? this.epSqBb >> U64(8) : this.epSqBb << U64(8)
   }
 
-  getBlockers () {
-    return this.blockers
+  getTheirBlockers () {
+    return this.theirBlockers
+  }
+
+  getOurBlockers () {
+    return this.ourBlockers
   }
 
   getXrayDangerBb () {
     return this.xrayDangerSqs
+  }
+
+  getXrayAttackBb () {
+    return this.xrayAttackSqs
   }
 
   legalMoves () {
@@ -403,8 +420,16 @@ class Board {
     return BoardStatus.isOurKingXrayed(this)
   }
 
+  isTheirKingXrayed () {
+    return BoardStatus.isTheirKingXrayed(this)
+  }
+
   isOurPiecePinnedToKing () {
     return BoardStatus.isOurPiecePinnedToKing(this)
+  }
+
+  isTheirPiecePinnedToTheirKing () {
+    return BoardStatus.isTheirPiecePinnedToTheirKing(this)
   }
 
   isInCheck () {
@@ -426,10 +451,11 @@ class BoardStatus {
     return (ourKing & opponentXrays) !== U64(0)
   }
 
-  static isOurPiecePinnedToKing (board) {
-    const ourBb = board.whiteToMove ? board.whiteBb : board.blackBb
-    const blockers = board.getBlockers()
-    return (ourBb & blockers) !== U64(0)
+  static isTheirKingXrayed (board) {
+    const theirKingFen = board.whiteToMove ? 'k' : 'K'
+    const theirKing = board.pieceBoardList[theirKingFen].bb
+    const ourXrays = board.getXrayAttackBb()
+    return (theirKing & ourXrays) !== U64(0)
   }
 
   static isInCheck (board) {

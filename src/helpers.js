@@ -1,4 +1,5 @@
 const Pieces = require('./pieces.js').Pieces
+// const PieceList = require('./pieceboard.js').PieceList
 
 function U64 (int) {
   return BigInt.asUintN(64, BigInt(int))
@@ -356,6 +357,48 @@ class SquareHelper {
   /* eslint-enable no-cond-assign */
 }
 
+class PieceList {
+  constructor () {
+    this.K = 0
+    this.Q = 0
+    this.R = 0
+    this.B = 0
+    this.N = 0
+    this.P = 0
+    this.k = 0
+    this.q = 0
+    this.r = 0
+    this.b = 0
+    this.n = 0
+    this.p = 0
+  }
+
+  forEach (callback) {
+    for (const piece in this) {
+      callback(this[piece])
+    }
+  }
+
+  firstMatch (callback) {
+    for (const piece in this) {
+      if (callback(this[piece])) {
+        return this[piece]
+      }
+    }
+    return 0
+  }
+}
+
+class PerftHelper {
+  static countMoves (moveList) {
+    const pieceList = new PieceList()
+    moveList.forEach((move) => {
+      pieceList[move.fenChar] += 1  
+    })
+    console.log(pieceList)
+  } 
+}
+
 module.exports = {
   BitHelper: BitHelper,
   BoardHelper: BoardHelper,
@@ -363,5 +406,6 @@ module.exports = {
   SquareHelper: SquareHelper,
   U64: U64,
   U64Comp: U64Comp,
-  U64Neg: U64Neg
+  U64Neg: U64Neg,
+  PerftHelper: PerftHelper
 }

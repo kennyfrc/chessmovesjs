@@ -7,7 +7,7 @@ const BitHelper = require('./helpers.js').BitHelper
 const PieceStatus = require('./pieces.js').PieceStatus
 const SquareHelper = require('./helpers.js').SquareHelper
 
-class ObjectUtils {
+class ObjectHelper {
   static orderKeys (unorderedObj) {
     return Object.keys(unorderedObj).sort().reduce(
       (obj, key) => { 
@@ -20,8 +20,8 @@ class ObjectUtils {
 }
 
 class Engine {
-  constructor (fen) {
-    this.board = new Board()
+  constructor (fen, seed) {
+    this.board = new Board(seed)
     this.board.parseFenToBoard(fen)
     this.moveStack = new LinkedList()
     this.captureStack = new LinkedList()
@@ -44,17 +44,25 @@ class Engine {
         nodes += 1
       } else {
         this.make(moves[i])
-        count = leaf ? this.board.legalMoves().length : this.perft(depth - 1, false)
+        count = leaf 
+          ? this.board.legalMoves().length 
+          : this.perft(depth - 1, false)
         nodes += count
         this.unmake()
       }
       if (root) {
-        divide[SquareHelper.uciFor(moves[i])] = count
+        if (moves[i].promotion) {
+          const promoteTo = moves[i].promoteTo.toLowerCase()
+          divide[SquareHelper.uciFor(moves[i])+promoteTo] = count  
+        } else {
+          divide[SquareHelper.uciFor(moves[i])] = count
+        }
+        
       }
     }
 
     if (root) {
-      const orderedMoves = ObjectUtils.orderKeys(divide)
+      const orderedMoves = ObjectHelper.orderKeys(divide)
       console.log(`go perft ${depth}`)
       Object.keys(orderedMoves).forEach((san) => {
         console.log(`${san}: ${orderedMoves[san]}`)
@@ -89,28 +97,33 @@ class Engine {
     const rookCastleFrom = null
     const rookCastleTo = null
 
+
+    // these are moves that require past context
+    this.handleMakeCaptureMoves(capture, pieceList, toBit, toIdx, ep, move)
+    this.handleMakeEpCaptureMoves(move, capture, pieceList, toBit, ep, epCaptureBb)
+    this.updateEpStack()
+    this.handleMoveWithEpRisk(epRisk, toBit)
+
+    // reset the context
     this.board.initWhiteBitBoards()
     this.board.initBlackBitBoards()
     this.board.initCheckEvasionData()
     this.board.initPinAndXrayData()
     this.board.initMoveCounters()
-    this.handleMakeCaptureMoves(capture, pieceList, toBit, toIdx, ep, move)
-    this.handleMakeEpCaptureMoves(move, capture, pieceList, toBit, ep, epCaptureBb)
-    this.updateEpStack()
-    this.handleMoveWithEpRisk(epRisk, toBit) // buggy due to eprisk?
+
+    // make moves now that we're on a clean slate
     this.handleMakeKingMoves(castleStatus, fenChar)
     this.handleMakeCastleStatuses(castleStatus, fenChar, fromBit)
     this.handleRookMovesWhenCastling(castle, toIdx, pieceList)
     this.handlePieceMove(pieceList, fromBit, toBit, promotion, promoteTo, fenChar)
     this.handlePosKeysDueToMove(fenChar, fromIdx, toIdx, promotion, promoteTo)
     this.handleMakeHalfMoveNo(fenChar)
+    this.handleThreeFoldRepetition()
     this.incrementFullMoveNo()
     this.updateSideToMove()
-    this.board.setPieceContext()
+    this.board.setPieceContext()    
     this.moveStack.append(move)
     this.posKeys.push(this.board.posKey)
-    this.handleThreeFoldRepetition()
-    
   }
 
   unmake () {
@@ -138,14 +151,19 @@ class Engine {
     const pieceBoard = null
     const capturedPieceBoard = null
 
+    // these are moves that require past context
+    this.handleUnMakeCaptureMoves(lastMove, pieceList, toBit, toIdx, ep)
+    this.handleUnMakeEpCaptureMoves(lastMove, pieceList, ep, epCaptureBb, toIdx)
+    this.handleUnMakeEpRisks(epSqIdx, this.board, epNode)
+
+    // reset the context
     this.board.initWhiteBitBoards()
     this.board.initBlackBitBoards()
     this.board.initCheckEvasionData()
     this.board.initPinAndXrayData()
     this.board.initMoveCounters()
-    this.handleUnMakeCaptureMoves(lastMove, pieceList, toBit, toIdx, ep)
-    this.handleUnMakeEpCaptureMoves(lastMove, pieceList, ep, epCaptureBb, toIdx)
-    this.handleUnMakeEpRisks(epSqIdx, this.board, epNode)
+
+    // unmake moves now that we're on a clean slate
     this.handleUnMakeKingMoves(castleDisabledLastMove, fenChar)
     this.handleUnMakeCastleStatuses(castleDisabledLastMove, fenChar, fromBit)
     this.handleRookMovesWhenCastling(castle, toIdx, pieceList)
@@ -161,7 +179,8 @@ class Engine {
 
   handleThreeFoldRepetition () {
     const length = this.posKeys.length
-    this.board.isThreeFoldRepetition = ((this.posKeys[length-1] === this.posKeys[length-5]) && (this.posKeys[length-5] === this.posKeys[length-9]))
+    this.board.isThreeFoldRepetition = ((this.posKeys[length-1] === this.posKeys[length-5]) 
+        && (this.posKeys[length-5] === this.posKeys[length-9]))
   }
 
   updateEpStack () {
@@ -198,14 +217,15 @@ class Engine {
   }
 
   // make() helper functions
-  makeCaptures (pieceList, toBit, toIdx, move) {
+  makeCaptures (pieceList, toBit, toIdx) {
     const pieceBoardWCapture = pieceList.firstMatch((pieceBoard) => { return (pieceBoard.bb & toBit) !== U64(0) })
     pieceBoardWCapture.bb ^= toBit
     const capturedFenChar = pieceBoardWCapture.fenChar
-    // if (this.board.pieceKeys[capturedFenChar] === undefined) {
-    //   ViewHelper.inspect(this.board, toIdx, 'hello')
-    //   console.log(this.moveStack)
-    // }
+    if (this.board.pieceKeys[capturedFenChar] === undefined) { 
+      console.log(pieceBoardWCapture)
+      ViewHelper.display(pieceBoardWCapture.bb, 'null?')
+      ViewHelper.inspect(this.board)
+    }
     this.board.posKey ^= this.board.pieceKeys[capturedFenChar][toIdx]
     this.captureStack.append(capturedFenChar)
     this.resetHalfMoveNo()
@@ -265,6 +285,7 @@ class Engine {
   }
 
   makeBlackQsRook (pieceList) {
+    if (pieceList === undefined) { console.log(pieceList) }
     const rook = pieceList.r
     rook.bb ^= (BoardHelper.blackQsCastleRookSq() | BitHelper.setBit(U64(0), 59))
     this.board.posKey ^= this.board.pieceKeys.r[56]
@@ -393,7 +414,7 @@ class Engine {
   }
 
   handleMoveWithEpRisk (epRisk, toBit) {
-    if (epRisk && epRisk !== U64(0)) {
+    if (epRisk && epRisk !== U64(0) && !this.board.isTheirKingXrayed()) {
       this.board.epSqBb = epRisk
       this.board.epSqIdx = BitHelper.bitScanFwd(epRisk)
       this.board.epCaptureBb = toBit
@@ -450,17 +471,17 @@ class Engine {
     }
 
     if (this.isWantingToCastleBlackKs(castle, toIdx)) {
-      this.makeBlackKsRook()
+      this.makeBlackKsRook(pieceList)
     }
 
     if (this.isWantingToCastleBlackQs(castle, toIdx)) {
-      this.makeBlackQsRook()
+      this.makeBlackQsRook(pieceList)
     }
   }
 
   handleMakeCaptureMoves (capture, pieceList, toBit, toIdx, ep, move) {
     if (capture && !ep) {
-      this.makeCaptures(pieceList, toBit, toIdx, move)
+      this.makeCaptures(pieceList, toBit, toIdx)
     }
   }
 

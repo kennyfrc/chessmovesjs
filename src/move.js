@@ -99,7 +99,7 @@ class Pins {
       const theyOccupied = board.whiteToMove ? board.blackBb : board.whiteBb
       const kingSourceSq = BitHelper.bitScanFwd(ourKingBb)
       const pinnerDirectionFromKing = Mask.mooreNeighborhood(ourKingBb) & board.xrayDangerSqs
-      const sqThatPointsToPinner = BitHelper.bitScanFwd(pinnerDirectionFromKing)
+      const sqThatPointsToPinner = BitHelper.bitScanRev(pinnerDirectionFromKing)
       const pinnerRay = Ray.for(kingSourceSq, sqThatPointsToPinner, theyOccupied)
       const pinnedPiece = pinnerRay & pieceBb ? pieceBb : U64(0)
       return pinnedPiece ? attacks & pinnerRay : attacks

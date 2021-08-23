@@ -1,3 +1,5 @@
+const U64 = require('./helpers.js').U64
+
 /**
  * We're using a Linear Congruential Generator
  * where m is Mersenne Prime 2**61-1,
@@ -7,9 +9,9 @@
  */
 class LCG {
   constructor (seed) {
-    this.seed = BigInt(seed || new Date().getTime())
-    this.a = BigInt(257)
-    this.m = BigInt(2 ** 61 - 1)
+    this.seed = U64(seed || new Date().getTime())
+    this.a = U64(257)
+    this.m = U64(2 ** 61 - 1)
   }
 
   randomBigInt () {

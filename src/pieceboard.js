@@ -4,6 +4,8 @@ const BoardHelper = require('./helpers.js').BoardHelper
 const ViewHelper = require('./helpers.js').ViewHelper
 const Direction = require('./attack.js').Direction
 // const MoveList = require('./move.js').MoveList
+const U64 = require('./helpers.js').U64
+// const U64Comp = require('./helpers.js').U64Comp
 const Mask = require('./mask.js').Mask
 
 class PieceBoard {
@@ -87,7 +89,7 @@ class WhitePawnBoard extends PieceBoard {
     this.blackMinorBb = board.blackMinorBb
     this.blackMajorBb = board.blackMajorBb
     this.epSqIdx = board.epSqIdx
-    this.epSqBb = this.epSqIdx === undefined ? 0n : BitHelper.setBit(0n, this.epSqIdx)
+    this.epSqBb = this.epSqIdx === undefined ? U64(0) : BitHelper.setBit(U64(0), this.epSqIdx)
     this.occupied = board.bb
     this.occupiable = ~board.whiteBb
   }
@@ -97,7 +99,7 @@ class WhitePawnBoard extends PieceBoard {
   }
 
   doublePushMoves (pieceBb) {
-    return this.atSecondRank(pieceBb) ? this.canDoublePush(pieceBb) : 0n
+    return this.atSecondRank(pieceBb) ? this.canDoublePush(pieceBb) : U64(0)
   }
 
   attacks (pieceBb, board) {
@@ -147,7 +149,7 @@ class BlackPawnBoard extends PieceBoard {
     this.whiteMinorBb = board.whiteMinorBb
     this.whiteMajorBb = board.whiteMajorBb
     this.epSqIdx = board.epSqIdx
-    this.epSqBb = this.epSqIdx === undefined ? 0n : BitHelper.setBit(0n, this.epSqIdx)
+    this.epSqBb = this.epSqIdx === undefined ? U64(0) : BitHelper.setBit(U64(0), this.epSqIdx)
     this.occupied = board.bb
     this.occupiable = ~board.blackBb
   }
@@ -157,7 +159,7 @@ class BlackPawnBoard extends PieceBoard {
   }
 
   doublePushMoves (pieceBb) {
-    return this.atSeventhRank(pieceBb) ? this.canDoublePush(pieceBb) : 0n
+    return this.atSeventhRank(pieceBb) ? this.canDoublePush(pieceBb) : U64(0)
   }
 
   attacks (pieceBb, board) {
@@ -436,24 +438,24 @@ class BlackKingBoard extends PieceBoard {
 
 class NullPieceBoard {
   constructor () {
-    this.bb = 0n
+    this.bb = U64(0)
   }
 }
 
 class PieceBoardList {
   constructor () {
-    this.K = PieceBoard.for('K', 0n)
-    this.Q = PieceBoard.for('Q', 0n)
-    this.R = PieceBoard.for('R', 0n)
-    this.B = PieceBoard.for('B', 0n)
-    this.N = PieceBoard.for('N', 0n)
-    this.P = PieceBoard.for('P', 0n)
-    this.k = PieceBoard.for('k', 0n)
-    this.q = PieceBoard.for('q', 0n)
-    this.r = PieceBoard.for('r', 0n)
-    this.b = PieceBoard.for('b', 0n)
-    this.n = PieceBoard.for('n', 0n)
-    this.p = PieceBoard.for('p', 0n)
+    this.K = PieceBoard.for('K', U64(0))
+    this.Q = PieceBoard.for('Q', U64(0))
+    this.R = PieceBoard.for('R', U64(0))
+    this.B = PieceBoard.for('B', U64(0))
+    this.N = PieceBoard.for('N', U64(0))
+    this.P = PieceBoard.for('P', U64(0))
+    this.k = PieceBoard.for('k', U64(0))
+    this.q = PieceBoard.for('q', U64(0))
+    this.r = PieceBoard.for('r', U64(0))
+    this.b = PieceBoard.for('b', U64(0))
+    this.n = PieceBoard.for('n', U64(0))
+    this.p = PieceBoard.for('p', U64(0))
   }
 
   forEach (callback) {

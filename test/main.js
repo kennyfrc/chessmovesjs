@@ -1087,10 +1087,6 @@ describe('Perft Tricky Positions', function () {
   it('tc3 3', function () {
     const engine = new Engine('rnbq1k1r/pp1Pbppp/2pQ4/8/2B5/8/PPP1NnPP/RNB1K2R b KQ - 2 8')
 
-
-    // console.log(engine.board.legalMoves())
-    // PerftHelper.countMoves(engine.board.legalMoves())
-
     assert.equal(engine.board.legalMoves().length, 28)
   })
 

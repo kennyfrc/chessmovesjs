@@ -1,6 +1,5 @@
 const Board = require('./board.js').Board
 const Pieces = require('./pieces.js').Pieces
-const U64 = require('./helpers.js').U64
 const ViewHelper = require('./helpers.js').ViewHelper
 const BoardHelper = require('./helpers.js').BoardHelper
 const BitHelper = require('./helpers.js').BitHelper
@@ -31,6 +30,7 @@ class Engine {
   }
 
   perft (depth, root=true) {
+    console.time('perft')
     const divide = {}
     let count = 0
     let nodes = 0
@@ -67,7 +67,7 @@ class Engine {
       Object.keys(orderedMoves).forEach((san) => {
         console.log(`${san}: ${orderedMoves[san]}`)
       })
-      console.log(`\n` + `Nodes searched: ${nodes}` + `\n`)
+      console.log(`\n` + `Nodes searched: ${nodes}` + `\n` + `${console.timeEnd('perft')}`)
     }
 
     return nodes
@@ -91,7 +91,7 @@ class Engine {
     const castleStatus = this.board.castleStatus
     const epCaptureBb = this.board.epCaptureBb
     const posKey = this.board.posKey
-    const pieceBb = U64(0)
+    const pieceBb = 0n
     const pieceBoard = null
     const pieceBoardWCapture = null
     const rookCastleFrom = null
@@ -147,7 +147,7 @@ class Engine {
     const castleDisabledLastMove = (this.board.ply === this.board.whiteCastleDisablePly) ||
             (this.board.ply === this.board.blackCastleDisablePly)
     const posKey = this.board.posKey
-    const pieceBb = U64(0)
+    const pieceBb = 0n
     const pieceBoard = null
     const capturedPieceBoard = null
 
@@ -218,7 +218,7 @@ class Engine {
 
   // make() helper functions
   makeCaptures (pieceList, toBit, toIdx) {
-    const pieceBoardWCapture = pieceList.firstMatch((pieceBoard) => { return (pieceBoard.bb & toBit) !== U64(0) })
+    const pieceBoardWCapture = pieceList.firstMatch((pieceBoard) => { return (pieceBoard.bb & toBit) !== 0n })
     pieceBoardWCapture.bb ^= toBit
     const capturedFenChar = pieceBoardWCapture.fenChar
     if (this.board.pieceKeys[capturedFenChar] === undefined) { 
@@ -232,7 +232,7 @@ class Engine {
   }
 
   makeEpCaptures (move, pieceList, toBit, epCaptureBb) {
-    const pieceBoardWCapture = ((toBit & BoardHelper.sixthRank()) !== U64(0))
+    const pieceBoardWCapture = ((toBit & BoardHelper.sixthRank()) !== 0n)
       ? pieceList.p
       : pieceList.P
     pieceBoardWCapture.bb ^= epCaptureBb
@@ -265,21 +265,21 @@ class Engine {
 
   makeWhiteKsRook (pieceList) {
     const rook = pieceList.R
-    rook.bb ^= (BoardHelper.whiteKsCastleRookSq() | BitHelper.setBit(U64(0), 5))
+    rook.bb ^= (BoardHelper.whiteKsCastleRookSq() | BitHelper.setBit(0n, 5))
     this.board.posKey ^= this.board.pieceKeys.R[7]
     this.board.posKey ^= this.board.pieceKeys.R[5]
   }
 
   makeWhiteQsRook (pieceList) {
     const rook = pieceList.R
-    rook.bb ^= (BoardHelper.whiteQsCastleRookSq() | BitHelper.setBit(U64(0), 3))
+    rook.bb ^= (BoardHelper.whiteQsCastleRookSq() | BitHelper.setBit(0n, 3))
     this.board.posKey ^= this.board.pieceKeys.R[0]
     this.board.posKey ^= this.board.pieceKeys.R[3]
   }
 
   makeBlackKsRook (pieceList) {
     const rook = pieceList.r
-    rook.bb ^= (BoardHelper.blackKsCastleRookSq() | BitHelper.setBit(U64(0), 61))
+    rook.bb ^= (BoardHelper.blackKsCastleRookSq() | BitHelper.setBit(0n, 61))
     this.board.posKey ^= this.board.pieceKeys.r[63]
     this.board.posKey ^= this.board.pieceKeys.r[61]
   }
@@ -287,7 +287,7 @@ class Engine {
   makeBlackQsRook (pieceList) {
     if (pieceList === undefined) { console.log(pieceList) }
     const rook = pieceList.r
-    rook.bb ^= (BoardHelper.blackQsCastleRookSq() | BitHelper.setBit(U64(0), 59))
+    rook.bb ^= (BoardHelper.blackQsCastleRookSq() | BitHelper.setBit(0n, 59))
     this.board.posKey ^= this.board.pieceKeys.r[56]
     this.board.posKey ^= this.board.pieceKeys.r[59]
   }
@@ -318,12 +318,12 @@ class Engine {
 
   handlePieceMove (pieceList, fromBit, toBit, promotion, promoteTo, fenChar) {
     if (promotion) {
-      const pieceBoard = pieceList.firstMatch((pieceBoard) => { return (pieceBoard.bb & fromBit) !== U64(0) })
+      const pieceBoard = pieceList.firstMatch((pieceBoard) => { return (pieceBoard.bb & fromBit) !== 0n })
       const promotionPieceBoard = pieceList[promoteTo]
       pieceBoard.bb ^= fromBit
       promotionPieceBoard.bb ^= toBit
     } else {
-      const pieceBoard = pieceList.firstMatch((pieceBoard) => { return (pieceBoard.bb & fromBit) !== U64(0) })
+      const pieceBoard = pieceList.firstMatch((pieceBoard) => { return (pieceBoard.bb & fromBit) !== 0n })
       pieceBoard.bb ^= (fromBit | toBit)
     }
   }
@@ -374,11 +374,11 @@ class Engine {
   }
 
   isWhiteKingMoveAndCastleStatusValid (castleStatus, fenChar) {
-    return (castleStatus & BoardHelper.whiteCastleSqs()) !== U64(0) && fenChar === 'K'
+    return (castleStatus & BoardHelper.whiteCastleSqs()) !== 0n && fenChar === 'K'
   }
 
   isBlackKingMoveAndCastleStatusValid (castleStatus, fenChar) {
-    return (castleStatus & BoardHelper.blackCastleSqs()) !== U64(0) && fenChar === 'k'
+    return (castleStatus & BoardHelper.blackCastleSqs()) !== 0n && fenChar === 'k'
   }
 
   isWantingToCastleWhiteKs (castle, toIdx) {
@@ -398,38 +398,38 @@ class Engine {
   }
 
   isWhiteRookMoveAndKsCastleStatusValid (castleStatus, fenChar, fromBit) {
-    return (castleStatus & BoardHelper.whiteKsCastleRookSq() & fromBit) !== U64(0) && fenChar === 'R'
+    return (castleStatus & BoardHelper.whiteKsCastleRookSq() & fromBit) !== 0n && fenChar === 'R'
   }
 
   isWhiteRookMoveAndQsCastleStatusValid (castleStatus, fenChar, fromBit) {
-    return (castleStatus & BoardHelper.whiteQsCastleRookSq() & fromBit) !== U64(0) && fenChar === 'R'
+    return (castleStatus & BoardHelper.whiteQsCastleRookSq() & fromBit) !== 0n && fenChar === 'R'
   }
 
   isBlackRookMoveAndKsCastleStatusValid (castleStatus, fenChar, fromBit) {
-    return (castleStatus & BoardHelper.blackKsCastleRookSq() & fromBit) !== U64(0) && fenChar === 'r'
+    return (castleStatus & BoardHelper.blackKsCastleRookSq() & fromBit) !== 0n && fenChar === 'r'
   }
 
   isBlackRookMoveAndQsCastleStatusValid (castleStatus, fenChar, fromBit) {
-    return (castleStatus & BoardHelper.blackQsCastleRookSq() & fromBit) !== U64(0) && fenChar === 'r'
+    return (castleStatus & BoardHelper.blackQsCastleRookSq() & fromBit) !== 0n && fenChar === 'r'
   }
 
   handleMoveWithEpRisk (epRisk, toBit) {
-    if (epRisk && epRisk !== U64(0) && !this.board.isTheirKingXrayed()) {
+    if (epRisk && epRisk !== 0n && !this.board.isTheirKingXrayed()) {
       this.board.epSqBb = epRisk
       this.board.epSqIdx = BitHelper.bitScanFwd(epRisk)
       this.board.epCaptureBb = toBit
     } else {
-      this.board.epSqBb = U64(0)
+      this.board.epSqBb = 0n
       this.board.epSqIdx = undefined
-      this.board.epCaptureBb = U64(0)
+      this.board.epCaptureBb = 0n
     }
   }
 
   handleUnMakeEpRisks (epSqIdx, board, epNode) {
     if (epSqIdx) {
-      this.board.epSqBb = epNode.epSqBb || U64(0)
+      this.board.epSqBb = epNode.epSqBb || 0n
       this.board.epSqIdx = epNode.epSqIdx || undefined
-      this.board.epCaptureBb = epNode.epCaptureBb || U64(0)
+      this.board.epCaptureBb = epNode.epCaptureBb || 0n
     }
   }
 
@@ -494,14 +494,14 @@ class Engine {
   // utilities
   resetEnPassantSquares () {
     this.board.epSqIdx = null
-    this.board.epCaptureBb = U64(0)
-    this.board.epSqBb = U64(0)
+    this.board.epCaptureBb = 0n
+    this.board.epSqBb = 0n
   }
 
   restoreEnPassantSquares (toIdx, epBb) {
     this.board.epSqIdx = toIdx
     this.board.epCaptureBb = epBb
-    this.board.epSqBb = BitHelper.setBit(U64(0), toIdx)
+    this.board.epSqBb = BitHelper.setBit(0n, toIdx)
   }
 
   // unmake() helper functions
@@ -568,7 +568,7 @@ class Engine {
       pieceBoard.bb ^= fromBit
       promotionPieceBoard.bb ^= toBit
     } else {
-      const pieceBoard = pieceList.firstMatch((pieceBoard) => { return (pieceBoard.bb & toBit) !== U64(0) })
+      const pieceBoard = pieceList.firstMatch((pieceBoard) => { return (pieceBoard.bb & toBit) !== 0n })
       pieceBoard.bb ^= (fromBit | toBit)
     }
   }
@@ -593,22 +593,22 @@ class Engine {
 
   isWhiteRookAndLastMoveIsKsCastle (castleDisabledLastMove, fenChar, fromBit) {
     return (castleDisabledLastMove && fenChar === 'R') &&
-      (fromBit & BoardHelper.whiteKsCastleRookSq()) !== U64(0)
+      (fromBit & BoardHelper.whiteKsCastleRookSq()) !== 0n
   }
 
   isWhiteRookAndLastMoveIsQsCastle (castleDisabledLastMove, fenChar, fromBit) {
     return (castleDisabledLastMove && fenChar === 'R') &&
-      (fromBit & BoardHelper.whiteQsCastleRookSq()) !== U64(0)
+      (fromBit & BoardHelper.whiteQsCastleRookSq()) !== 0n
   }
 
   isBlackRookAndLastMoveIsKsCastle (castleDisabledLastMove, fenChar, fromBit) {
     return (castleDisabledLastMove && fenChar === 'r') &&
-      (fromBit & BoardHelper.blackKsCastleRookSq()) !== U64(0)
+      (fromBit & BoardHelper.blackKsCastleRookSq()) !== 0n
   }
 
   isBlackRookAndLastMoveIsQsCastle (castleDisabledLastMove, fenChar, fromBit) {
     return (castleDisabledLastMove && fenChar === 'r') &&
-      (fromBit & BoardHelper.blackQsCastleRookSq()) !== U64(0)
+      (fromBit & BoardHelper.blackQsCastleRookSq()) !== 0n
   }
 
   handleUnMakeCaptureMoves (lastMove, pieceList, toBit, toIdx, ep) {

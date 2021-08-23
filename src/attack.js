@@ -2,9 +2,6 @@ const BitHelper = require('./helpers.js').BitHelper
 const BoardHelper = require('./helpers.js').BoardHelper
 const SquareHelper = require('./helpers.js').SquareHelper
 const ViewHelper = require('./helpers.js').ViewHelper
-const U64 = require('./helpers.js').U64
-const U64Comp = require('./helpers.js').U64Comp
-const U64Neg = require('./helpers.js').U64Neg
 const Mask = require('./mask.js').Mask
 
 /**
@@ -48,7 +45,7 @@ class RayCompass {
         return Ray.sliderAttacks(sourceSq, occupied,
           BitHelper.bitScanFwd, Ray.posAntiDiag)
       default:
-        return U64(0)
+        return 0n
     }
   }
 }
@@ -60,43 +57,43 @@ class Ray {
 
   // basic board rays
   static rank (sq) {
-    return BoardHelper.firstRank() << (sq & U64(56))
+    return BoardHelper.firstRank() << (BigInt(sq) & 56n)
   }
 
   static file (sq) {
-    return BoardHelper.aFile() << (sq & U64(7))
+    return BoardHelper.aFile() << (BigInt(sq) & 7n)
   }
 
   static diag (sq) {
-    const diag = U64(8) * (sq & U64(7)) - (sq & U64(56))
-    const nort = U64Neg(diag) & (diag >> U64(31))
-    const sout = diag & (U64Neg(diag) >> U64(31))
+    const diag = 8n * (BigInt(sq) & 7n) - (BigInt(sq) & 56n)
+    const nort = -(diag) & (diag >> 31n)
+    const sout = diag & (-(diag) >> 31n)
     return (BoardHelper.a1H8Diagonal() >> sout) << nort
   }
 
   static antiDiag (sq) {
-    const diag = U64(56) - U64(8) * (sq & U64(7)) - (sq & U64(56))
-    const nort = U64Neg(diag) & (diag >> U64(31))
-    const sout = diag & (U64Neg(diag) >> U64(31))
+    const diag = 56n - 8n * (BigInt(sq) & 7n) - (BigInt(sq) & 56n)
+    const nort = -(diag) & (diag >> 31n)
+    const sout = diag & (-(diag) >> 31n)
     return (BoardHelper.h1A8Diagonal() >> sout) << nort
   }
 
   // positive & negative rays
   static posRays (sq) {
-    return U64(-2) << sq
+    return -2n << BigInt(sq)
   }
 
   static negRays (sq) {
-    return ((U64(1) << sq) - U64(1))
+    return ((1n << BigInt(sq)) - 1n)
   }
 
   // piece specific
   static sliderAttacks (sq, occupied, bitScanCallback, rayCallback) {
-    let rayAttacks = rayCallback(U64(sq))
+    let rayAttacks = rayCallback(sq)
     let rayBlocker = rayAttacks & occupied
-    while (rayBlocker !== U64(0)) {
+    while (rayBlocker !== 0n) {
       const sqOfBlocker = bitScanCallback(rayBlocker)
-      const rayBehindBlocker = rayCallback(U64(sqOfBlocker)) & rayAttacks
+      const rayBehindBlocker = rayCallback(sqOfBlocker) & rayAttacks
       rayBlocker = BitHelper.clearBit(rayBlocker, sqOfBlocker)
       rayAttacks ^= rayBehindBlocker
     }
@@ -195,9 +192,6 @@ class Direction {
   }
 
   static bSinglePush (bb, emptySq) {
-    if (typeof emptySq !== 'bigint') { throw new Error(`notbigint: ${emptySq}`) }
-    if (bb === undefined) { throw new Error() }
-    if (emptySq === undefined) { throw new Error() }
     return Mask.southOne(bb) & emptySq
   }
 
@@ -207,24 +201,24 @@ class Direction {
   }
 
   static wPawnAttacks (bb) {
-    return (Mask.northWestOne(bb & U64Comp(BoardHelper.aFile())) |
-     Mask.northEastOne(bb & U64Comp(BoardHelper.hFile())))
+    return (Mask.northWestOne(bb & ~(BoardHelper.aFile())) |
+     Mask.northEastOne(bb & ~(BoardHelper.hFile())))
   }
 
   static bPawnAttacks (bb) {
-    return (Mask.southWestOne(bb & U64Comp(BoardHelper.aFile())) |
-     Mask.southEastOne(bb & U64Comp(BoardHelper.hFile())))
+    return (Mask.southWestOne(bb & ~(BoardHelper.aFile())) |
+     Mask.southEastOne(bb & ~(BoardHelper.hFile())))
   }
 
   static knightAttacks (bb) {
-    return Mask.noNoEast(bb & U64Comp((BoardHelper.hFile()) | BoardHelper.seventhRank() | BoardHelper.eighthRank())) |
-      Mask.noEaEast(bb & U64Comp((BoardHelper.gFile()) | BoardHelper.hFile() | BoardHelper.eighthRank())) |
-      Mask.soEaEast(bb & U64Comp((BoardHelper.gFile()) | BoardHelper.hFile() | BoardHelper.firstRank())) |
-      Mask.soSoEast(bb & U64Comp((BoardHelper.hFile()) | BoardHelper.firstRank() | BoardHelper.secondRank())) |
-      Mask.noNoWest(bb & U64Comp((BoardHelper.aFile()) | BoardHelper.seventhRank() | BoardHelper.eighthRank())) |
-      Mask.noWeWest(bb & U64Comp((BoardHelper.aFile()) | BoardHelper.bFile() | BoardHelper.eighthRank())) |
-      Mask.soWeWest(bb & U64Comp((BoardHelper.aFile()) | BoardHelper.bFile() | BoardHelper.firstRank())) |
-      Mask.soSoWest(bb & U64Comp((BoardHelper.aFile()) | BoardHelper.firstRank() | BoardHelper.secondRank()))
+    return Mask.noNoEast(bb & ~((BoardHelper.hFile()) | BoardHelper.seventhRank() | BoardHelper.eighthRank())) |
+      Mask.noEaEast(bb & ~((BoardHelper.gFile()) | BoardHelper.hFile() | BoardHelper.eighthRank())) |
+      Mask.soEaEast(bb & ~((BoardHelper.gFile()) | BoardHelper.hFile() | BoardHelper.firstRank())) |
+      Mask.soSoEast(bb & ~((BoardHelper.hFile()) | BoardHelper.firstRank() | BoardHelper.secondRank())) |
+      Mask.noNoWest(bb & ~((BoardHelper.aFile()) | BoardHelper.seventhRank() | BoardHelper.eighthRank())) |
+      Mask.noWeWest(bb & ~((BoardHelper.aFile()) | BoardHelper.bFile() | BoardHelper.eighthRank())) |
+      Mask.soWeWest(bb & ~((BoardHelper.aFile()) | BoardHelper.bFile() | BoardHelper.firstRank())) |
+      Mask.soSoWest(bb & ~((BoardHelper.aFile()) | BoardHelper.firstRank() | BoardHelper.secondRank()))
   }
 
   static bishopRays (bb, occupied, occupiable) {
@@ -244,15 +238,15 @@ class Direction {
   }
 
   static kingMoves (bb, occupied, occupiable, rookBb, castleStatus, inCheck) {
-    const castlingMoves = inCheck ? U64(0) : this.castleCheck(bb, occupied, occupiable, rookBb, castleStatus)
+    const castlingMoves = inCheck ? 0n : this.castleCheck(bb, occupied, occupiable, rookBb, castleStatus)
     const bareKingMoves = this.handleKingEdges(bb)
     return (this.handleKingEdges(bb) | castlingMoves) & occupiable
   }
 
   static handleKingEdges (bb) {
-    if ((bb & BoardHelper.aFile()) !== U64(0)) {
+    if ((bb & BoardHelper.aFile()) !== 0n) {
       return Mask.mooreNeighborhood(bb) & (BoardHelper.aFile() | BoardHelper.bFile())
-    } else if ((bb & BoardHelper.hFile()) !== U64(0)) {
+    } else if ((bb & BoardHelper.hFile()) !== 0n) {
       return Mask.mooreNeighborhood(bb) & (BoardHelper.gFile() | BoardHelper.hFile())
     } else {
       return Mask.mooreNeighborhood(bb)
@@ -260,29 +254,29 @@ class Direction {
   }
 
   static castleCheck (kingBb, occupied, occupiable, rookBb, castleStatus) {
-    let castlingMoves = U64(0)
+    let castlingMoves = 0n
     rookBb &= castleStatus
-    if (rookBb === U64(0)) {
+    if (rookBb === 0n) {
       return castlingMoves
     }
     const kingSq = BitHelper.bitScanFwd(kingBb)
     castlingMoves |= CastleRay.canCastleQs(kingSq, occupied, occupiable)
       ? CastleRay.setQsCastleMove(kingSq)
-      : U64(0)
+      : 0n
     castlingMoves |= CastleRay.canCastleKs(kingSq, occupied, occupiable)
       ? CastleRay.setKsCastleMove(kingSq)
-      : U64(0)
+      : 0n
     return castlingMoves
   }
 }
 
 class CastleRay {
   static setQsCastleMove (kingSq) {
-    return BitHelper.setBit(U64(0), kingSq - 2)
+    return BitHelper.setBit(0n, kingSq - 2)
   }
 
   static setKsCastleMove (kingSq) {
-    return BitHelper.setBit(U64(0), kingSq + 2)
+    return BitHelper.setBit(0n, kingSq + 2)
   }
 
   static canCastleKs (kingSq, occupied, occupiable) {

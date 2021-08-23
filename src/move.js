@@ -2,9 +2,6 @@ const BitHelper = require('./helpers.js').BitHelper
 const BoardHelper = require('./helpers.js').BoardHelper
 const SquareHelper = require('./helpers.js').SquareHelper
 const ViewHelper = require('./helpers.js').ViewHelper
-const U64 = require('./helpers.js').U64
-// const U64Comp = require('./helpers.js').U64Comp
-// const U64Neg = require('./helpers.js').U64Neg
 const Ray = require('./attack.js').Ray
 const Direction = require('./attack.js').Direction
 const Mask = require('./mask.js').Mask
@@ -17,7 +14,7 @@ class MoveList {
     const moveList = []
     const pieceBoard = board.pieceBoardList[fenPiece]
     SquareHelper.indicesFor(pieceBoard.bb).forEach((fromIdx) => {
-      const pieceBb = BitHelper.setBit(U64(0), fromIdx)
+      const pieceBb = BitHelper.setBit(0n, fromIdx)
       let attacks = CheckEvasions.filter(fenPiece, pieceBoard, pieceBb, board)
       attacks = Pins.filter(fenPiece, attacks, pieceBb, board)
       const toIdxs = SquareHelper.indicesFor(attacks)
@@ -58,8 +55,8 @@ class MoveList {
 
   static isPromotable (fenPiece, pieceBb) {
     return fenPiece === 'P'
-      ? (BoardHelper.seventhRank() & pieceBb) !== U64(0)
-      : (BoardHelper.secondRank() & pieceBb) !== U64(0)
+      ? (BoardHelper.seventhRank() & pieceBb) !== 0n
+      : (BoardHelper.secondRank() & pieceBb) !== 0n
   }
 
   static legalMoves (board) {
@@ -95,7 +92,7 @@ class MoveList {
 class Pins {
   static filter (fenPiece, attacks, pieceBb, board) {
     if (board.isOurKingXrayed() && board.blockersFromOurKing === 1) {
-      const pinnedPiece = board.theirPinnersRay & pieceBb ? pieceBb : U64(0)
+      const pinnedPiece = board.theirPinnersRay & pieceBb ? pieceBb : 0n
       return pinnedPiece ? attacks & board.theirPinnersRay : attacks
     }
     return attacks
@@ -104,7 +101,7 @@ class Pins {
 
 class CheckEvasions {
   static filter (fenPiece, pieceBoard, pieceBb, board) {
-    let pieceMoves = U64(0)
+    let pieceMoves = 0n
     if (this.isMultiCheckAndNotKing(board, fenPiece)) { return pieceMoves };
     if (this.isSingleCheckAndNotKing(board, fenPiece)) {
       pieceMoves |= MoveList.pieceMoves(fenPiece, pieceBoard, pieceBb, board)
@@ -196,8 +193,8 @@ class WhitePawnMove {
   constructor (fromBit, fromIdx, toIdx, pieceBoard, promotion, promoteTo) {
     this.from = fromIdx
     this.to = toIdx
-    this.fromBit = fromBit || U64(0)
-    this.toBit = BitHelper.setBit(U64(0), U64(toIdx))
+    this.fromBit = fromBit || 0n
+    this.toBit = BitHelper.setBit(0n, toIdx)
     this.ep = false
     this.promotion = promotion
     this.promoteTo = promoteTo
@@ -205,24 +202,24 @@ class WhitePawnMove {
     this.capture = this.isCapture(pieceBoard)
     this.threat = this.isThreat(pieceBoard)
     this.fenChar = 'P'
-    this.epRisk = this.isDoublePush(pieceBoard.emptySq) ? Mask.southOne(this.toBit) : U64(0)
+    this.epRisk = this.isDoublePush(pieceBoard.emptySq) ? Mask.southOne(this.toBit) : 0n
   }
 
   isCheck (pieceBoard) {
     return ((this.parsePawnAttacks(pieceBoard, this.toBit) & pieceBoard.blackKingBb) !==
-      U64(0))
+      0n)
   }
 
   isCapture (pieceBoard) {
     const capOrEp = this.toBit & (pieceBoard.blackBb | pieceBoard.epSqBb)
     const enPassant = this.toBit & pieceBoard.epSqBb
-    this.ep = enPassant !== U64(0)
-    return (capOrEp !== U64(0))
+    this.ep = enPassant !== 0n
+    return (capOrEp !== 0n)
   }
 
   isThreat (pieceBoard) {
     return (this.parsePawnAttacks(pieceBoard, this.toBit) & (pieceBoard.blackMinorBb |
-      pieceBoard.blackMajorBb)) !== U64(0)
+      pieceBoard.blackMajorBb)) !== 0n
   }
 
   isDoublePush (emptySq) {
@@ -249,8 +246,8 @@ class BlackPawnMove {
   constructor (fromBit, fromIdx, toIdx, pieceBoard, promotion, promoteTo) {
     this.from = fromIdx
     this.to = toIdx
-    this.fromBit = fromBit || U64(0)
-    this.toBit = BitHelper.setBit(U64(0), U64(toIdx))
+    this.fromBit = fromBit || 0n
+    this.toBit = BitHelper.setBit(0n, toIdx)
     this.ep = false
     this.promotion = promotion
     this.promoteTo = promoteTo
@@ -258,24 +255,24 @@ class BlackPawnMove {
     this.capture = this.isCapture(pieceBoard)
     this.threat = this.isThreat(pieceBoard)
     this.fenChar = 'p'
-    this.epRisk = this.isDoublePush(pieceBoard.emptySq) ? Mask.northOne(this.toBit) : U64(0)
+    this.epRisk = this.isDoublePush(pieceBoard.emptySq) ? Mask.northOne(this.toBit) : 0n
   }
 
   isCheck (pieceBoard) {
     return ((this.parsePawnAttacks(pieceBoard, this.toBit) & pieceBoard.whiteKingBb) !==
-      U64(0))
+      0n)
   }
 
   isCapture (pieceBoard) {
     const capOrEp = this.toBit & (pieceBoard.whiteBb | pieceBoard.epSqBb)
     const enPassant = this.toBit & pieceBoard.epSqBb
-    this.ep = enPassant !== U64(0)
-    return (capOrEp !== U64(0))
+    this.ep = enPassant !== 0n
+    return (capOrEp !== 0n)
   }
 
   isThreat (pieceBoard) {
     return (this.parsePawnAttacks(pieceBoard, this.toBit) & (pieceBoard.whiteMinorBb |
-      pieceBoard.whiteMajorBb)) !== U64(0)
+      pieceBoard.whiteMajorBb)) !== 0n
   }
 
   isDoublePush (emptySq) {
@@ -302,8 +299,8 @@ class WhiteKnightMove {
   constructor (fromBit, fromIdx, toIdx, pieceBoard) {
     this.from = fromIdx
     this.to = toIdx
-    this.fromBit = fromBit || U64(0)
-    this.toBit = BitHelper.setBit(U64(0), U64(toIdx))
+    this.fromBit = fromBit || 0n
+    this.toBit = BitHelper.setBit(0n, toIdx)
     this.check = this.isCheck(pieceBoard)
     this.capture = this.isCapture(pieceBoard)
     this.threat = this.isThreat(pieceBoard)
@@ -312,16 +309,16 @@ class WhiteKnightMove {
 
   isCheck (pieceBoard) {
     return ((Direction.knightAttacks(this.toBit) & pieceBoard.blackKingBb) !==
-      U64(0))
+      0n)
   }
 
   isCapture (pieceBoard) {
-    return ((this.toBit & pieceBoard.blackBb) !== U64(0))
+    return ((this.toBit & pieceBoard.blackBb) !== 0n)
   }
 
   isThreat (pieceBoard) {
     return (Direction.knightAttacks(this.toBit) & pieceBoard.blackMajorBb) !==
-      U64(0)
+      0n
   }
 }
 
@@ -329,8 +326,8 @@ class BlackKnightMove {
   constructor (fromBit, fromIdx, toIdx, pieceBoard) {
     this.from = fromIdx
     this.to = toIdx
-    this.fromBit = fromBit || U64(0)
-    this.toBit = BitHelper.setBit(U64(0), U64(toIdx))
+    this.fromBit = fromBit || 0n
+    this.toBit = BitHelper.setBit(0n, toIdx)
     this.check = this.isCheck(pieceBoard)
     this.capture = this.isCapture(pieceBoard)
     this.threat = this.isThreat(pieceBoard)
@@ -339,16 +336,16 @@ class BlackKnightMove {
 
   isCheck (pieceBoard) {
     return ((Direction.knightAttacks(this.toBit) & pieceBoard.whiteKingBb) !==
-      U64(0))
+      0n)
   }
 
   isCapture (pieceBoard) {
-    return ((this.toBit & pieceBoard.whiteBb) !== U64(0))
+    return ((this.toBit & pieceBoard.whiteBb) !== 0n)
   }
 
   isThreat (pieceBoard) {
     return (Direction.knightAttacks(this.toBit) & pieceBoard.whiteMajorBb) !==
-      U64(0)
+      0n
   }
 }
 
@@ -356,8 +353,8 @@ class WhiteBishopMove {
   constructor (fromBit, fromIdx, toIdx, pieceBoard) {
     this.from = fromIdx
     this.to = toIdx
-    this.fromBit = fromBit || U64(0)
-    this.toBit = BitHelper.setBit(U64(0), U64(toIdx))
+    this.fromBit = fromBit || 0n
+    this.toBit = BitHelper.setBit(0n, toIdx)
     this.check = this.isCheck(pieceBoard)
     this.capture = this.isCapture(pieceBoard)
     this.threat = this.isThreat(pieceBoard)
@@ -366,16 +363,16 @@ class WhiteBishopMove {
 
   isCheck (pieceBoard) {
     return ((Direction.bishopRays(this.toBit, pieceBoard.occupied, pieceBoard.occupiable) &
-        pieceBoard.blackKingBb) !== U64(0))
+        pieceBoard.blackKingBb) !== 0n)
   }
 
   isCapture (pieceBoard) {
-    return ((this.toBit & pieceBoard.blackBb) !== U64(0))
+    return ((this.toBit & pieceBoard.blackBb) !== 0n)
   }
 
   isThreat (pieceBoard) {
     return (Direction.bishopRays(this.toBit, pieceBoard.occupied, pieceBoard.occupiable) &
-        pieceBoard.blackMajorBb) !== U64(0)
+        pieceBoard.blackMajorBb) !== 0n
   }
 }
 
@@ -383,8 +380,8 @@ class BlackBishopMove {
   constructor (fromBit, fromIdx, toIdx, pieceBoard) {
     this.from = fromIdx
     this.to = toIdx
-    this.fromBit = fromBit || U64(0)
-    this.toBit = BitHelper.setBit(U64(0), U64(toIdx))
+    this.fromBit = fromBit || 0n
+    this.toBit = BitHelper.setBit(0n, toIdx)
     this.check = this.isCheck(pieceBoard)
     this.capture = this.isCapture(pieceBoard)
     this.threat = this.isThreat(pieceBoard)
@@ -393,16 +390,16 @@ class BlackBishopMove {
 
   isCheck (pieceBoard) {
     return ((Direction.bishopRays(this.toBit, pieceBoard.occupied, pieceBoard.occupiable) &
-      pieceBoard.whiteKingBb) !== U64(0))
+      pieceBoard.whiteKingBb) !== 0n)
   }
 
   isCapture (pieceBoard) {
-    return ((this.toBit & pieceBoard.whiteBb) !== U64(0))
+    return ((this.toBit & pieceBoard.whiteBb) !== 0n)
   }
 
   isThreat (pieceBoard) {
     return (Direction.bishopRays(this.toBit, pieceBoard.occupied, pieceBoard.occupiable) &
-      pieceBoard.whiteMajorBb) !== U64(0)
+      pieceBoard.whiteMajorBb) !== 0n
   }
 }
 
@@ -410,8 +407,8 @@ class WhiteRookMove {
   constructor (fromBit, fromIdx, toIdx, pieceBoard) {
     this.from = fromIdx
     this.to = toIdx
-    this.fromBit = fromBit || U64(0)
-    this.toBit = BitHelper.setBit(U64(0), U64(toIdx))
+    this.fromBit = fromBit || 0n
+    this.toBit = BitHelper.setBit(0n, toIdx)
     this.check = this.isCheck(pieceBoard)
     this.capture = this.isCapture(pieceBoard)
     this.threat = this.isThreat(pieceBoard)
@@ -420,16 +417,16 @@ class WhiteRookMove {
 
   isCheck (pieceBoard) {
     return ((Direction.rookRays(this.toBit, pieceBoard.occupied, pieceBoard.occupiable) &
-          pieceBoard.blackKingBb) !== U64(0))
+          pieceBoard.blackKingBb) !== 0n)
   }
 
   isCapture (pieceBoard) {
-    return ((this.toBit & pieceBoard.blackBb) !== U64(0))
+    return ((this.toBit & pieceBoard.blackBb) !== 0n)
   }
 
   isThreat (pieceBoard) {
     return (Direction.rookRays(this.toBit, pieceBoard.occupied, pieceBoard.occupiable) &
-      pieceBoard.blackQueenBb) !== U64(0)
+      pieceBoard.blackQueenBb) !== 0n
   }
 }
 
@@ -437,8 +434,8 @@ class BlackRookMove {
   constructor (fromBit, fromIdx, toIdx, pieceBoard) {
     this.from = fromIdx
     this.to = toIdx
-    this.fromBit = fromBit || U64(0)
-    this.toBit = BitHelper.setBit(U64(0), U64(toIdx))
+    this.fromBit = fromBit || 0n
+    this.toBit = BitHelper.setBit(0n, toIdx)
     this.check = this.isCheck(pieceBoard)
     this.capture = this.isCapture(pieceBoard)
     this.threat = this.isThreat(pieceBoard)
@@ -447,16 +444,16 @@ class BlackRookMove {
 
   isCheck (pieceBoard) {
     return ((Direction.rookRays(this.toBit, pieceBoard.occupied, pieceBoard.occupiable) &
-          pieceBoard.whiteKingBb) !== U64(0))
+          pieceBoard.whiteKingBb) !== 0n)
   }
 
   isCapture (pieceBoard) {
-    return ((this.toBit & pieceBoard.whiteBb) !== U64(0))
+    return ((this.toBit & pieceBoard.whiteBb) !== 0n)
   }
 
   isThreat (pieceBoard) {
     return (Direction.rookRays(this.toBit, pieceBoard.occupied, pieceBoard.occupiable) &
-      pieceBoard.whiteQueenBb) !== U64(0)
+      pieceBoard.whiteQueenBb) !== 0n
   }
 }
 
@@ -464,8 +461,8 @@ class WhiteQueenMove {
   constructor (fromBit, fromIdx, toIdx, pieceBoard) {
     this.from = fromIdx
     this.to = toIdx
-    this.fromBit = fromBit || U64(0)
-    this.toBit = BitHelper.setBit(U64(0), U64(toIdx))
+    this.fromBit = fromBit || 0n
+    this.toBit = BitHelper.setBit(0n, toIdx)
     this.check = this.isCheck(pieceBoard)
     this.capture = this.isCapture(pieceBoard)
     this.threat = false
@@ -474,11 +471,11 @@ class WhiteQueenMove {
 
   isCheck (pieceBoard) {
     return ((Direction.queenRays(this.toBit, pieceBoard.occupied, pieceBoard.occupiable) &
-          pieceBoard.blackKingBb) !== U64(0))
+          pieceBoard.blackKingBb) !== 0n)
   }
 
   isCapture (pieceBoard) {
-    return ((this.toBit & pieceBoard.blackBb) !== U64(0))
+    return ((this.toBit & pieceBoard.blackBb) !== 0n)
   }
 }
 
@@ -486,8 +483,8 @@ class BlackQueenMove {
   constructor (fromBit, fromIdx, toIdx, pieceBoard) {
     this.to = toIdx
     this.from = fromIdx
-    this.fromBit = fromBit || U64(0)
-    this.toBit = BitHelper.setBit(U64(0), U64(toIdx))
+    this.fromBit = fromBit || 0n
+    this.toBit = BitHelper.setBit(0n, toIdx)
     this.check = this.isCheck(pieceBoard)
     this.capture = this.isCapture(pieceBoard)
     this.threat = false
@@ -496,11 +493,11 @@ class BlackQueenMove {
 
   isCheck (pieceBoard) {
     return ((Direction.queenRays(this.toBit, pieceBoard.occupied, pieceBoard.occupiable) &
-          pieceBoard.whiteKingBb) !== U64(0))
+          pieceBoard.whiteKingBb) !== 0n)
   }
 
   isCapture (pieceBoard) {
-    return ((this.toBit & pieceBoard.whiteBb) !== U64(0))
+    return ((this.toBit & pieceBoard.whiteBb) !== 0n)
   }
 }
 
@@ -508,8 +505,8 @@ class WhiteKingMove {
   constructor (fromBit, fromIdx, toIdx, pieceBoard) {
     this.from = fromIdx
     this.to = toIdx
-    this.fromBit = fromBit || U64(0)
-    this.toBit = BitHelper.setBit(U64(0), U64(toIdx))
+    this.fromBit = fromBit || 0n
+    this.toBit = BitHelper.setBit(0n, toIdx)
     this.castle = this.isCastle(fromIdx, toIdx)
     this.check = false
     this.capture = this.isCapture(pieceBoard)
@@ -521,7 +518,7 @@ class WhiteKingMove {
   // TODO: isThreat for threats against other pawns / pieces
 
   isCapture (pieceBoard) {
-    return ((this.toBit & pieceBoard.blackBb) !== U64(0))
+    return ((this.toBit & pieceBoard.blackBb) !== 0n)
   }
 
   isCastle (fromIdx, toIdx) {
@@ -534,8 +531,8 @@ class BlackKingMove {
   constructor (fromBit, fromIdx, toIdx, pieceBoard) {
     this.from = fromIdx
     this.to = toIdx
-    this.fromBit = fromBit || U64(0)
-    this.toBit = BitHelper.setBit(U64(0), U64(toIdx))
+    this.fromBit = fromBit || 0n
+    this.toBit = BitHelper.setBit(0n, toIdx)
     this.castle = this.isCastle(fromIdx, toIdx)
     this.check = false
     this.capture = this.isCapture(pieceBoard)
@@ -544,7 +541,7 @@ class BlackKingMove {
   }
 
   isCapture (pieceBoard) {
-    return ((this.toBit & pieceBoard.whiteBb) !== U64(0))
+    return ((this.toBit & pieceBoard.whiteBb) !== 0n)
   }
 
   isCastle (fromIdx, toIdx) {

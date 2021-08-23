@@ -2,7 +2,6 @@ const assert = require('assert')
 const Board = require('../src/board.js').Board
 const BoardView = require('../src/boardview.js').BoardView
 const SquareHelper = require('../src/helpers.js').SquareHelper
-const U64 = require('../src/helpers.js').U64
 // const PieceBoard = require('../src/board.js').PieceBoard
 const ViewHelper = require('../src/helpers.js').ViewHelper
 const PerftHelper = require('../src/helpers.js').PerftHelper
@@ -1068,6 +1067,18 @@ describe('Perft Tricky Positions', function () {
 
   it('tc1 2', function () {
     const engine = new Engine('8/2p5/3p4/KP5r/1R2Pp1k/8/6P1/8 b - - 0 1')
+
+    assert.equal(engine.board.legalMoves().length, 16)
+  })
+
+  it('tc1 3', function () {
+    const engine = new Engine('8/2p5/3p4/1P5r/KR3p1k/8/4P1P1/8 b - - 1 1')
+
+    // make move bug
+    engine.make(engine.board.legalMoves()[12])
+
+    // cannot seem to find captures after a make move
+    PerftHelper.countMoves(engine.board.legalMoves())
 
     assert.equal(engine.board.legalMoves().length, 16)
   })

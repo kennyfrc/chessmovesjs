@@ -7,9 +7,9 @@
  */
 class LCG {
   constructor (seed) {
-    this.seed = BigInt(seed || new Date().getTime())
-    this.a = BigInt(257)
-    this.m = BigInt(2 ** 61 - 1)
+    this.seed = seed || 91289n
+    this.a = 257n
+    this.m = 2305843009213693952n // (2 ** 61 - 1)
   }
 
   randomBigInt () {

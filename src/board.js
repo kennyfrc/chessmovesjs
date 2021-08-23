@@ -13,7 +13,7 @@ const Direction = require('./attack.js').Direction
 const LCG = require('./prng.js').LCG
 
 class Board {
-  constructor (seed=91289) {
+  constructor (seed=91289n) {
     this.bb = 0n
     this.initWhiteBitBoards()
     this.initBlackBitBoards()
@@ -90,10 +90,10 @@ class Board {
   initCastleData () {
     this.castleStatus = 0n
     this.castleBit = {
-      K: BigInt('0x80'),
-      Q: BigInt('0x1'),
-      k: BigInt('0x8000000000000000'),
-      q: BigInt('0x100000000000000')
+      K: 0x80n,
+      Q: 0x1n,
+      k: 0x8000000000000000n,
+      q: 0x100000000000000n
     }
   }
 

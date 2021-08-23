@@ -7,18 +7,18 @@ function U64 (int) {
 
 class BitHelper {
   static getBit (bb, bitPosition) {
-    return (BigInt(bb) & (1n << BigInt(bitPosition))) === 0n
+    return (bb & (1n << BigInt(bitPosition))) === 0n
       ? 0n
       : 1n
   }
 
   static setBit (bb, bitPosition) {
-    return BigInt(bb) | 1n << BigInt(bitPosition)
+    return bb | 1n << BigInt(bitPosition)
   }
 
   static clearBit (bb, bitPosition) {
     const mask = ~(1n << BigInt(bitPosition))
-    return BigInt(bb & mask)
+    return bb & mask
   }
 
   static updateBit (bb, bitPosition, bitValue) {
@@ -34,7 +34,7 @@ class BitHelper {
   }
 
   static deBruijnMagicNum () {
-    return BigInt('0x03f79d71b4cb0a89')
+    return 0x03f79d71b4cb0a89n
   }
 
   /* eslint-disable */
@@ -86,123 +86,123 @@ class BitHelper {
 // LERF-mapping constants
 class BoardHelper {
   static aFile () {
-    return BigInt('0x0101010101010101')
+    return 0x0101010101010101n
   }
 
   static bFile () {
-    return BigInt('0x0202020202020202')
+    return 0x0202020202020202n
   }
 
   static cFile () {
-    return BigInt('0x0404040404040404')
+    return 0x0404040404040404n
   }
 
   static dFile () {
-    return BigInt('0x0808080808080808')
+    return 0x0808080808080808n
   }
 
   static eFile () {
-    return BigInt('0x1010101010101010')
+    return 0x1010101010101010n
   }
 
   static fFile () {
-    return BigInt('0x2020202020202020')
+    return 0x2020202020202020n
   }
 
   static gFile () {
-    return BigInt('0x4040404040404040')
+    return 0x4040404040404040n
   }
 
   static hFile () {
-    return BigInt('0x8080808080808080')
+    return 0x8080808080808080n
   }
 
   static firstRank () {
-    return BigInt('0x00000000000000FF')
+    return 0x00000000000000FFn
   }
 
   static secondRank () {
-    return BigInt('0x000000000000FF00')
+    return 0x000000000000FF00n
   }
 
   static thirdRank () {
-    return BigInt('0x0000000000FF0000')
+    return 0x0000000000FF0000n
   }
 
   static fourthRank () {
-    return BigInt('0x00000000FF000000')
+    return 0x00000000FF000000n
   }
 
   static fifthRank () {
-    return BigInt('0x000000FF00000000')
+    return 0x000000FF00000000n
   }
 
   static sixthRank () {
-    return BigInt('0x0000FF0000000000')
+    return 0x0000FF0000000000n
   }
 
   static seventhRank () {
-    return BigInt('0x00FF000000000000')
+    return 0x00FF000000000000n
   }
 
   static eighthRank () {
-    return BigInt('0xFF00000000000000')
+    return 0xFF00000000000000n
   }
 
   static a1H8Diagonal () {
-    return BigInt('0x8040201008040201')
+    return 0x8040201008040201n
   }
 
   static h1A8Diagonal () {
-    return BigInt('0x0102040810204080')
+    return 0x0102040810204080n
   }
 
   static lightSq () {
-    return BigInt('0x55AA55AA55AA55AA')
+    return 0x55AA55AA55AA55AAn
   }
 
   static darkSq () {
-    return BigInt('0xAA55AA55AA55AA55')
+    return 0xAA55AA55AA55AA55n
   }
 
   static blackKsSqs () {
-    return BigInt('0x6000000000000000')
+    return 0x6000000000000000n
   }
 
   static blackQsSqs () {
-    return BigInt('0xE00000000000000')
+    return 0xE00000000000000n
   }
 
   static whiteQsSqs () {
-    return BigInt('0xE')
+    return 0xEn
   }
 
   static whiteKsSqs () {
-    return BigInt('0x60')
+    return 0x60n
   }
 
   static whiteKsCastleRookSq () {
-    return BigInt('0x80')
+    return 0x80n
   }
 
   static whiteQsCastleRookSq () {
-    return BigInt('0x1')
+    return 0x1n
   }
 
   static blackKsCastleRookSq () {
-    return BigInt('0x8000000000000000')
+    return 0x8000000000000000n
   }
 
   static blackQsCastleRookSq () {
-    return BigInt('0x100000000000000')
+    return 0x100000000000000n
   }
 
   static whiteCastleSqs () {
-    return BigInt('0x81')
+    return 0x81n
   }
 
   static blackCastleSqs () {
-    return BigInt('0x8100000000000000')
+    return 0x8100000000000000n
   }
 }
 

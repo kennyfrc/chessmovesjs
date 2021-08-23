@@ -27,7 +27,7 @@ class ThreatBoard {
             const theyOccupied = board.whiteToMove ? board.blackBb : board.whiteBb
             const kingSourceSq = BitHelper.bitScanFwd(ourKingBb)
             const theirPinnersAttacks = ((attacks & ourKingBb) !== 0n) ? attacks : 0n            
-            const pinnerDirectionFromKing = Mask.mooreNeighborhood(ourKingBb) & theirPinnersAttacks
+            const pinnerDirectionFromKing = Direction.bareKingMoves(ourKingBb) & theirPinnersAttacks
             const sqThatPointsToPinner = BitHelper.bitScanRev(pinnerDirectionFromKing)
             const pinnerRay = Ray.for(kingSourceSq, sqThatPointsToPinner, theyOccupied)
             board.theirKingPinnerBb |= ((attacks & ourKingBb) !== 0n) ? pieceBb : 0n
@@ -37,8 +37,8 @@ class ThreatBoard {
             const weOccupied = board.whiteToMove ? board.whiteBb : board.blackBb
             const kingSourceSq = BitHelper.bitScanFwd(theirKingBb)       
             const ourPinnersAttacks = ((attacks & theirKingBb) !== 0n) ? attacks : 0n            
-            const pinnerDirectionFromKing = Mask.mooreNeighborhood(ourKingBb) & ourPinnersAttacks
-            const sqThatPointsToPinner = BitHelper.bitScanRev(pinnerDirectionFromKing)
+            const pinnerDirectionFromKing = Direction.bareKingMoves(ourKingBb) & ourPinnersAttacks
+            const sqThatPointsToPinner = BitHelper.bitScanFwd(pinnerDirectionFromKing)
             const pinnerRay = Ray.for(kingSourceSq, sqThatPointsToPinner, ourOccupied)
             board.ourKingPinnerBb |= ((attacks & theirKingBb) !== 0n) ? pieceBb : 0n
             board.ourPinnersRay |= pinnerRay

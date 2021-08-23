@@ -1074,13 +1074,24 @@ describe('Perft Tricky Positions', function () {
   it('tc1 3', function () {
     const engine = new Engine('8/2p5/3p4/1P5r/KR3p1k/8/4P1P1/8 b - - 1 1')
 
-    // make move bug
-    engine.make(engine.board.legalMoves()[12])
+    assert.equal(engine.board.legalMoves().length, 15)
+  })
 
-    // cannot seem to find captures after a make move
-    PerftHelper.countMoves(engine.board.legalMoves())
+  it('tc1 4', function () {
+    const engine = new Engine('8/2p5/3p4/KPr5/R4p1k/8/4P1P1/8 w - - 2 2')
 
-    assert.equal(engine.board.legalMoves().length, 16)
+    // bug: pawn doesn't see pin
+
+    assert.equal(engine.board.legalMoves().length, 14)
+  })
+
+  it('tc2 1', function () {
+    const engine = new Engine('r3k2r/Pppp1ppp/1b3nbN/nP6/BBPPP3/q4N2/Pp4PP/R2Q1RK1 b kq - 0 1')
+
+    engine.make(engine.board.legalMoves()[38])
+
+    // en passant
+    assert.equal(engine.board.legalMoves().length, 39)
   })
 
   it('tc3 1', function () {

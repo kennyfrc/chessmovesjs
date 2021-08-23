@@ -5,6 +5,7 @@ const ViewHelper = require('./helpers.js').ViewHelper
 const Direction = require('./attack.js').Direction
 // const MoveList = require('./move.js').MoveList
 const Mask = require('./mask.js').Mask
+const Pieces = require('./pieces.js').Pieces
 
 class PieceBoard {
   static for (fenChar, pieceBit) {
@@ -434,12 +435,6 @@ class BlackKingBoard extends PieceBoard {
   }
 }
 
-class NullPieceBoard {
-  constructor () {
-    this.bb = 0n
-  }
-}
-
 class PieceBoardList {
   constructor () {
     this.K = PieceBoard.for('K', 0n)
@@ -456,19 +451,14 @@ class PieceBoardList {
     this.p = PieceBoard.for('p', 0n)
   }
 
-  forEach (callback) {
-    for (const piece in this) {
-      callback(this[piece])
-    }
-  }
-
   firstMatch (callback) {
-    for (const piece in this) {
-      if (callback(this[piece])) {
-        return this[piece]
+    let val;
+    Pieces.for('all').forEach((fenChar) => {
+      if (callback(this[fenChar])) {
+        val = this[fenChar]
       }
-    }
-    return new NullPieceBoard()
+    })
+    return val
   }
 }
 

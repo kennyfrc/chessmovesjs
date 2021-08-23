@@ -99,7 +99,7 @@ class Engine {
 
 
     // these are moves that require past context
-    this.handleMakeCaptureMoves(capture, pieceList, toBit, toIdx, ep, move)
+    this.handleMakeCaptureMoves(capture, pieceList, toBit, toIdx, ep, move, fenChar)
     this.handleMakeEpCaptureMoves(move, capture, pieceList, toBit, ep, epCaptureBb)
     this.updateEpStack()
     this.handleMoveWithEpRisk(epRisk, toBit)
@@ -217,15 +217,10 @@ class Engine {
   }
 
   // make() helper functions
-  makeCaptures (pieceList, toBit, toIdx) {
-    const pieceBoardWCapture = pieceList.firstMatch((pieceBoard) => { return (pieceBoard.bb & toBit) !== 0n })
+  makeCaptures (pieceList, toBit, toIdx, fenChar) {
+    const pieceBoardWCapture = pieceList.firstMatch((piece) => (toBit & piece.bb) !== 0n)
     pieceBoardWCapture.bb ^= toBit
     const capturedFenChar = pieceBoardWCapture.fenChar
-    if (this.board.pieceKeys[capturedFenChar] === undefined) { 
-      console.log(pieceBoardWCapture)
-      ViewHelper.display(pieceBoardWCapture.bb, 'null?')
-      ViewHelper.inspect(this.board)
-    }
     this.board.posKey ^= this.board.pieceKeys[capturedFenChar][toIdx]
     this.captureStack.append(capturedFenChar)
     this.resetHalfMoveNo()
@@ -318,12 +313,12 @@ class Engine {
 
   handlePieceMove (pieceList, fromBit, toBit, promotion, promoteTo, fenChar) {
     if (promotion) {
-      const pieceBoard = pieceList.firstMatch((pieceBoard) => { return (pieceBoard.bb & fromBit) !== 0n })
+      const pieceBoard = pieceList[fenChar]
       const promotionPieceBoard = pieceList[promoteTo]
       pieceBoard.bb ^= fromBit
       promotionPieceBoard.bb ^= toBit
     } else {
-      const pieceBoard = pieceList.firstMatch((pieceBoard) => { return (pieceBoard.bb & fromBit) !== 0n })
+      const pieceBoard = pieceList[fenChar]
       pieceBoard.bb ^= (fromBit | toBit)
     }
   }
@@ -414,7 +409,7 @@ class Engine {
   }
 
   handleMoveWithEpRisk (epRisk, toBit) {
-    if (epRisk && epRisk !== 0n && !this.board.isTheirKingXrayed()) {
+    if ((epRisk && epRisk !== 0n) && (!this.board.isOurKingXrayed() && this.board.blockersFromOurKing !== 1)) {
       this.board.epSqBb = epRisk
       this.board.epSqIdx = BitHelper.bitScanFwd(epRisk)
       this.board.epCaptureBb = toBit
@@ -479,9 +474,9 @@ class Engine {
     }
   }
 
-  handleMakeCaptureMoves (capture, pieceList, toBit, toIdx, ep, move) {
+  handleMakeCaptureMoves (capture, pieceList, toBit, toIdx, ep, move, fenChar) {
     if (capture && !ep) {
-      this.makeCaptures(pieceList, toBit, toIdx)
+      this.makeCaptures(pieceList, toBit, toIdx, fenChar)
     }
   }
 
@@ -568,7 +563,7 @@ class Engine {
       pieceBoard.bb ^= fromBit
       promotionPieceBoard.bb ^= toBit
     } else {
-      const pieceBoard = pieceList.firstMatch((pieceBoard) => { return (pieceBoard.bb & toBit) !== 0n })
+      const pieceBoard = pieceList[fenChar]
       pieceBoard.bb ^= (fromBit | toBit)
     }
   }

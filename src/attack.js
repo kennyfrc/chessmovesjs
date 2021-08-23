@@ -239,11 +239,11 @@ class Direction {
 
   static kingMoves (bb, occupied, occupiable, rookBb, castleStatus, inCheck) {
     const castlingMoves = inCheck ? 0n : this.castleCheck(bb, occupied, occupiable, rookBb, castleStatus)
-    const bareKingMoves = this.handleKingEdges(bb)
-    return (this.handleKingEdges(bb) | castlingMoves) & occupiable
+    const bareKingMoves = this.bareKingMoves(bb)
+    return (this.bareKingMoves(bb) | castlingMoves) & occupiable
   }
 
-  static handleKingEdges (bb) {
+  static bareKingMoves (bb) {
     if ((bb & BoardHelper.aFile()) !== 0n) {
       return Mask.mooreNeighborhood(bb) & (BoardHelper.aFile() | BoardHelper.bFile())
     } else if ((bb & BoardHelper.hFile()) !== 0n) {

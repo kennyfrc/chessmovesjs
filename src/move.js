@@ -94,15 +94,15 @@ class MoveList {
 
 class Pins {
   static filter (fenPiece, attacks, pieceBb, board) {
-    if (board.isOurKingXrayed()) {
+    if (board.isOurKingXrayed() && board.blockersFromOurKing === 1) {
       const ourKingBb = board.whiteToMove ? board.whiteKingBb : board.blackKingBb
       const theyOccupied = board.whiteToMove ? board.blackBb : board.whiteBb
       const kingSourceSq = BitHelper.bitScanFwd(ourKingBb)
       const pinnerDirectionFromKing = Mask.mooreNeighborhood(ourKingBb) & board.theirPinnersRay
       const sqThatPointsToPinner = BitHelper.bitScanRev(pinnerDirectionFromKing)
       const pinnerRay = Ray.for(kingSourceSq, sqThatPointsToPinner, theyOccupied)
-      const pinnedPiece = pinnerRay & pieceBb ? pieceBb : U64(0)
-      return pinnedPiece ? attacks & pinnerRay : attacks
+      const pinnedPiece = board.theirPinnersRay & pieceBb ? pieceBb : U64(0)
+      return pinnedPiece ? attacks & board.theirPinnersRay : attacks
     }
     return attacks
   }

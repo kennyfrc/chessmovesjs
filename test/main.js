@@ -77,17 +77,22 @@ describe('Board', function () {
   })
 
   describe('inCheck()', function () {
-    const board = new Board()
-    const otherBoard = new Board()
-    board.parseFenToBoard('3K4/8/8/8/8/2N5/8/3k4 b - - 0 1')
-    otherBoard.parseFenToBoard('4k3/6N1/5b2/4R3/8/8/8/4K3 b - - 0 1')
-
     it('should return true if side to move is in check', function () {
+      const board = new Board()
+      const otherBoard = new Board()
+      board.parseFenToBoard('3K4/8/8/8/8/2N5/8/3k4 b - - 0 1')
+      otherBoard.parseFenToBoard('4k3/6N1/5b2/4R3/8/8/8/4K3 b - - 0 1')
+
       assert.equal(board.isInCheck(), true)
       assert.equal(otherBoard.isInCheck(), true)
     })
 
     it('should also return >0 checkerCount', function () {
+      const board = new Board()
+      const otherBoard = new Board()
+      board.parseFenToBoard('3K4/8/8/8/8/2N5/8/3k4 b - - 0 1')
+      otherBoard.parseFenToBoard('4k3/6N1/5b2/4R3/8/8/8/4K3 b - - 0 1')
+
       assert.equal(board.checkerCount, 1)
       assert.equal(otherBoard.checkerCount, 2)
     })
@@ -423,12 +428,12 @@ describe('KnightBoard', function () {
 
 describe('BishopBoard', function () {
   describe('#moves()', function () {
-    const boardWManyBishopAttacks = new Board()
-    boardWManyBishopAttacks.parseFenToBoard('rn2k2r/p1pq1ppp/1p1p1n2/2b1p3/2B1P1b1/BPNP4/P1PQ1PPP/R3K1NR w KQkq - 6 8')
-
-    const whiteBishopMoves = boardWManyBishopAttacks.moves('B')
-
     it('returns legal moves', function () {
+      const boardWManyBishopAttacks = new Board()
+      boardWManyBishopAttacks.parseFenToBoard('rn2k2r/p1pq1ppp/1p1p1n2/2b1p3/2B1P1b1/BPNP4/P1PQ1PPP/R3K1NR w KQkq - 6 8')
+
+      const whiteBishopMoves = boardWManyBishopAttacks.moves('B')
+
       assert.equal(whiteBishopMoves[0].from, 16)
       assert.equal(whiteBishopMoves[0].to, 2)
       assert.equal(whiteBishopMoves[1].from, 16)
@@ -450,10 +455,20 @@ describe('BishopBoard', function () {
     })
 
     it('shows threats', function () {
+      const boardWManyBishopAttacks = new Board()
+      boardWManyBishopAttacks.parseFenToBoard('rn2k2r/p1pq1ppp/1p1p1n2/2b1p3/2B1P1b1/BPNP4/P1PQ1PPP/R3K1NR w KQkq - 6 8')
+
+      const whiteBishopMoves = boardWManyBishopAttacks.moves('B')
+
       assert.equal(whiteBishopMoves[4].threat, true)
     })
 
     it('shows checks', function () {
+      const boardWManyBishopAttacks = new Board()
+      boardWManyBishopAttacks.parseFenToBoard('rn2k2r/p1pq1ppp/1p1p1n2/2b1p3/2B1P1b1/BPNP4/P1PQ1PPP/R3K1NR w KQkq - 6 8')
+
+      const whiteBishopMoves = boardWManyBishopAttacks.moves('B')
+
       assert.equal(whiteBishopMoves[8].check, true)
     })
   })
@@ -461,12 +476,12 @@ describe('BishopBoard', function () {
 
 describe('RookBoard', function () {
   describe('#moves()', function () {
-    const boardWManyRookAttacks = new Board()
-    boardWManyRookAttacks.parseFenToBoard('1nb1kb2/1pqpppp1/2pr1r1n/p6p/P3R2P/2R2P2/1PPPPKP1/1NBQ1BN1 b - - 5 10')
-
-    const blackRookMoves = boardWManyRookAttacks.moves('r')
-
     it('returns legal moves', function () {
+      const boardWManyRookAttacks = new Board()
+      boardWManyRookAttacks.parseFenToBoard('1nb1kb2/1pqpppp1/2pr1r1n/p6p/P3R2P/2R2P2/1PPPPKP1/1NBQ1BN1 b - - 5 10')
+
+      const blackRookMoves = boardWManyRookAttacks.moves('r')
+
       assert.equal(blackRookMoves[0].from, 43)
       assert.equal(blackRookMoves[0].to, 11)
       assert.equal(blackRookMoves[1].from, 43)
@@ -490,10 +505,20 @@ describe('RookBoard', function () {
     })
 
     it('shows threats', function () {
+      const boardWManyRookAttacks = new Board()
+      boardWManyRookAttacks.parseFenToBoard('1nb1kb2/1pqpppp1/2pr1r1n/p6p/P3R2P/2R2P2/1PPPPKP1/1NBQ1BN1 b - - 5 10')
+
+      const blackRookMoves = boardWManyRookAttacks.moves('r')
+
       assert.equal(blackRookMoves[0].threat, true)
     })
 
     it('shows checks', function () {
+      const boardWManyRookAttacks = new Board()
+      boardWManyRookAttacks.parseFenToBoard('1nb1kb2/1pqpppp1/2pr1r1n/p6p/P3R2P/2R2P2/1PPPPKP1/1NBQ1BN1 b - - 5 10')
+
+      const blackRookMoves = boardWManyRookAttacks.moves('r')
+
       assert.equal(blackRookMoves[5].check, true)
     })
   })
@@ -501,12 +526,12 @@ describe('RookBoard', function () {
 
 describe('QueenBoard', function () {
   describe('#moves()', function () {
-    const boardWManyQueenAttacks = new Board()
-    boardWManyQueenAttacks.parseFenToBoard('rnb1kbnr/pp1p1ppp/8/q1p1p2Q/4P3/5N2/PPPP1PPP/RNB1KB1R w KQkq - 2 4')
-
-    const whiteQueenMoves = boardWManyQueenAttacks.moves('Q')
-
     it('returns legal moves', function () {
+      const boardWManyQueenAttacks = new Board()
+      boardWManyQueenAttacks.parseFenToBoard('rnb1kbnr/pp1p1ppp/8/q1p1p2Q/4P3/5N2/PPPP1PPP/RNB1KB1R w KQkq - 2 4')
+
+      const whiteQueenMoves = boardWManyQueenAttacks.moves('Q')
+
       assert.equal(whiteQueenMoves[0].from, 39)
       assert.equal(whiteQueenMoves[0].to, 23)
       assert.equal(whiteQueenMoves[1].from, 39)
@@ -530,6 +555,11 @@ describe('QueenBoard', function () {
     })
 
     it('shows checks', function () {
+      const boardWManyQueenAttacks = new Board()
+      boardWManyQueenAttacks.parseFenToBoard('rnb1kbnr/pp1p1ppp/8/q1p1p2Q/4P3/5N2/PPPP1PPP/RNB1KB1R w KQkq - 2 4')
+
+      const whiteQueenMoves = boardWManyQueenAttacks.moves('Q')
+
       assert.equal(whiteQueenMoves[8].check, true)
     })
   })
@@ -632,22 +662,34 @@ describe('BoardView', function () {
 // SquareHelper should return integer indices
 describe('SquareHelper', function () {
   describe('#indicesFor', function () {
-    const board = new Board()
-    board.parseFenToBoard('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1')
-    const rookBoard = board.pieceBoardList.r
-    const bKingBoard = board.pieceBoardList.k
-    const wKingBoard = board.pieceBoardList.K
-
     it('shows indices of black rook', function () {
+      const board = new Board()
+      board.parseFenToBoard('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1')
+      const rookBoard = board.pieceBoardList.r
+      const bKingBoard = board.pieceBoardList.k
+      const wKingBoard = board.pieceBoardList.K
+
       assert.equal(SquareHelper.indicesFor(rookBoard.bb)[0], 56)
       assert.equal(SquareHelper.indicesFor(rookBoard.bb)[1], 63)
     })
 
     it('shows indices of black king', function () {
+      const board = new Board()
+      board.parseFenToBoard('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1')
+      const rookBoard = board.pieceBoardList.r
+      const bKingBoard = board.pieceBoardList.k
+      const wKingBoard = board.pieceBoardList.K
+
       assert.equal(SquareHelper.indicesFor(bKingBoard.bb)[0], 60)
     })
 
     it('shows indices of white king', function () {
+      const board = new Board()
+      board.parseFenToBoard('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1')
+      const rookBoard = board.pieceBoardList.r
+      const bKingBoard = board.pieceBoardList.k
+      const wKingBoard = board.pieceBoardList.K
+
       assert.equal(SquareHelper.indicesFor(wKingBoard.bb)[0], 4)
     })
   })
@@ -655,15 +697,6 @@ describe('SquareHelper', function () {
 
 describe('Engine', function () {
   describe('#make() and #unmake()', function () {
-    // OK console.log(moves[35]) // quiet pawn move
-    // OK console.log(moves[10]) // queen cap w check = 10
-    // OK console.log(moves[1]) // break castle = 1 (king)
-    // OK console.log(moves[12]) // break castle = 12 (rook)
-    // OK castled
-    // OK console.log(moves[37])  // en passant 37??
-    // console.log(moves[47]) // promotion
-    // board stuff such as halfmove clock, threefold repetition, etc
-
     it('should update the board for a quiet move', function () {
       const engine = new Engine('r1b1k2r/1Pp1bp2/3pq2p/1p2p1pP/4P1n1/2N2NP1/PPP1QP2/R1B1K2R w KQkq g6 0 13')
       const moves = engine.board.legalMoves()
@@ -1054,6 +1087,10 @@ describe('Perft Tricky Positions', function () {
   it('tc3 3', function () {
     const engine = new Engine('rnbq1k1r/pp1Pbppp/2pQ4/8/2B5/8/PPP1NnPP/RNB1K2R b KQ - 2 8')
 
+
+    // console.log(engine.board.legalMoves())
+    // PerftHelper.countMoves(engine.board.legalMoves())
+
     assert.equal(engine.board.legalMoves().length, 28)
   })
 
@@ -1062,10 +1099,17 @@ describe('Perft Tricky Positions', function () {
 
     assert.equal(engine.board.legalMoves().length, 31)
   })
-    console.log(engine.board.legalMoves())
-    PerftHelper.countMoves(engine.board.legalMoves())
 
-    assert.equal(engine.board.legalMoves().length, 31)
+  it('tc3 5', function () {
+    const engine = new Engine('rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQ1RK1 b - - 2 8')
+
+    assert.equal(engine.board.legalMoves().length, 34)
+  })
+
+  it('tc3 6', function () {
+    const engine = new Engine('rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQKR2 b Q - 2 8')
+
+    assert.equal(engine.board.legalMoves().length, 34)
   })
 })
 

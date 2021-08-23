@@ -5,44 +5,36 @@ function U64 (int) {
   return BigInt.asUintN(64, BigInt(int))
 }
 
-function U64Comp (int) {
-  return BigInt.asUintN(64, ~BigInt(int))
-}
-
-function U64Neg (int) {
-  return BigInt.asUintN(64, -BigInt(int))
-}
-
 class BitHelper {
   static getBit (bb, bitPosition) {
-    return (U64(bb) & (U64(1) << U64(bitPosition))) === U64(0)
-      ? U64(0)
-      : U64(1)
+    return (BigInt(bb) & (1n << BigInt(bitPosition))) === 0n
+      ? 0n
+      : 1n
   }
 
   static setBit (bb, bitPosition) {
-    return U64(bb) | U64(1) << U64(bitPosition)
+    return BigInt(bb) | 1n << BigInt(bitPosition)
   }
 
   static clearBit (bb, bitPosition) {
-    const mask = U64Comp(U64(1) << U64(bitPosition))
-    return U64(bb & mask)
+    const mask = ~(1n << BigInt(bitPosition))
+    return BigInt(bb & mask)
   }
 
   static updateBit (bb, bitPosition, bitValue) {
-    const bitValueNormalized = U64(bitValue) ? U64(1) : U64(0)
-    const clearMask = U64Comp(U64(1) << U64(bitPosition))
-    return (bb & clearMask) | (bitValueNormalized << U64(bitPosition))
+    const bitValueNormalized = BigInt(bitValue) ? 1n : 0n
+    const clearMask = ~(1n << BigInt(bitPosition))
+    return (bb & clearMask) | (bitValueNormalized << BigInt(bitPosition))
   }
 
   static bitsFor (indices) {
     return indices
-      .map((idx) => BitHelper.setBit(U64(0), idx))
-      .reduce((accBit, currBit) => accBit | currBit, U64(0))
+      .map((idx) => BitHelper.setBit(0n, idx))
+      .reduce((accBit, currBit) => accBit | currBit, 0n)
   }
 
   static deBruijnMagicNum () {
-    return U64('0x03f79d71b4cb0a89')
+    return BigInt('0x03f79d71b4cb0a89')
   }
 
   /* eslint-disable */
@@ -62,18 +54,18 @@ class BitHelper {
     * De Bruijn Multiplication
     */
   static bitScanFwd (bb) {
-    bb = U64(bb) ^ (U64(bb) - U64(1))
-    return BitHelper.deBruijnTable()[(U64(bb * BitHelper.deBruijnMagicNum()) >> U64(58))]
+    bb = bb ^ (bb - 1n)
+    return BitHelper.deBruijnTable()[(U64(bb * BitHelper.deBruijnMagicNum()) >> 58n)]
   }
 
   static bitScanRev (bb) {
-    bb |= U64(bb) >> U64(1)
-    bb |= U64(bb) >> U64(2)
-    bb |= U64(bb) >> U64(4)
-    bb |= U64(bb) >> U64(8)
-    bb |= U64(bb) >> U64(16)
-    bb |= U64(bb) >> U64(32)
-    return BitHelper.deBruijnTable()[(U64(bb * BitHelper.deBruijnMagicNum()) >> U64(58))]
+    bb |= bb >> 1n
+    bb |= bb >> 2n
+    bb |= bb >> 4n
+    bb |= bb >> 8n
+    bb |= bb >> 16n
+    bb |= bb >> 32n
+    return BitHelper.deBruijnTable()[(U64(bb * BitHelper.deBruijnMagicNum()) >> 58n)]
   }
 
   /** counting bits:
@@ -82,9 +74,9 @@ class BitHelper {
   static popCount (bb) {
     let count = 0
 
-    while (U64(bb) > 0) {
+    while (bb > 0) {
       count++
-      bb &= U64(bb) - U64(1) // reset LS1B
+      bb &= bb - 1n // reset LS1B
     }
 
     return count
@@ -94,123 +86,123 @@ class BitHelper {
 // LERF-mapping constants
 class BoardHelper {
   static aFile () {
-    return U64('0x0101010101010101')
+    return BigInt('0x0101010101010101')
   }
 
   static bFile () {
-    return U64('0x0202020202020202')
+    return BigInt('0x0202020202020202')
   }
 
   static cFile () {
-    return U64('0x0404040404040404')
+    return BigInt('0x0404040404040404')
   }
 
   static dFile () {
-    return U64('0x0808080808080808')
+    return BigInt('0x0808080808080808')
   }
 
   static eFile () {
-    return U64('0x1010101010101010')
+    return BigInt('0x1010101010101010')
   }
 
   static fFile () {
-    return U64('0x2020202020202020')
+    return BigInt('0x2020202020202020')
   }
 
   static gFile () {
-    return U64('0x4040404040404040')
+    return BigInt('0x4040404040404040')
   }
 
   static hFile () {
-    return U64('0x8080808080808080')
+    return BigInt('0x8080808080808080')
   }
 
   static firstRank () {
-    return U64('0x00000000000000FF')
+    return BigInt('0x00000000000000FF')
   }
 
   static secondRank () {
-    return U64('0x000000000000FF00')
+    return BigInt('0x000000000000FF00')
   }
 
   static thirdRank () {
-    return U64('0x0000000000FF0000')
+    return BigInt('0x0000000000FF0000')
   }
 
   static fourthRank () {
-    return U64('0x00000000FF000000')
+    return BigInt('0x00000000FF000000')
   }
 
   static fifthRank () {
-    return U64('0x000000FF00000000')
+    return BigInt('0x000000FF00000000')
   }
 
   static sixthRank () {
-    return U64('0x0000FF0000000000')
+    return BigInt('0x0000FF0000000000')
   }
 
   static seventhRank () {
-    return U64('0x00FF000000000000')
+    return BigInt('0x00FF000000000000')
   }
 
   static eighthRank () {
-    return U64('0xFF00000000000000')
+    return BigInt('0xFF00000000000000')
   }
 
   static a1H8Diagonal () {
-    return U64('0x8040201008040201')
+    return BigInt('0x8040201008040201')
   }
 
   static h1A8Diagonal () {
-    return U64('0x0102040810204080')
+    return BigInt('0x0102040810204080')
   }
 
   static lightSq () {
-    return U64('0x55AA55AA55AA55AA')
+    return BigInt('0x55AA55AA55AA55AA')
   }
 
   static darkSq () {
-    return U64('0xAA55AA55AA55AA55')
+    return BigInt('0xAA55AA55AA55AA55')
   }
 
   static blackKsSqs () {
-    return U64('0x6000000000000000')
+    return BigInt('0x6000000000000000')
   }
 
   static blackQsSqs () {
-    return U64('0xE00000000000000')
+    return BigInt('0xE00000000000000')
   }
 
   static whiteQsSqs () {
-    return U64('0xE')
+    return BigInt('0xE')
   }
 
   static whiteKsSqs () {
-    return U64('0x60')
+    return BigInt('0x60')
   }
 
   static whiteKsCastleRookSq () {
-    return U64('0x80')
+    return BigInt('0x80')
   }
 
   static whiteQsCastleRookSq () {
-    return U64('0x1')
+    return BigInt('0x1')
   }
 
   static blackKsCastleRookSq () {
-    return U64('0x8000000000000000')
+    return BigInt('0x8000000000000000')
   }
 
   static blackQsCastleRookSq () {
-    return U64('0x100000000000000')
+    return BigInt('0x100000000000000')
   }
 
   static whiteCastleSqs () {
-    return U64('0x81')
+    return BigInt('0x81')
   }
 
   static blackCastleSqs () {
-    return U64('0x8100000000000000')
+    return BigInt('0x8100000000000000')
   }
 }
 
@@ -345,11 +337,11 @@ class SquareHelper {
   /* eslint-disable no-cond-assign */
   static indicesFor (board) {
     const someList = []
-    if (U64(board) !== U64(0)) {
+    if (U64(board) !== 0n) {
       do {
         const idx = BitHelper.bitScanFwd(board)
         someList.push(idx)
-      } while (board &= U64(board) - U64(1))
+      } while (board &= U64(board) - 1n)
     }
 
     return someList
@@ -404,8 +396,5 @@ module.exports = {
   BoardHelper: BoardHelper,
   ViewHelper: ViewHelper,
   SquareHelper: SquareHelper,
-  U64: U64,
-  U64Comp: U64Comp,
-  U64Neg: U64Neg,
   PerftHelper: PerftHelper
 }

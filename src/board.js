@@ -4,7 +4,6 @@ const PieceBoard = require('./pieceboard.js').PieceBoard
 const PieceBoardList = require('./pieceboard.js').PieceBoardList
 const ViewHelper = require('./helpers.js').ViewHelper
 const SquareHelper = require('./helpers.js').SquareHelper
-const U64 = require('./helpers.js').U64
 const Pieces = require('./pieces.js').Pieces
 const MoveList = require('./move.js').MoveList
 const ThreatBoard = require('./threatboard.js').ThreatBoard
@@ -15,7 +14,7 @@ const LCG = require('./prng.js').LCG
 
 class Board {
   constructor (seed=91289) {
-    this.bb = U64(0)
+    this.bb = 0n
     this.initWhiteBitBoards()
     this.initBlackBitBoards()
     this.initPieceBoardList()
@@ -32,48 +31,48 @@ class Board {
   }
 
   initWhiteBitBoards () {
-    this.whiteBb = U64(0)
-    this.whiteKingBb = U64(0)
-    this.whitePawnBb = U64(0)
-    this.whiteKnightBb = U64(0)
-    this.whiteBishopBb = U64(0)
-    this.whiteRookBb = U64(0)
-    this.whiteQueenBb = U64(0)
-    this.whiteMinorBb = U64(0)
-    this.whiteMajorBb = U64(0)
+    this.whiteBb = 0n
+    this.whiteKingBb = 0n
+    this.whitePawnBb = 0n
+    this.whiteKnightBb = 0n
+    this.whiteBishopBb = 0n
+    this.whiteRookBb = 0n
+    this.whiteQueenBb = 0n
+    this.whiteMinorBb = 0n
+    this.whiteMajorBb = 0n
   }
 
   initBlackBitBoards () {
-    this.blackBb = U64(0)
-    this.blackKingBb = U64(0)
-    this.blackPawnBb = U64(0)
-    this.blackKnightBb = U64(0)
-    this.blackBishopBb = U64(0)
-    this.blackRookBb = U64(0)
-    this.blackQueenBb = U64(0)
-    this.blackMinorBb = U64(0)
-    this.blackMajorBb = U64(0)
+    this.blackBb = 0n
+    this.blackKingBb = 0n
+    this.blackPawnBb = 0n
+    this.blackKnightBb = 0n
+    this.blackBishopBb = 0n
+    this.blackRookBb = 0n
+    this.blackQueenBb = 0n
+    this.blackMinorBb = 0n
+    this.blackMajorBb = 0n
   }
 
   initCheckEvasionData () {
     this.sideInCheck = false
-    this.checkersBb = U64(0)
+    this.checkersBb = 0n
     this.checkerCount = 0
     this.checkingPiece = null
-    this.kingDangerSquares = U64(0)
-    this.whiteKingDangerSquares = U64(0)
-    this.blackKingDangerSquares = U64(0)
+    this.kingDangerSquares = 0n
+    this.whiteKingDangerSquares = 0n
+    this.blackKingDangerSquares = 0n
   }
 
   initPinAndXrayData () {
-    this.xrayDangerSqs = U64(0)
-    this.xrayAttackSqs = U64(0)
-    this.theirBlockers = U64(0)
-    this.ourBlockers = U64(0)
-    this.theirKingPinnerBb = U64(0)
-    this.ourKingPinnerBb = U64(0)
-    this.theirPinnersRay = U64(0)
-    this.ourPinnersRay = U64(0)
+    this.xrayDangerSqs = 0n
+    this.xrayAttackSqs = 0n
+    this.theirBlockers = 0n
+    this.ourBlockers = 0n
+    this.theirKingPinnerBb = 0n
+    this.ourKingPinnerBb = 0n
+    this.theirPinnersRay = 0n
+    this.ourPinnersRay = 0n
     this.blockersFromOurKing = null
     this.blockersFromTheirKing = null
   }
@@ -84,23 +83,23 @@ class Board {
 
   initEnPassantData () {
     this.epSqIdx = undefined
-    this.epSqBb = U64(0)
-    this.epCaptureBb = U64(0)
+    this.epSqBb = 0n
+    this.epCaptureBb = 0n
   }
 
   initCastleData () {
-    this.castleStatus = U64(0)
+    this.castleStatus = 0n
     this.castleBit = {
-      K: U64('0x80'),
-      Q: U64('0x1'),
-      k: U64('0x8000000000000000'),
-      q: U64('0x100000000000000')
+      K: BigInt('0x80'),
+      Q: BigInt('0x1'),
+      k: BigInt('0x8000000000000000'),
+      q: BigInt('0x100000000000000')
     }
   }
 
   initZobristKey (seed) {
     this.lcg = new LCG(seed)
-    this.posKey = U64(0)
+    this.posKey = 0n
     this.pieceKeys = new PieceKeys()
     this.enPassantKeys = new BigUint64Array(64)
     this.sideKey = new BigUint64Array(2)
@@ -138,7 +137,7 @@ class Board {
         if (FenReader.isEnPassantChar(fen[i], whiteSpace)) {
           const epSq = fen[i] + fen[i + 1]
           this.epSqIdx = SquareHelper.for(epSq)
-          this.epSqBb = BitHelper.setBit(U64(0), this.epSqIdx)
+          this.epSqBb = BitHelper.setBit(0n, this.epSqIdx)
           this.epCaptureBb = this.getEpCaptureBb()
           this.posKey ^= this.enPassantKeys[this.epSqIdx]
           i += 1
@@ -221,18 +220,18 @@ class Board {
   }
 
   clearPieceBbs () {
-    this.whiteKingBb = U64(0)
-    this.blackKingBb = U64(0)
-    this.whiteQueenBb = U64(0)
-    this.blackQueenBb = U64(0)
-    this.whiteRookBb = U64(0)
-    this.blackRookBb = U64(0)
-    this.whiteBishopBb = U64(0)
-    this.blackBishopBb = U64(0)
-    this.whiteKnightBb = U64(0)
-    this.blackKnightBb = U64(0)
-    this.whitePawnBb = U64(0)
-    this.blackPawnBb = U64(0)
+    this.whiteKingBb = 0n
+    this.blackKingBb = 0n
+    this.whiteQueenBb = 0n
+    this.blackQueenBb = 0n
+    this.whiteRookBb = 0n
+    this.blackRookBb = 0n
+    this.whiteBishopBb = 0n
+    this.blackBishopBb = 0n
+    this.whiteKnightBb = 0n
+    this.blackKnightBb = 0n
+    this.whitePawnBb = 0n
+    this.blackPawnBb = 0n
   }
 
   setPieceContext () {
@@ -280,7 +279,7 @@ class Board {
 
   setInCheck () {
     const kingBb = this.whiteToMove ? this.whiteKingBb : this.blackKingBb
-    this.sideInCheck = (this.kingDangerSquares & kingBb) !== U64(0)
+    this.sideInCheck = (this.kingDangerSquares & kingBb) !== 0n
   }
 
   setCheckerCount () {
@@ -307,7 +306,7 @@ class Board {
   setPawnThreats (boardProxy, fenPiece) {
     const pieceBoard = boardProxy.pieceBoardList[fenPiece]
     SquareHelper.indicesFor(pieceBoard.bb)
-      .map((sq) => BitHelper.setBit(U64(0), sq))
+      .map((sq) => BitHelper.setBit(0n, sq))
       .forEach((pieceBb) => {
         const threats = pieceBoard.rawPawnAttacks(pieceBb, boardProxy)
 
@@ -319,7 +318,7 @@ class Board {
   setPieceThreats (boardProxy, fenPiece) {
     const pieceBoard = boardProxy.pieceBoardList[fenPiece]
     SquareHelper.indicesFor(pieceBoard.bb)
-      .map((sq) => BitHelper.setBit(U64(0), sq))
+      .map((sq) => BitHelper.setBit(0n, sq))
       .forEach((pieceBb) => {
         const threats = pieceBoard.attacks(pieceBb, boardProxy) | pieceBoard.defends(pieceBb, this)
         const kingBb = boardProxy.whiteToMove ? boardProxy.whiteKingBb : boardProxy.blackKingBb
@@ -329,7 +328,7 @@ class Board {
   }
 
   setDangerSquares (threats, pieceBb, fenPiece) {
-    let pawnAttacks = U64(0)
+    let pawnAttacks = 0n
     if (this.whiteToMove) {
       pawnAttacks = Direction.bPawnAttacks(this.pieceBoardList.p.bb)
       this.whiteKingDangerSquares |= (threats | pawnAttacks)
@@ -343,7 +342,7 @@ class Board {
 
   setCheckers (threats, pieceBb, boardProxy) {
     const kingBb = boardProxy.whiteToMove ? boardProxy.whiteKingBb : boardProxy.blackKingBb
-    this.checkersBb |= ((threats & kingBb) !== U64(0)) ? pieceBb : U64(0)
+    this.checkersBb |= ((threats & kingBb) !== 0n) ? pieceBb : 0n
   }
 
   setBlockers () {
@@ -392,12 +391,12 @@ class Board {
       this.castleKeys[sq] = this.lcg.randomBigInt()
     })
 
-    this.sideKey[0] = U64(0)
+    this.sideKey[0] = 0n
     this.sideKey[1] = this.lcg.randomBigInt()
   }
 
   getEpCaptureBb () {
-    return this.whiteToMove ? this.epSqBb >> U64(8) : this.epSqBb << U64(8)
+    return this.whiteToMove ? this.epSqBb >> 8n : this.epSqBb << 8n
   }
 
   getTheirBlockers () {
@@ -451,23 +450,23 @@ class Board {
 
 class BoardStatus {
   static isSqAttacked (board, sq, byPieceOrSide = 'all') {
-    const targetSq = BitHelper.setBit(U64(0), sq)
+    const targetSq = BitHelper.setBit(0n, sq)
     const attacks = ThreatBoard.for(byPieceOrSide, board)
-    return (targetSq & attacks) !== U64(0)
+    return (targetSq & attacks) !== 0n
   }
 
   static isOurKingXrayed (board) {
     const ourKingFen = board.whiteToMove ? 'K' : 'k'
     const ourKing = board.pieceBoardList[ourKingFen].bb
     const opponentXrays = board.getXrayDangerBb()
-    return (ourKing & opponentXrays) !== U64(0)
+    return (ourKing & opponentXrays) !== 0n
   }
 
   static isTheirKingXrayed (board) {
     const theirKingFen = board.whiteToMove ? 'k' : 'K'
     const theirKing = board.pieceBoardList[theirKingFen].bb
     const ourXrays = board.getXrayAttackBb()
-    return (theirKing & ourXrays) !== U64(0)
+    return (theirKing & ourXrays) !== 0n
   }
 
   static isInCheck (board) {

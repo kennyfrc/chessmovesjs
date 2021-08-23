@@ -1,40 +1,37 @@
-const U64 = require('./helpers.js').U64
-// const U64Comp = require('./helpers.js').U64Comp
-// const U64Neg = require('./helpers.js').U64Neg
 const ViewHelper = require('./helpers.js').ViewHelper
 
 class Mask {
   // basic Mask
   static northOne (bb) {
-    return bb << U64(8)
+    return bb << 8n
   }
 
   static northEastOne (bb) {
-    return bb << U64(9)
+    return bb << 9n
   }
 
   static eastOne (bb) {
-    return bb << U64(1)
+    return bb << 1n
   }
 
   static southEastOne (bb) {
-    return bb >> U64(7)
+    return bb >> 7n
   }
 
   static southOne (bb) {
-    return bb >> U64(8)
+    return bb >> 8n
   }
 
   static southWestOne (bb) {
-    return bb >> U64(9)
+    return bb >> 9n
   }
 
   static westOne (bb) {
-    return bb >> U64(1)
+    return bb >> 1n
   }
 
   static northWestOne (bb) {
-    return bb << U64(7)
+    return bb << 7n
   }
 
   // king moves
@@ -46,35 +43,35 @@ class Mask {
 
   // knight moves
   static noNoEast (bb) {
-    return bb << U64(17)
+    return bb << 17n
   }
 
   static noEaEast (bb) {
-    return bb << U64(10)
+    return bb << 10n
   }
 
   static soEaEast (bb) {
-    return bb >> U64(6)
+    return bb >> 6n
   }
 
   static soSoEast (bb) {
-    return bb >> U64(15)
+    return bb >> 15n
   }
 
   static noNoWest (bb) {
-    return bb << U64(15)
+    return bb << 15n
   }
 
   static noWeWest (bb) {
-    return bb << U64(6)
+    return bb << 6n
   }
 
   static soWeWest (bb) {
-    return bb >> U64(10)
+    return bb >> 10n
   }
 
   static soSoWest (bb) {
-    return bb >> U64(17)
+    return bb >> 17n
   }
 }
 

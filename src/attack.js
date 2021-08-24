@@ -19,6 +19,10 @@ const Mask = require('./mask.js').Mask
 class RayCompass {
   static for (sourceSq, pointingSq, occupied) {
     const direction = pointingSq - sourceSq
+    return this.seek(direction, sourceSq, occupied)
+  }
+
+  static seek (direction, sourceSq, occupied) {
     switch (direction) {
       case 8:
         return Ray.sliderAttacks(sourceSq, occupied,
@@ -53,6 +57,18 @@ class RayCompass {
 class Ray {
   static for (sourceSq, pointingSq, occupied) {
     return RayCompass.for(sourceSq, pointingSq, occupied)
+  }
+
+  static seek (sourceSq, targetBb, occupied) {
+    let ray = 0n
+    const directions = [8, 9, 1, -7, -8, -9, -1, 7]
+    for (let i = 0; i < directions.length; i++) {
+      ray = RayCompass.seek(directions[i], sourceSq, occupied)
+      if ((ray & targetBb) !== 0n) { 
+        break
+      }
+    }
+    return ray
   }
 
   // basic board rays

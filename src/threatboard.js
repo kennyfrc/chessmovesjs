@@ -8,6 +8,15 @@ const ViewHelper = require('./helpers.js').ViewHelper
 const Mask = require('./mask.js').Mask
 const Ray = require('./attack.js').Ray
 
+class Pin {
+  constructor(pieceBb, pinnerRay, blockerCount, kingPinnerBb) {
+    this.pieceBb = pieceBb
+    this.pinnerRay = pinnerRay
+    this.blockerCount = blockerCount
+    this.kingPinnerBb = kingPinnerBb
+  }
+}
+
 class ThreatBoard {
   static for (byPieceOrSide = 'all', board, xRaysToUs) {
     return this.threats(byPieceOrSide, board, xRaysToUs)
@@ -25,23 +34,25 @@ class ThreatBoard {
           if (xRaysToUs) {
             const ourKingBb = board.whiteToMove ? board.whiteKingBb : board.blackKingBb
             const theyOccupied = board.whiteToMove ? board.blackBb : board.whiteBb
+            const weOccupied = board.whiteToMove ? board.whiteBb : board.blackBb
             const kingSourceSq = BitHelper.bitScanFwd(ourKingBb)
-            const theirPinnersAttacks = ((attacks & ourKingBb) !== 0n) ? attacks : 0n            
-            const pinnerDirectionFromKing = Direction.bareKingMoves(ourKingBb) & theirPinnersAttacks
-            const sqThatPointsToPinner = BitHelper.bitScanRev(pinnerDirectionFromKing)
-            const pinnerRay = Ray.for(kingSourceSq, sqThatPointsToPinner, theyOccupied)
-            board.theirKingPinnerBb |= ((attacks & ourKingBb) !== 0n) ? pieceBb : 0n
-            board.theirPinnersRay |= pinnerRay
+            const kingPinnerBb = ((attacks & ourKingBb) !== 0n) ? pieceBb : 0n
+            const pinnerRay = Ray.seek(kingSourceSq, kingPinnerBb, theyOccupied)
+            if (pinnerRay !== 0n) {
+              const blockersFromOurKing = BitHelper.popCount((pinnerRay ^ kingPinnerBb) & weOccupied)
+              board.ourPinList.push(new Pin(pieceBb, pinnerRay, blockersFromOurKing,kingPinnerBb)) 
+            }
           } else {
             const theirKingBb = board.whiteToMove ? board.blackKingBb : board.whiteKingBb
+            const theyOccupied = board.whiteToMove ? board.blackBb : board.whiteBb
             const weOccupied = board.whiteToMove ? board.whiteBb : board.blackBb
             const kingSourceSq = BitHelper.bitScanFwd(theirKingBb)
-            const ourPinnersAttacks = ((attacks & theirKingBb) !== 0n) ? attacks : 0n
-            const pinnerDirectionFromKing = Direction.bareKingMoves(theirKingBb) & ourPinnersAttacks
-            const sqThatPointsToPinner = BitHelper.bitScanFwd(pinnerDirectionFromKing)
-            const pinnerRay = Ray.for(kingSourceSq, sqThatPointsToPinner, weOccupied)
-            board.ourKingPinnerBb |= ((attacks & theirKingBb) !== 0n) ? pieceBb : 0n
-            board.ourPinnersRay |= pinnerRay
+            const kingPinnerBb = ((attacks & theirKingBb) !== 0n) ? pieceBb : 0n
+            const pinnerRay = Ray.seek(kingSourceSq, kingPinnerBb, weOccupied)
+            if (pinnerRay !== 0n) {
+              const blockersFromTheirKing = BitHelper.popCount((pinnerRay ^ kingPinnerBb) & theyOccupied)
+              board.theirPinList.push(new Pin(pieceBb, pinnerRay, blockersFromTheirKing, kingPinnerBb)) 
+            }
           }
           return attacks
         })

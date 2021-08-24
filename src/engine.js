@@ -409,9 +409,14 @@ class Engine {
     return (castleStatus & BoardHelper.blackQsCastleRookSq() & fromBit) !== 0n && fenChar === 'r'
   }
 
-  isPawnBesideTheirPinnedPiece (pawnToBit) {
-    const pinnedPiece = this.board.ourPinnersRay & this.board.ourBlockers
-    return (Direction.beside(pawnToBit) & pinnedPiece) !== 0n
+  isPawnBesideTheirPinnedPiece (pawnToBit) { // kind of messy
+    let isBeside = false
+    for (let i = 0; i < this.board.theirPinList.length; i++) {
+      const pinnedPiece = this.board.theirPinList[i].pinnerRay & this.board.ourBlockers
+      isBeside = (Direction.beside(pawnToBit) & pinnedPiece) !== 0n
+      if (isBeside) { break }
+    }
+    return isBeside
   }
 
   handleMoveWithEpRisk (epRisk, toBit) {

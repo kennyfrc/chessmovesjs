@@ -91,9 +91,13 @@ class MoveList {
 
 class Pins {
   static filter (fenPiece, attacks, pieceBb, board) {
-    if (board.isOurKingXrayed() && board.blockersFromOurKing === 1) {
-      const pinnedPiece = board.theirPinnersRay & pieceBb ? pieceBb : 0n
-      return pinnedPiece ? attacks & board.theirPinnersRay : attacks
+    if (board.isOurKingXrayed()) {
+      board.ourPinList.forEach((pin) => {
+        if (pin.blockerCount === 1) {
+          const pinnedPiece = pin.pinnerRay & pieceBb ? pieceBb : 0n
+          attacks = pinnedPiece ? attacks & pin.pinnerRay : attacks
+        }
+      })      
     }
     return attacks
   }

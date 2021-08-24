@@ -1057,7 +1057,14 @@ describe('Perft Tricky Positions', function () {
     assert.equal(engine.board.legalMoves().length, 42)
   })
 
-  it('tc1 1', function () {
+  it('kiwipete 3', function () {
+    const engine = new Engine('r3k2r/p1ppqpb1/1n2pnp1/3PN3/1p2P3/2N2Q1p/PPPBbPPP/1R2K2R w Kkq - 0 2')
+
+    // castle bug
+    assert.equal(engine.board.legalMoves().length, 40)
+  })
+
+  it('tc1 1 - pins', function () {
     const engine = new Engine('8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - ')
 
     engine.make(engine.board.legalMoves()[11])
@@ -1065,25 +1072,25 @@ describe('Perft Tricky Positions', function () {
     assert.equal(engine.board.legalMoves().length, 16)
   })
 
-  it('tc1 2', function () {
+  it('tc1 2 - pins', function () {
     const engine = new Engine('8/2p5/3p4/KP5r/1R2Pp1k/8/6P1/8 b - - 0 1')
 
     assert.equal(engine.board.legalMoves().length, 16)
   })
 
-  it('tc1 3', function () {
+  it('tc1 3 - pins', function () {
     const engine = new Engine('8/2p5/3p4/1P5r/KR3p1k/8/4P1P1/8 b - - 1 1')
 
     assert.equal(engine.board.legalMoves().length, 15)
   })
 
-  it('tc1 4', function () {
+  it('tc1 4 - pins w/ en passant', function () {
     const engine = new Engine('8/2p5/3p4/KPr5/R4p1k/8/4P1P1/8 w - - 2 2')
 
     assert.equal(engine.board.legalMoves().length, 14)
   })
 
-  it('tc1 5', function () {
+  it('tc1 5 - pins w/ en passant', function () {
     const engine = new Engine('8/2p5/3p4/1P5r/KR3p1k/8/4P1P1/8 b - - 1 1')
 
     engine.make(engine.board.legalMoves()[13])
@@ -1091,7 +1098,7 @@ describe('Perft Tricky Positions', function () {
     assert.equal(engine.board.legalMoves().length, 16)
   })
 
-  it('tc2 1', function () {
+  it('tc2 1 - pin w/ en passant', function () {
     const engine = new Engine('r3k2r/Pppp1ppp/1b3nbN/nP6/BBPPP3/q4N2/Pp4PP/R2Q1RK1 b kq - 0 1')
 
     engine.make(engine.board.legalMoves()[38])
@@ -1099,37 +1106,49 @@ describe('Perft Tricky Positions', function () {
     assert.equal(engine.board.legalMoves().length, 39)
   })
 
-  it('tc3 1', function () {
+  it('tc2 2 - double pin', function () {
+    const engine = new Engine('r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/P2P1RPP/q2Q2K1 w kq - 0 2')
+
+    assert.equal(engine.board.legalMoves().length, 33)
+  })
+
+  it('tc2 3 - frozen h pawn', function () {
+    const engine = new Engine('r3k2r/Pppp1ppp/1b3nbN/nP6/BBPNP3/6q1/Pp1P2PP/R2Q1RK1 w kq - 2 2')
+
+    assert.equal(engine.board.legalMoves().length, 38)
+  })
+
+  it('tc3 1 - castles and pins', function () {
     const engine = new Engine('rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8  ')
 
     assert.equal(engine.board.legalMoves().length, 44)
   })
 
-  it('tc3 2', function () {
+  it('tc3 2 - castles and pins', function () {
     const engine = new Engine('rnbq1k1r/pp1Pbppp/2p4B/8/2B5/8/PPP1NnPP/RN1QK2R b KQ - 2 8')
 
     assert.equal(engine.board.legalMoves().length, 31)
   })
 
-  it('tc3 3', function () {
+  it('tc3 3 - castles and pins', function () {
     const engine = new Engine('rnbq1k1r/pp1Pbppp/2pQ4/8/2B5/8/PPP1NnPP/RNB1K2R b KQ - 2 8')
 
     assert.equal(engine.board.legalMoves().length, 28)
   })
 
-  it('tc3 4', function () {
+  it('tc3 4 - castles and pins', function () {
     const engine = new Engine('rnQq1k1r/pp2bppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R b KQ - 0 8')
 
     assert.equal(engine.board.legalMoves().length, 31)
   })
 
-  it('tc3 5', function () {
+  it('tc3 5 - castles and pins', function () {
     const engine = new Engine('rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQ1RK1 b - - 2 8')
 
     assert.equal(engine.board.legalMoves().length, 34)
   })
 
-  it('tc3 6', function () {
+  it('tc3 6 - castles and pins', function () {
     const engine = new Engine('rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQKR2 b Q - 2 8')
 
     assert.equal(engine.board.legalMoves().length, 34)

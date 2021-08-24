@@ -11,6 +11,7 @@ const BoardProxy = require('./boardproxy.js').BoardProxy
 const PieceStatus = require('./pieces.js').PieceStatus
 const Direction = require('./attack.js').Direction
 const LCG = require('./prng.js').LCG
+const PinList = require('./move.js').PinList
 
 class Board {
   constructor (seed=91289n) {
@@ -69,12 +70,8 @@ class Board {
     this.xrayAttackSqs = 0n
     this.theirBlockers = 0n
     this.ourBlockers = 0n
-    this.theirKingPinnerBb = 0n
-    this.ourKingPinnerBb = 0n
-    this.theirPinnersRay = 0n
-    this.ourPinnersRay = 0n
-    this.blockersFromOurKing = null
-    this.blockersToTheirKing = null
+    this.ourPinList = []
+    this.theirPinList = []
   }
 
   initPieceBoardList () {
@@ -356,24 +353,22 @@ class Board {
 
   setXrayDangerSqs () {
     const opponentsSide = this.whiteToMove ? 'bs' : 'ws'
+    const ourPieceBb = this.whiteToMove ? this.whiteBb : this.blackBb
     const blockers = this.getTheirBlockers() | this.getOurBlockers()
     const boardProxyNoBlockers = new BoardProxy(this)
     boardProxyNoBlockers.bb = boardProxyNoBlockers.bb ^ blockers
     this.xrayDangerSqs = ThreatBoard.for(opponentsSide, boardProxyNoBlockers, true)
-    this.theirKingPinnerBb = boardProxyNoBlockers.theirKingPinnerBb
-    this.theirPinnersRay = boardProxyNoBlockers.theirPinnersRay
-    this.blockersFromOurKing = BitHelper.popCount((this.theirPinnersRay ^ this.theirKingPinnerBb) & this.bb)
+    this.ourPinList = boardProxyNoBlockers.ourPinList
   }
 
   setXrayAttackSqs () {
     const ourSide = this.whiteToMove ? 'ws' : 'bs'
+    const theirPieceBb = this.whiteToMove ? this.blackBb : this.whiteBb
     const blockers = this.getTheirBlockers() | this.getOurBlockers()
     const boardProxyNoBlockers = new BoardProxy(this)
     boardProxyNoBlockers.bb = boardProxyNoBlockers.bb ^ blockers
     this.xrayAttackSqs = ThreatBoard.for(ourSide, boardProxyNoBlockers, false)
-    this.ourKingPinnerBb = boardProxyNoBlockers.ourKingPinnerBb
-    this.ourPinnersRay = boardProxyNoBlockers.ourPinnersRay 
-    this.blockersToTheirKing = BitHelper.popCount((this.ourPinnersRay ^ this.ourKingPinnerBb) & this.bb)
+    this.theirPinList = boardProxyNoBlockers.theirPinList
   }
 
   initKeys () {

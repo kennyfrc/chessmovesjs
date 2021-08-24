@@ -74,7 +74,7 @@ class Board {
     this.theirPinnersRay = 0n
     this.ourPinnersRay = 0n
     this.blockersFromOurKing = null
-    this.blockersFromTheirKing = null
+    this.blockersToTheirKing = null
   }
 
   initPieceBoardList () {
@@ -373,7 +373,7 @@ class Board {
     this.xrayAttackSqs = ThreatBoard.for(ourSide, boardProxyNoBlockers, false)
     this.ourKingPinnerBb = boardProxyNoBlockers.ourKingPinnerBb
     this.ourPinnersRay = boardProxyNoBlockers.ourPinnersRay 
-    this.blockersFromTheirKing = BitHelper.popCount((this.ourPinnersRay ^ this.ourKingPinnerBb) & this.bb)
+    this.blockersToTheirKing = BitHelper.popCount((this.ourPinnersRay ^ this.ourKingPinnerBb) & this.bb)
   }
 
   initKeys () {

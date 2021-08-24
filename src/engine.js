@@ -5,6 +5,7 @@ const BoardHelper = require('./helpers.js').BoardHelper
 const BitHelper = require('./helpers.js').BitHelper
 const PieceStatus = require('./pieces.js').PieceStatus
 const SquareHelper = require('./helpers.js').SquareHelper
+const Direction = require('./attack.js').Direction
 
 class ObjectHelper {
   static orderKeys (unorderedObj) {
@@ -408,8 +409,13 @@ class Engine {
     return (castleStatus & BoardHelper.blackQsCastleRookSq() & fromBit) !== 0n && fenChar === 'r'
   }
 
+  isPawnBesideTheirPinnedPiece (pawnToBit) {
+    const pinnedPiece = this.board.ourPinnersRay & this.board.ourBlockers
+    return (Direction.beside(pawnToBit) & pinnedPiece) !== 0n
+  }
+
   handleMoveWithEpRisk (epRisk, toBit) {
-    if ((epRisk && epRisk !== 0n) && (!this.board.isOurKingXrayed() && this.board.blockersFromOurKing !== 1)) {
+    if ((epRisk && epRisk !== 0n) && (!this.isPawnBesideTheirPinnedPiece(toBit))) {
       this.board.epSqBb = epRisk
       this.board.epSqIdx = BitHelper.bitScanFwd(epRisk)
       this.board.epCaptureBb = toBit

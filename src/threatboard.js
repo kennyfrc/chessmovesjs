@@ -9,8 +9,8 @@ const Mask = require('./mask.js').Mask
 const Ray = require('./attack.js').Ray
 
 class ThreatBoard {
-  static for (byPieceOrSide = 'all', board) {
-    return this.threats(byPieceOrSide, board)
+  static for (byPieceOrSide = 'all', board, xRaysToUs) {
+    return this.threats(byPieceOrSide, board, xRaysToUs)
   }
 
   static threats (byPieceOrSide, board, xRaysToUs=true) {
@@ -35,11 +35,11 @@ class ThreatBoard {
           } else {
             const theirKingBb = board.whiteToMove ? board.blackKingBb : board.whiteKingBb
             const weOccupied = board.whiteToMove ? board.whiteBb : board.blackBb
-            const kingSourceSq = BitHelper.bitScanFwd(theirKingBb)       
-            const ourPinnersAttacks = ((attacks & theirKingBb) !== 0n) ? attacks : 0n            
-            const pinnerDirectionFromKing = Direction.bareKingMoves(ourKingBb) & ourPinnersAttacks
+            const kingSourceSq = BitHelper.bitScanFwd(theirKingBb)
+            const ourPinnersAttacks = ((attacks & theirKingBb) !== 0n) ? attacks : 0n
+            const pinnerDirectionFromKing = Direction.bareKingMoves(theirKingBb) & ourPinnersAttacks
             const sqThatPointsToPinner = BitHelper.bitScanFwd(pinnerDirectionFromKing)
-            const pinnerRay = Ray.for(kingSourceSq, sqThatPointsToPinner, ourOccupied)
+            const pinnerRay = Ray.for(kingSourceSq, sqThatPointsToPinner, weOccupied)
             board.ourKingPinnerBb |= ((attacks & theirKingBb) !== 0n) ? pieceBb : 0n
             board.ourPinnersRay |= pinnerRay
           }

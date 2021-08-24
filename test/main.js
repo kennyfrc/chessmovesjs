@@ -1080,9 +1080,15 @@ describe('Perft Tricky Positions', function () {
   it('tc1 4', function () {
     const engine = new Engine('8/2p5/3p4/KPr5/R4p1k/8/4P1P1/8 w - - 2 2')
 
-    // bug: pawn doesn't see pin
-
     assert.equal(engine.board.legalMoves().length, 14)
+  })
+
+  it('tc1 5', function () {
+    const engine = new Engine('8/2p5/3p4/1P5r/KR3p1k/8/4P1P1/8 b - - 1 1')
+
+    engine.make(engine.board.legalMoves()[13])
+
+    assert.equal(engine.board.legalMoves().length, 16)
   })
 
   it('tc2 1', function () {
@@ -1090,7 +1096,6 @@ describe('Perft Tricky Positions', function () {
 
     engine.make(engine.board.legalMoves()[38])
 
-    // en passant
     assert.equal(engine.board.legalMoves().length, 39)
   })
 

@@ -200,6 +200,11 @@ class Direction {
     return Mask.southOne(singlePushBb) & emptySq & BoardHelper.fifthRank()
   }
 
+  static beside (bb) {
+    return (Mask.westOne(bb & ~(BoardHelper.aFile())) |
+     Mask.eastOne(bb & ~(BoardHelper.hFile())))
+  }
+
   static wPawnAttacks (bb) {
     return (Mask.northWestOne(bb & ~(BoardHelper.aFile())) |
      Mask.northEastOne(bb & ~(BoardHelper.hFile())))

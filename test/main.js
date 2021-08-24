@@ -1057,10 +1057,9 @@ describe('Perft Tricky Positions', function () {
     assert.equal(engine.board.legalMoves().length, 42)
   })
 
-  it('kiwipete 3', function () {
+  it('kiwipete 3 - castling bug', function () {
     const engine = new Engine('r3k2r/p1ppqpb1/1n2pnp1/3PN3/1p2P3/2N2Q1p/PPPBbPPP/1R2K2R w Kkq - 0 2')
 
-    // castle bug
     assert.equal(engine.board.legalMoves().length, 40)
   })
 

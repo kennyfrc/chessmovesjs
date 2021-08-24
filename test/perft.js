@@ -14,7 +14,7 @@ describe('perft', function () {
     // assert.equal(engine.perft(5), 4865609)
   }).timeout(300000)
 
-  it.skip('kiwipete', function () {
+  it('kiwipete', function () {
     const engine = new Engine('r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - ')
 
     assert.equal(engine.perft(1), 48)

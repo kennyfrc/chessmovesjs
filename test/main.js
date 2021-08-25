@@ -1126,6 +1126,24 @@ describe('Perft Tricky Positions', function () {
     assert.equal(engine.board.legalMoves().length, 23)
   })
 
+  it('tc1 7 - doesnt see checker ray', function () {
+    const engine = new Engine('8/2p5/3p4/KP5r/5R1k/8/4P1P1/8 b - - 0 1')
+
+    assert.equal(engine.board.legalMoves().length, 2)
+  })
+
+  it('tc1 8 - pinned for no reason', function () {
+    const engine = new Engine('8/2p5/3p4/1P4r1/KR3pPk/8/4P3/8 b - - 0 2')
+
+    assert.equal(engine.board.legalMoves().length, 17)
+  })
+
+  it('tc1 9 - king should be in check after capture', function () {
+    const engine = new Engine('8/2p5/3p4/KP5r/6R1/6k1/4P1P1/8 b - - 2 2')
+
+    assert.equal(engine.board.legalMoves().length, 3)
+  })
+
   it('tc2 1 - pin w/ en passant', function () {
     const engine = new Engine('r3k2r/Pppp1ppp/1b3nbN/nP6/BBPPP3/q4N2/Pp4PP/R2Q1RK1 b kq - 0 1')
 
@@ -1180,6 +1198,20 @@ describe('Perft Tricky Positions', function () {
     const engine = new Engine('rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQKR2 b Q - 2 8')
 
     assert.equal(engine.board.legalMoves().length, 34)
+  })
+
+  it('tc3 7 - check evasion bug', function () {
+    const engine = new Engine('rnb2k1r/pp1Pbppp/2p5/q7/2B5/P7/1PP1NnPP/RNBQK2R w KQ - 1 9')
+
+    engine.board.legalMoves()
+
+    assert.equal(engine.board.legalMoves().length, 9)
+  })
+
+  it('tc3 8 - castle bug', function () {
+    const engine = new Engine('rnbq1k1r/pp1Pbppp/2p5/8/2B5/P7/1PP1N1PP/RNBQK2n w Q - 0 9')
+
+    assert.equal(engine.board.legalMoves().length, 40)
   })
 })
 

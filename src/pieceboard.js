@@ -403,7 +403,7 @@ class WhiteKingBoard extends PieceBoard {
 
   defends (pieceBb, board) {
     this.setContext(board)
-    return Mask.mooreNeighborhood(pieceBb) & board.whiteBb
+    return Direction.bareKingMoves(pieceBb) & board.whiteBb
   }
 }
 
@@ -431,7 +431,7 @@ class BlackKingBoard extends PieceBoard {
 
   defends (pieceBb, board) {
     this.setContext(board)
-    return Mask.mooreNeighborhood(pieceBb) & board.blackBb
+    return Direction.bareKingMoves(pieceBb) & board.blackBb
   }
 }
 

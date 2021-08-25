@@ -63,6 +63,10 @@ class Board {
     this.kingDangerSquares = 0n
     this.whiteKingDangerSquares = 0n
     this.blackKingDangerSquares = 0n
+    this.ourCheckerRay = 0n
+    this.theirCheckerRay = 0n
+    this.rayBehindWhiteKing = 0n
+    this.rayBehindBlackKing = 0n
   }
 
   initPinAndXrayData () {
@@ -343,7 +347,7 @@ class Board {
   setBlockers () {
     const opponentsSide = this.whiteToMove ? 'bs' : 'ws'
     const ourSide = opponentsSide === 'ws' ? 'bs' : 'ws'
-    const theirBlockers = ThreatBoard.for(opponentsSide, this) & this.bb 
+    const theirBlockers = ThreatBoard.for(opponentsSide, this) & this.bb
     const ourBlockers = ThreatBoard.for(ourSide, this) & this.bb
     this.theirBlockers = theirBlockers
     this.ourBlockers = ourBlockers
@@ -357,6 +361,7 @@ class Board {
     boardProxyNoBlockers.bb = boardProxyNoBlockers.bb ^ blockers
     this.xrayDangerSqs = ThreatBoard.for(opponentsSide, boardProxyNoBlockers, true)
     this.ourPinList = boardProxyNoBlockers.ourPinList
+    this.theirCheckerRay = boardProxyNoBlockers.theirCheckerRay
   }
 
   setXrayAttackSqs () {
@@ -367,6 +372,7 @@ class Board {
     boardProxyNoBlockers.bb = boardProxyNoBlockers.bb ^ blockers
     this.xrayAttackSqs = ThreatBoard.for(ourSide, boardProxyNoBlockers, false)
     this.theirPinList = boardProxyNoBlockers.theirPinList
+    this.ourCheckerRay = boardProxyNoBlockers.ourCheckerRay
   }
 
   initKeys () {

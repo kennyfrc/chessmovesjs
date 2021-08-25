@@ -23,6 +23,7 @@ class ThreatBoard {
   }
 
   static threats (byPieceOrSide, board, xRaysToUs=true) {
+    let count = 0
     return Pieces.for(byPieceOrSide)
       .map((fenPiece) => board.pieceBoardList[fenPiece])
       .map((pieceBoard) => SquareHelper.indicesFor(pieceBoard.bb)
@@ -30,17 +31,29 @@ class ThreatBoard {
         .map((pieceBb) => { 
           // looks messy - saves pins & returns attacks
           // should there be some sort of 'attack setter function?' but we are in it..
-          const attacks = pieceBoard.attacks(pieceBb, board)
+          let attacks = pieceBoard.attacks(pieceBb, board)
+          let rayBehindKing = 0n
           if (xRaysToUs) {
             const ourKingBb = board.whiteToMove ? board.whiteKingBb : board.blackKingBb
             const theyOccupied = board.whiteToMove ? board.blackBb : board.whiteBb
             const weOccupied = board.whiteToMove ? board.whiteBb : board.blackBb
             const kingSourceSq = BitHelper.bitScanFwd(ourKingBb)
             const kingPinnerBb = ((attacks & ourKingBb) !== 0n) ? pieceBb : 0n
-            const pinnerRay = Ray.seek(kingSourceSq, kingPinnerBb, theyOccupied)
-            if (pinnerRay !== 0n) {
+            if (kingPinnerBb !== 0n) {
+              const pinnerRay = Ray.seek(kingSourceSq, kingPinnerBb, theyOccupied)
+              rayBehindKing = Ray.seek(kingSourceSq, kingPinnerBb, theyOccupied, true)
               const blockersFromOurKing = BitHelper.popCount((pinnerRay ^ kingPinnerBb) & weOccupied)
-              board.ourPinList.push(new Pin(pieceBb, pinnerRay, blockersFromOurKing,kingPinnerBb)) 
+              if (blockersFromOurKing === 1 && (pinnerRay !== 0n)) {
+                board.ourPinList.push(new Pin(pieceBb, pinnerRay, blockersFromOurKing, kingPinnerBb))
+              }        
+              if (blockersFromOurKing === 0 && (pinnerRay !== 0n)) {
+                board.theirCheckerRay |= pinnerRay
+                if (board.whiteToMove) {
+                  board.rayBehindWhiteKing |= rayBehindKing
+                } else {
+                  board.rayBehindBlackKing |= rayBehindKing
+                }
+              }
             }
           } else {
             const theirKingBb = board.whiteToMove ? board.blackKingBb : board.whiteKingBb
@@ -48,10 +61,21 @@ class ThreatBoard {
             const weOccupied = board.whiteToMove ? board.whiteBb : board.blackBb
             const kingSourceSq = BitHelper.bitScanFwd(theirKingBb)
             const kingPinnerBb = ((attacks & theirKingBb) !== 0n) ? pieceBb : 0n
-            const pinnerRay = Ray.seek(kingSourceSq, kingPinnerBb, weOccupied)
-            if (pinnerRay !== 0n) {
+            if (kingPinnerBb !== 0n) {
+              const pinnerRay = Ray.seek(kingSourceSq, kingPinnerBb, weOccupied)
+              rayBehindKing = Ray.seek(kingSourceSq, kingPinnerBb, weOccupied, true)
               const blockersFromTheirKing = BitHelper.popCount((pinnerRay ^ kingPinnerBb) & theyOccupied)
-              board.theirPinList.push(new Pin(pieceBb, pinnerRay, blockersFromTheirKing, kingPinnerBb)) 
+              if (blockersFromTheirKing === 1 && (pinnerRay !== 0n)) {
+                board.theirPinList.push(new Pin(pieceBb, pinnerRay, blockersFromTheirKing, kingPinnerBb))   
+              }
+              if (blockersFromTheirKing === 0 && (pinnerRay !== 0n)) {
+                board.ourCheckerRay |= pinnerRay
+                if (board.whiteToMove) {
+                  board.rayBehindBlackKing |= rayBehindKing
+                } else {
+                  board.rayBehindWhiteKing |= rayBehindKing
+                }
+              }
             }
           }
           return attacks

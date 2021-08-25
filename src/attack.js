@@ -59,16 +59,21 @@ class Ray {
     return RayCompass.for(sourceSq, pointingSq, occupied)
   }
 
-  static seek (sourceSq, targetBb, occupied) {
+  static seek (sourceSq, targetBb, occupied, flip=false) {
     let ray = 0n
+    let behindRay = 0n
     const directions = [8, 9, 1, -7, -8, -9, -1, 7]
     for (let i = 0; i < directions.length; i++) {
       ray = RayCompass.seek(directions[i], sourceSq, occupied)
+      behindRay = RayCompass.seek(-(directions[i]), sourceSq, occupied)
       if ((ray & targetBb) !== 0n) { 
         break
       }
+      ray = 0n
+      behindRay = 0n
     }
-    return ray
+    if (!flip) { return ray }
+    return behindRay
   }
 
   // basic board rays
@@ -303,15 +308,13 @@ class CastleRay {
   static canCastleKs (kingSq, occupied, occupiable) {
     const ksCastleRays = Ray.castlingPosRays(kingSq, occupied) & occupiable
     const kingCanSeeKsSq = BitHelper.bitScanRev(ksCastleRays)
-    return kingCanSeeKsSq === 62 || kingCanSeeKsSq === 63 
-      || kingCanSeeKsSq === 6 || kingCanSeeKsSq === 7
+    return kingCanSeeKsSq === 62 || kingCanSeeKsSq === 6
   }
 
   static canCastleQs (kingSq, occupied, occupiable) {
     const qsCastleRays = Ray.castlingNegRays(kingSq, occupied) & occupiable
     const kingCanSeeQsSq = BitHelper.bitScanFwd(qsCastleRays)
-    return kingCanSeeQsSq === 57 || kingCanSeeQsSq === 64 
-      || kingCanSeeQsSq === 1 || kingCanSeeQsSq === 0
+    return kingCanSeeQsSq === 57 || kingCanSeeQsSq === 1
   }
 }
 

@@ -69,12 +69,12 @@ class MoveList {
     let kingInCheckMoves
     if (fenPiece === 'K') {
       const moves = pieceBoard.attacks(pieceBb, board)
-      kingInCheckMoves = moves & board.whiteKingDangerSquares
+      kingInCheckMoves = moves & board.whiteKingDangerSquares | board.rayBehindWhiteKing
       return moves ^ kingInCheckMoves
     }
     if (fenPiece === 'k') {
       const moves = pieceBoard.attacks(pieceBb, board)
-      kingInCheckMoves = moves & board.blackKingDangerSquares
+      kingInCheckMoves = moves & board.blackKingDangerSquares | board.rayBehindBlackKing
       return moves ^ kingInCheckMoves
     }
     return pieceBoard.attacks(pieceBb, board)
@@ -125,7 +125,7 @@ class CheckEvasions {
 
   static manageCheckers (fenPiece, board, attacks) {
     const captureCheckers = this.findCheckersToCapture(fenPiece, board, attacks)
-    const blockCheckers = attacks & this.findWaysToBlockCheckers(fenPiece, board, attacks)
+    const blockCheckers = attacks & board.theirCheckerRay
     return captureCheckers | blockCheckers
   }
 
@@ -134,15 +134,6 @@ class CheckEvasions {
       return (attacks & board.epSqBb) | (attacks & board.checkersBb)
     }
     return (attacks & board.checkersBb)
-  }
-
-  static findWaysToBlockCheckers (fenPiece, board, attacks) {
-    const kingBb = board.whiteToMove ? board.whiteKingBb : board.blackKingBb
-    const kingSourceSq = BitHelper.bitScanFwd(kingBb)
-    const checkerDirectionFromKing = Mask.mooreNeighborhood(kingBb) & board.kingDangerSquares
-    const sqThatPointsToChecker = BitHelper.bitScanFwd(checkerDirectionFromKing)
-    const checkerRay = Ray.for(kingSourceSq, sqThatPointsToChecker, board.bb)
-    return checkerRay
   }
 }
 

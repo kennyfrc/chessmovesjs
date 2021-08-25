@@ -69,13 +69,13 @@ class MoveList {
     let kingInCheckMoves
     if (fenPiece === 'K') {
       const moves = pieceBoard.attacks(pieceBb, board)
-      kingInCheckMoves = moves & board.whiteKingDangerSquares | (board.rayBehindWhiteKing & pieceBoard.occupiable)
+
+      kingInCheckMoves = moves & board.whiteKingDangerSquares | board.rayBehindWhiteKing
       return moves ^ kingInCheckMoves
     }
     if (fenPiece === 'k') {
       const moves = pieceBoard.attacks(pieceBb, board)
-
-      kingInCheckMoves = moves & board.blackKingDangerSquares | (board.rayBehindBlackKing & pieceBoard.occupiable)
+      kingInCheckMoves = moves & board.blackKingDangerSquares | board.rayBehindBlackKing
       return moves ^ kingInCheckMoves
     }
     return pieceBoard.attacks(pieceBb, board)

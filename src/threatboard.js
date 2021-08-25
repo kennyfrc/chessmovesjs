@@ -43,16 +43,19 @@ class ThreatBoard {
               const pinnerRay = Ray.seek(kingSourceSq, kingPinnerBb, theyOccupied)
               rayBehindKing = Ray.seek(kingSourceSq, kingPinnerBb, board.bb, true)
               const blockersFromOurKing = BitHelper.popCount((pinnerRay ^ kingPinnerBb) & weOccupied)
+              const blockersBehindOurKing = BitHelper.popCount(rayBehindKing & theyOccupied)
               if (blockersFromOurKing === 1 && (pinnerRay !== 0n)) {
                 board.ourPinList.push(new Pin(pieceBb, pinnerRay, blockersFromOurKing, kingPinnerBb))
-              }        
-              if (blockersFromOurKing === 0 && (pinnerRay !== 0n)) {
-                board.theirCheckerRay |= pinnerRay
+              }
+              if (blockersBehindOurKing === 1) {
                 if (board.whiteToMove) {
                   board.rayBehindWhiteKing |= rayBehindKing
                 } else {
                   board.rayBehindBlackKing |= rayBehindKing
                 }
+              }
+              if (blockersFromOurKing === 0 && (pinnerRay !== 0n)) {
+                board.theirCheckerRay |= pinnerRay
               }
             }
           } else {
@@ -65,16 +68,19 @@ class ThreatBoard {
               const pinnerRay = Ray.seek(kingSourceSq, kingPinnerBb, weOccupied)
               rayBehindKing = Ray.seek(kingSourceSq, kingPinnerBb, board.bb, true)
               const blockersFromTheirKing = BitHelper.popCount((pinnerRay ^ kingPinnerBb) & theyOccupied)
+              const blockersBehindTheirKing = BitHelper.popCount(rayBehindKing & weOccupied)
               if (blockersFromTheirKing === 1 && (pinnerRay !== 0n)) {
                 board.theirPinList.push(new Pin(pieceBb, pinnerRay, blockersFromTheirKing, kingPinnerBb))   
               }
-              if (blockersFromTheirKing === 0 && (pinnerRay !== 0n)) {
-                board.ourCheckerRay |= pinnerRay
+              if (blockersBehindTheirKing === 1) {
                 if (board.whiteToMove) {
                   board.rayBehindBlackKing |= rayBehindKing
                 } else {
                   board.rayBehindWhiteKing |= rayBehindKing
                 }
+              }
+              if (blockersFromTheirKing === 0 && (pinnerRay !== 0n)) {
+                board.ourCheckerRay |= pinnerRay
               }
             }
           }

@@ -1144,8 +1144,14 @@ describe('Perft Tricky Positions', function () {
     assert.equal(engine.board.legalMoves().length, 3)
   })
 
-  it('tc1 10 - ?', function () {
+  it('tc1 10 - behind king ray bug', function () {
     const engine = new Engine('8/8/3p4/KPp4r/5p1k/8/4P1P1/7R b - - 1 2')
+
+    assert.equal(engine.board.legalMoves().length, 3)
+  })
+
+  it('tc1 11 - ?', function () {
+    const engine = new Engine('8/2p5/3p4/KPr5/5p1k/8/4P1P1/7R b - - 3 2')
 
     assert.equal(engine.board.legalMoves().length, 3)
   })

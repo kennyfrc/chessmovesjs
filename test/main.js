@@ -1144,6 +1144,12 @@ describe('Perft Tricky Positions', function () {
     assert.equal(engine.board.legalMoves().length, 3)
   })
 
+  it('tc1 10 - ?', function () {
+    const engine = new Engine('8/8/3p4/KPp4r/5p1k/8/4P1P1/7R b - - 1 2')
+
+    assert.equal(engine.board.legalMoves().length, 3)
+  })
+
   it('tc2 1 - pin w/ en passant', function () {
     const engine = new Engine('r3k2r/Pppp1ppp/1b3nbN/nP6/BBPPP3/q4N2/Pp4PP/R2Q1RK1 b kq - 0 1')
 

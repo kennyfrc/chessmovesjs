@@ -41,7 +41,7 @@ class ThreatBoard {
             const kingPinnerBb = ((attacks & ourKingBb) !== 0n) ? pieceBb : 0n
             if (kingPinnerBb !== 0n) {
               const pinnerRay = Ray.seek(kingSourceSq, kingPinnerBb, theyOccupied)
-              rayBehindKing = Ray.seek(kingSourceSq, kingPinnerBb, theyOccupied, true)
+              rayBehindKing = Ray.seek(kingSourceSq, kingPinnerBb, board.bb, true)
               const blockersFromOurKing = BitHelper.popCount((pinnerRay ^ kingPinnerBb) & weOccupied)
               if (blockersFromOurKing === 1 && (pinnerRay !== 0n)) {
                 board.ourPinList.push(new Pin(pieceBb, pinnerRay, blockersFromOurKing, kingPinnerBb))
@@ -63,7 +63,7 @@ class ThreatBoard {
             const kingPinnerBb = ((attacks & theirKingBb) !== 0n) ? pieceBb : 0n
             if (kingPinnerBb !== 0n) {
               const pinnerRay = Ray.seek(kingSourceSq, kingPinnerBb, weOccupied)
-              rayBehindKing = Ray.seek(kingSourceSq, kingPinnerBb, weOccupied, true)
+              rayBehindKing = Ray.seek(kingSourceSq, kingPinnerBb, board.bb, true)
               const blockersFromTheirKing = BitHelper.popCount((pinnerRay ^ kingPinnerBb) & theyOccupied)
               if (blockersFromTheirKing === 1 && (pinnerRay !== 0n)) {
                 board.theirPinList.push(new Pin(pieceBb, pinnerRay, blockersFromTheirKing, kingPinnerBb))   

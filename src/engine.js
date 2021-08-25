@@ -27,6 +27,7 @@ class Engine {
     this.captureStack = new LinkedList()
     this.halfMoveStack = new LinkedList()
     this.epStack = new LinkedList()
+    this.castleStack = new LinkedList()
     this.posKeys = []
   }
 
@@ -75,7 +76,6 @@ class Engine {
   }
 
   make (move) {
-    this.board.ply++
     const fromIdx = move.from
     const toIdx = move.to
     const fromBit = move.fromBit
@@ -98,6 +98,9 @@ class Engine {
     const rookCastleFrom = null
     const rookCastleTo = null
 
+    // update stacks
+    this.castleStack.append(castleStatus)
+    this.moveStack.append(move)
 
     // these are moves that require past context
     this.handleMakeCaptureMoves(capture, pieceList, toBit, toIdx, ep, move, fenChar)
@@ -110,7 +113,6 @@ class Engine {
     this.board.initBlackBitBoards()
     this.board.initCheckEvasionData()
     this.board.initPinAndXrayData()
-    this.board.initMoveCounters()
 
     // make moves now that we're on a clean slate
     this.handleMakeKingMoves(castleStatus, fenChar)
@@ -122,14 +124,16 @@ class Engine {
     this.handleThreeFoldRepetition()
     this.incrementFullMoveNo()
     this.updateSideToMove()
+
     this.board.setPieceContext()    
-    this.moveStack.append(move)
     this.posKeys.push(this.board.posKey)
+    this.board.ply += 1
   }
 
   unmake () {
     const lastMove = this.moveStack.pop()
     const epNode = this.epStack.pop() || new EpNode()
+    const lastCastleStatus = this.castleStack.pop()
     const fromIdx = lastMove.from
     const toIdx = lastMove.to
     const fromBit = lastMove.fromBit
@@ -145,8 +149,6 @@ class Engine {
     const epSqIdx = this.board.epSqIdx || epNode.epSqIdx
     const epSqBb = this.board.epSqBb || epNode.epSqBb
     const pieceList = this.board.pieceBoardList
-    const castleDisabledLastMove = (this.board.ply === this.board.whiteCastleDisablePly) ||
-            (this.board.ply === this.board.blackCastleDisablePly)
     const posKey = this.board.posKey
     const pieceBb = 0n
     const pieceBoard = null
@@ -162,11 +164,10 @@ class Engine {
     this.board.initBlackBitBoards()
     this.board.initCheckEvasionData()
     this.board.initPinAndXrayData()
-    this.board.initMoveCounters()
 
     // unmake moves now that we're on a clean slate
-    this.handleUnMakeKingMoves(castleDisabledLastMove, fenChar)
-    this.handleUnMakeCastleStatuses(castleDisabledLastMove, fenChar, fromBit)
+    this.handleUnMakeKingMoves(fenChar, lastCastleStatus)
+    this.handleUnMakeCastleStatuses(lastCastleStatus, fenChar, fromBit)
     this.handleRookMovesWhenCastling(castle, toIdx, pieceList)
     this.unMakePieceMove(pieceList, fromBit, toBit, promotion, promoteTo, fenChar)
     this.unMakePosKeysDueToMove(fenChar, fromIdx, toIdx, promotion, promoteTo)
@@ -174,8 +175,8 @@ class Engine {
     this.decrementFullMoveNo()
     this.updateSideToMove()
     this.board.setPieceContext()
-    this.board.ply--
     this.posKeys.pop()
+    this.board.ply -= 1
   }
 
   handleThreeFoldRepetition () {
@@ -249,38 +250,36 @@ class Engine {
     this.board.castleStatus ^= BoardHelper.whiteCastleSqs()
     this.board.posKey ^= this.board.castleKeys[0]
     this.board.posKey ^= this.board.castleKeys[7]
-    this.board.whiteCastleDisablePly = this.board.ply
   }
 
   makeBlackKingPos () {
     this.board.castleStatus ^= BoardHelper.blackCastleSqs()
     this.board.posKey ^= this.board.castleKeys[56]
     this.board.posKey ^= this.board.castleKeys[63]
-    this.board.blackCastleDisablePly = this.board.ply
   }
 
-  makeWhiteKsRook (pieceList) {
+  xorWhiteKsRook (pieceList) {
     const rook = pieceList.R
     rook.bb ^= (BoardHelper.whiteKsCastleRookSq() | BitHelper.setBit(0n, 5))
     this.board.posKey ^= this.board.pieceKeys.R[7]
     this.board.posKey ^= this.board.pieceKeys.R[5]
   }
 
-  makeWhiteQsRook (pieceList) {
+  xorWhiteQsRook (pieceList) {
     const rook = pieceList.R
     rook.bb ^= (BoardHelper.whiteQsCastleRookSq() | BitHelper.setBit(0n, 3))
     this.board.posKey ^= this.board.pieceKeys.R[0]
     this.board.posKey ^= this.board.pieceKeys.R[3]
   }
 
-  makeBlackKsRook (pieceList) {
+  xorBlackKsRook (pieceList) {
     const rook = pieceList.r
     rook.bb ^= (BoardHelper.blackKsCastleRookSq() | BitHelper.setBit(0n, 61))
     this.board.posKey ^= this.board.pieceKeys.r[63]
     this.board.posKey ^= this.board.pieceKeys.r[61]
   }
 
-  makeBlackQsRook (pieceList) {
+  xorBlackQsRook (pieceList) {
     if (pieceList === undefined) { console.log(pieceList) }
     const rook = pieceList.r
     rook.bb ^= (BoardHelper.blackQsCastleRookSq() | BitHelper.setBit(0n, 59))
@@ -291,25 +290,21 @@ class Engine {
   makeWhiteKsCastleStatus () {
     this.board.castleStatus ^= BoardHelper.whiteKsCastleRookSq()
     this.board.posKey ^= this.board.castleKeys[7]
-    this.board.whiteCastleDisablePly = this.board.ply
   }
 
   makeWhiteQsCastleStatus () {
     this.board.castleStatus ^= BoardHelper.whiteQsCastleRookSq()
     this.board.posKey ^= this.board.castleKeys[0]
-    this.board.whiteCastleDisablePly = this.board.ply
   }
 
   makeBlackKsCastleStatus () {
     this.board.castleStatus ^= BoardHelper.blackKsCastleRookSq()
     this.board.posKey ^= this.board.castleKeys[63]
-    this.board.blackCastleDisablePly = this.board.ply
   }
 
   makeBlackQsCastleStatus () {
     this.board.castleStatus ^= BoardHelper.blackQsCastleRookSq()
     this.board.posKey ^= this.board.castleKeys[56]
-    this.board.blackCastleDisablePly = this.board.ply
   }
 
   handlePieceMove (pieceList, fromBit, toBit, promotion, promoteTo, fenChar) {
@@ -469,19 +464,19 @@ class Engine {
 
   handleRookMovesWhenCastling (castle, toIdx, pieceList) {
     if (this.isWantingToCastleWhiteKs(castle, toIdx)) {
-      this.makeWhiteKsRook(pieceList)
+      this.xorWhiteKsRook(pieceList)
     }
 
     if (this.isWantingToCastleWhiteQs(castle, toIdx)) {
-      this.makeWhiteQsRook(pieceList)
+      this.xorWhiteQsRook(pieceList)
     }
 
     if (this.isWantingToCastleBlackKs(castle, toIdx)) {
-      this.makeBlackKsRook(pieceList)
+      this.xorBlackKsRook(pieceList)
     }
 
     if (this.isWantingToCastleBlackQs(castle, toIdx)) {
-      this.makeBlackQsRook(pieceList)
+      this.xorBlackQsRook(pieceList)
     }
   }
 
@@ -529,42 +524,30 @@ class Engine {
     this.restoreHalfMoveNo()
   }
 
-  unMakeWhiteKingPos () {
-    this.board.castleStatus ^= BoardHelper.whiteCastleSqs()
+  unMakeWhiteKingPos (lastCastleStatus) {
     this.board.posKey ^= this.board.castleKeys[0]
     this.board.posKey ^= this.board.castleKeys[7]
-    this.board.whiteCastleDisablePly = null
   }
 
-  unMakeBlackKingPos () {
-    this.board.castleStatus ^= BoardHelper.blackCastleSqs()
+  unMakeBlackKingPos (lastCastleStatus) {
     this.board.posKey ^= this.board.castleKeys[56]
     this.board.posKey ^= this.board.castleKeys[63]
-    this.board.blackCastleDisablePly = null
   }
 
-  unMakeWhiteKsRook () {
-    this.board.castleStatus ^= BoardHelper.whiteKsCastleRookSq()
+  unMakeWhiteKsCastleStatus () {
     this.board.posKey ^= this.board.castleKeys[7]
-    this.board.whiteCastleDisablePly = null
   }
 
-  unMakeWhiteQsRook () {
-    this.board.castleStatus ^= BoardHelper.whiteQsCastleRookSq()
+  unMakeWhiteQsCastleStatus () {
     this.board.posKey ^= this.board.castleKeys[0]
-    this.board.whiteCastleDisablePly = null
   }
 
-  unMakeBlackKsRook () {
-    this.board.castleStatus ^= BoardHelper.blackKsCastleRookSq()
+  unMakeBlackKsCastleStatus () {
     this.board.posKey ^= this.board.castleKeys[63]
-    this.board.blackCastleDisablePly = null
   }
 
-  unMakeBlackQsRook () {
-    this.board.castleStatus ^= BoardHelper.blackQsCastleRookSq()
+  unMakeBlackQsCastleStatus () {
     this.board.posKey ^= this.board.castleKeys[56]
-    this.board.blackCastleDisablePly = null
   }
 
   unMakePieceMove (pieceList, fromBit, toBit, promotion, promoteTo, fenChar) {
@@ -589,32 +572,28 @@ class Engine {
     }
   }
 
-  isWhiteKingAndLastMoveIsCastle (castleDisabledLastMove, fenChar) {
-    return castleDisabledLastMove && fenChar === 'K'
+  isWhiteKing (fenChar) {
+    return fenChar === 'K'
   }
 
-  isBlackKingAndLastMoveIsCastle (castleDisabledLastMove, fenChar) {
-    return castleDisabledLastMove && fenChar === 'k'
+  isBlackKing (fenChar) {
+    return fenChar === 'k'
   }
 
-  isWhiteRookAndLastMoveIsKsCastle (castleDisabledLastMove, fenChar, fromBit) {
-    return (castleDisabledLastMove && fenChar === 'R') &&
-      (fromBit & BoardHelper.whiteKsCastleRookSq()) !== 0n
+  isWhiteRookAndLastMoveIsRookKsHome (lastCastleStatus, fenChar, fromBit) {
+    return (fenChar === 'R') && ((fromBit & lastCastleStatus) & BoardHelper.whiteKsCastleRookSq()) !== 0n
   }
 
-  isWhiteRookAndLastMoveIsQsCastle (castleDisabledLastMove, fenChar, fromBit) {
-    return (castleDisabledLastMove && fenChar === 'R') &&
-      (fromBit & BoardHelper.whiteQsCastleRookSq()) !== 0n
+  isWhiteRookAndLastMoveIsRookQsHome (lastCastleStatus, fenChar, fromBit) {
+    return (fenChar === 'R') && ((fromBit & lastCastleStatus) & BoardHelper.whiteQsCastleRookSq()) !== 0n
   }
 
-  isBlackRookAndLastMoveIsKsCastle (castleDisabledLastMove, fenChar, fromBit) {
-    return (castleDisabledLastMove && fenChar === 'r') &&
-      (fromBit & BoardHelper.blackKsCastleRookSq()) !== 0n
+  isBlackRookAndLastMoveIsRookKsHome (lastCastleStatus, fenChar, fromBit) {
+    return (fenChar === 'r') && ((fromBit & lastCastleStatus) & BoardHelper.blackKsCastleRookSq()) !== 0n
   }
 
-  isBlackRookAndLastMoveIsQsCastle (castleDisabledLastMove, fenChar, fromBit) {
-    return (castleDisabledLastMove && fenChar === 'r') &&
-      (fromBit & BoardHelper.blackQsCastleRookSq()) !== 0n
+  isBlackRookAndLastMoveIsRookQsHome (lastCastleStatus, fenChar, fromBit) {
+    return (fenChar === 'r') && ((fromBit & lastCastleStatus) & BoardHelper.blackQsCastleRookSq()) !== 0n
   }
 
   handleUnMakeCaptureMoves (lastMove, pieceList, toBit, toIdx, ep) {
@@ -629,32 +608,33 @@ class Engine {
     }
   }
 
-  handleUnMakeKingMoves (castleDisabledLastMove, fenChar) {
-    if (this.isWhiteKingAndLastMoveIsCastle(castleDisabledLastMove, fenChar)) {
+  handleUnMakeKingMoves (fenChar) {
+    if (this.isWhiteKing(fenChar)) {
       this.unMakeWhiteKingPos()
     }
 
-    if (this.isBlackKingAndLastMoveIsCastle(castleDisabledLastMove, fenChar)) {
+    if (this.isBlackKing(fenChar)) {
       this.unMakeBlackKingPos()
     }
   }
 
-  handleUnMakeCastleStatuses (castleDisabledLastMove, fenChar, fromBit) {
-    if (this.isWhiteRookAndLastMoveIsKsCastle(castleDisabledLastMove, fenChar, fromBit)) {
-      this.unMakeWhiteKsRook()
+  handleUnMakeCastleStatuses (lastCastleStatus, fenChar, fromBit) {
+    if (this.isWhiteRookAndLastMoveIsRookKsHome(lastCastleStatus, fenChar, fromBit)) {
+      this.unMakeWhiteKsCastleStatus()
     }
 
-    if (this.isWhiteRookAndLastMoveIsQsCastle(castleDisabledLastMove, fenChar, fromBit)) {
-      this.unMakeWhiteQsRook()
+    if (this.isWhiteRookAndLastMoveIsRookQsHome(lastCastleStatus, fenChar, fromBit)) {
+      this.unMakeWhiteQsCastleStatus()
     }
 
-    if (this.isBlackRookAndLastMoveIsKsCastle(castleDisabledLastMove, fenChar, fromBit)) {
-      this.unMakeBlackKsRook()
+    if (this.isBlackRookAndLastMoveIsRookKsHome(lastCastleStatus, fenChar, fromBit)) {
+      this.unMakeBlackKsCastleStatus()
     }
 
-    if (this.isBlackRookAndLastMoveIsQsCastle(castleDisabledLastMove, fenChar, fromBit)) {
-      this.unMakeBlackQsRook()
+    if (this.isBlackRookAndLastMoveIsRookQsHome(lastCastleStatus, fenChar, fromBit)) {
+      this.unMakeBlackQsCastleStatus()
     }
+    this.board.castleStatus = lastCastleStatus
   }
 }
 

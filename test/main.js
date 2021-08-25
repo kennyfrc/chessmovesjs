@@ -1063,11 +1063,32 @@ describe('Perft Tricky Positions', function () {
     assert.equal(engine.board.legalMoves().length, 40)
   })
 
+  it('kiwipete 4 - unmake bug', function () {
+    const engine = new Engine('r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - ')
+
+    const initialCastleStatus = engine.board.castleStatus
+    engine.make(engine.board.legalMoves()[13])
+
+    const firstCastleStatus = engine.board.castleStatus
+    engine.make(engine.board.legalMoves()[0])
+
+    const secondCastleStatus = engine.board.castleStatus
+    engine.make(engine.board.legalMoves()[2])
+    
+    engine.unmake()
+    assert.equal(engine.board.castleStatus, secondCastleStatus)
+    
+    engine.unmake()
+    assert.equal(engine.board.castleStatus, firstCastleStatus)
+    
+    engine.unmake()
+    assert.equal(engine.board.castleStatus, initialCastleStatus)
+  })
+
   it('tc1 1 - pins', function () {
     const engine = new Engine('8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - ')
 
     engine.make(engine.board.legalMoves()[11])
-
     assert.equal(engine.board.legalMoves().length, 16)
   })
 
@@ -1095,6 +1116,14 @@ describe('Perft Tricky Positions', function () {
     engine.make(engine.board.legalMoves()[13])
 
     assert.equal(engine.board.legalMoves().length, 16)
+  })
+
+  it('tc1 6 - make en passant ', function () {
+    const engine = new Engine('8/2p5/3p4/1P5r/KR3p2/6k1/4P1P1/8 w - - 2 2')
+
+    engine.make(engine.board.legalMoves()[11])
+
+    assert.equal(engine.board.legalMoves().length, 23)
   })
 
   it('tc2 1 - pin w/ en passant', function () {

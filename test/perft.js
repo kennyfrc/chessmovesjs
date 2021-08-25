@@ -10,15 +10,15 @@ describe('perft', function () {
     assert.equal(engine.perft(1), 20)
     assert.equal(engine.perft(2), 400)
     assert.equal(engine.perft(3), 8902)
-    // assert.equal(engine.perft(4), 197281)
+    assert.equal(engine.perft(4), 197281)
     // assert.equal(engine.perft(5), 4865609)
   }).timeout(300000)
 
-  it('kiwipete', function () {
+  it.skip('kiwipete', function () {
     const engine = new Engine('r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - ')
 
-    assert.equal(engine.perft(1), 48)
-    assert.equal(engine.perft(2), 2039)
+    // assert.equal(engine.perft(1), 48)
+    // assert.equal(engine.perft(2), 2039)
     assert.equal(engine.perft(3), 97862)
     // assert.equal(engine.perft(4), 4085603)
     // assert.equal(engine.perft(5), 193690690)
@@ -29,28 +29,28 @@ describe('perft', function () {
 
     assert.equal(engine.perft(1), 46)
     assert.equal(engine.perft(2), 2079)
-    // assert.equal(engine.perft(3), 89890)
-    // assert.equal(engine.perft(4), 3894594)
+    assert.equal(engine.perft(3), 89890)
+    assert.equal(engine.perft(4), 3894594)
     // assert.equal(engine.perft(5), 89941194)
-  }).timeout(300000)
+  }).timeout(600000)
 
-  it.skip('talkchess 1', function () {
-    const engine = new Engine('8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - ')
+  it('talkchess 1', function () {
+    const engine = new Engine('8/2p5/3p4/1P5r/KR2Pp2/6k1/6P1/8 b - e3 0 2')
 
-    assert.equal(engine.perft(1), 14)
-    assert.equal(engine.perft(2), 191)
-    assert.equal(engine.perft(3), 2812)
-    // assert.equal(engine.perft(4), 43238)
+    // assert.equal(engine.perft(1), 14)
+    // assert.equal(engine.perft(2), 191)
+    // assert.equal(engine.perft(3), 2812)
+    assert.equal(engine.perft(4), 43238)
     // assert.equal(engine.perft(5), 674624)
   }).timeout(300000)
 
   it.skip('talkchess 2', function () {
     const engine = new Engine('r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1')
 
-    // assert.equal(engine.perft(1), 6)
-    // assert.equal(engine.perft(2), 264)
+    assert.equal(engine.perft(1), 6)
+    assert.equal(engine.perft(2), 264)
     assert.equal(engine.perft(3), 9467)
-    // assert.equal(engine.perft(4), 422333)
+    assert.equal(engine.perft(4), 422333)
     // assert.equal(engine.perft(5), 15833292)
   }).timeout(300000)
 
@@ -59,8 +59,8 @@ describe('perft', function () {
 
     assert.equal(engine.perft(1), 44)
     assert.equal(engine.perft(2), 1486)
-    // assert.equal(engine.perft(3), 62379)
-    // assert.equal(engine.perft(4), 2103487)
+    assert.equal(engine.perft(3), 62379)
+    assert.equal(engine.perft(4), 2103487)
     // assert.equal(engine.perft(5), 89941194)
   }).timeout(300000)
 })

@@ -47,7 +47,7 @@ class ThreatBoard {
               if (blockersFromOurKing === 1 && (pinnerRay !== 0n)) {
                 board.ourPinList.push(new Pin(pieceBb, pinnerRay, blockersFromOurKing, kingPinnerBb))
               }
-              if (blockersBehindOurKing === 1) {
+              if (blockersBehindOurKing >= 1) {
                 if (board.whiteToMove) {
                   board.rayBehindWhiteKing |= rayBehindKing
                 } else {
@@ -72,7 +72,7 @@ class ThreatBoard {
               if (blockersFromTheirKing === 1 && (pinnerRay !== 0n)) {
                 board.theirPinList.push(new Pin(pieceBb, pinnerRay, blockersFromTheirKing, kingPinnerBb))   
               }
-              if (blockersBehindTheirKing === 1) {
+              if (blockersBehindTheirKing >= 1) {
                 if (board.whiteToMove) {
                   board.rayBehindBlackKing |= rayBehindKing
                 } else {

@@ -4,6 +4,7 @@ const PieceBoard = require('./pieceboard.js').PieceBoard
 const PieceBoardList = require('./pieceboard.js').PieceBoardList
 const ViewHelper = require('./helpers.js').ViewHelper
 const SquareHelper = require('./helpers.js').SquareHelper
+const BoardHelper = require('./helpers.js').BoardHelper
 const Pieces = require('./pieces.js').Pieces
 const MoveList = require('./move.js').MoveList
 const ThreatBoard = require('./threatboard.js').ThreatBoard
@@ -244,6 +245,7 @@ class Board {
     this.setCheckerCount()
     this.setXrayDangerSqs()
     this.setXrayAttackSqs()
+    this.verifyCastleStatus()
   }
 
   setPieceBbs () {
@@ -373,6 +375,13 @@ class Board {
     this.xrayAttackSqs = ThreatBoard.for(ourSide, boardProxyNoBlockers, false)
     this.theirPinList = boardProxyNoBlockers.theirPinList
     this.ourCheckerRay = boardProxyNoBlockers.ourCheckerRay
+  }
+
+  verifyCastleStatus () {
+    this.castleStatus = (this.blackRookBb& 
+      (BoardHelper.blackKsCastleRookSq() | BoardHelper.blackQsCastleRookSq()))
+      | (this.whiteRookBb & 
+        (BoardHelper.whiteKsCastleRookSq() | BoardHelper.whiteQsCastleRookSq()))
   }
 
   initKeys () {

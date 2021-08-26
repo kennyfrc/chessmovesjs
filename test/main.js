@@ -747,7 +747,7 @@ describe('Engine', function () {
       assert.equal(engine.board.pieceBoardList.K.bb, 32n)
       assert.equal(engine.board.bb, 10751949189452937125n)
       assert.equal(engine.board.posKey, 1377952623175419136n)
-      assert.equal(engine.board.castleStatus, 9295429630892703744n)
+      assert.equal(engine.board.castleStatus, 9295429630892703873n)
 
       engine.unmake()
       assert.equal(engine.board.pieceBoardList.K.bb, originalKingBb)
@@ -791,7 +791,7 @@ describe('Engine', function () {
       assert.equal(engine.board.pieceBoardList.R.bb, 33n)
       assert.equal(engine.board.bb, 10751949189452937061n)
       assert.equal(engine.board.posKey, 678716279420615168n)
-      assert.equal(engine.board.castleStatus, 9295429630892703744n)
+      assert.equal(engine.board.castleStatus, 9295429630892703745n)
 
       engine.unmake()
       assert.equal(engine.board.pieceBoardList.K.bb, originalKingBb)
@@ -1083,6 +1083,14 @@ describe('Perft Tricky Positions', function () {
     
     engine.unmake()
     assert.equal(engine.board.castleStatus, initialCastleStatus)
+  })
+
+  it('kiwipete 5 - make castle bug', function () {
+    const engine = new Engine('r3k2r/p1ppqNb1/bn2pnp1/3P4/1p2P3/2N2Q2/PPPBBPpP/R3K2R w KQkq - 0 2')
+
+    engine.make(engine.board.legalMoves()[37])
+
+    assert.equal(engine.board.legalMoves().length, 46)
   })
 
   it('tc1 1 - pins', function () {

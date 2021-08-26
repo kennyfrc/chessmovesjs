@@ -378,10 +378,8 @@ class Board {
   }
 
   verifyCastleStatus () {
-    this.castleStatus = (this.blackRookBb& 
-      (BoardHelper.blackKsCastleRookSq() | BoardHelper.blackQsCastleRookSq()))
-      | (this.whiteRookBb & 
-        (BoardHelper.whiteKsCastleRookSq() | BoardHelper.whiteQsCastleRookSq()))
+    this.castleStatus &= (this.blackRookBb & (BoardHelper.blackKsCastleRookSq() | BoardHelper.blackQsCastleRookSq()))
+      | (this.whiteRookBb & (BoardHelper.whiteKsCastleRookSq() | BoardHelper.whiteQsCastleRookSq()))
   }
 
   initKeys () {

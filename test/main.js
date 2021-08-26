@@ -1176,6 +1176,18 @@ describe('Perft Tricky Positions', function () {
     assert.equal(engine.board.legalMoves().length, 38)
   })
 
+  it('tc2 4 - castle bug', function () {
+    const engine = new Engine('1B2k2r/1ppp1ppp/1b3nbN/nPB5/B1P1P3/q4N2/Pp1P2PP/R2Q1RK1 b k - 0 2')
+
+    assert.equal(engine.board.legalMoves().length, 37)
+  })
+
+  it('tc2 5 - castle bug', function () {
+    const engine = new Engine('r3k1Nr/Ppp2ppp/1b1p1nb1/nPB5/B1P1P3/q4N2/Pp1P2PP/R2Q1RK1 b kq - 1 2')
+
+    assert.equal(engine.board.legalMoves().length, 45)
+  })
+
   it('tc3 1 - castles and pins', function () {
     const engine = new Engine('rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8  ')
 
@@ -1214,8 +1226,6 @@ describe('Perft Tricky Positions', function () {
 
   it('tc3 7 - check evasion bug', function () {
     const engine = new Engine('rnb2k1r/pp1Pbppp/2p5/q7/2B5/P7/1PP1NnPP/RNBQK2R w KQ - 1 9')
-
-    engine.board.legalMoves()
 
     assert.equal(engine.board.legalMoves().length, 9)
   })

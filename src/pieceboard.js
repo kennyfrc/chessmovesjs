@@ -390,6 +390,7 @@ class WhiteKingBoard extends PieceBoard {
     this.blackBb = board.blackBb
     this.occupied = board.bb | board.whiteKingDangerSquares
     this.occupiable = ~board.whiteBb
+    this.castleable = ~board.bb
     this.whiteRookBb = board.whiteRookBb
     this.castleStatus = board.castleStatus
     this.inCheck = board.sideInCheck
@@ -398,7 +399,7 @@ class WhiteKingBoard extends PieceBoard {
   attacks (pieceBb, board) {
     this.setContext(board)
     return Direction.kingMoves(pieceBb, this.occupied, this.occupiable,
-      this.whiteRookBb, this.castleStatus, this.inCheck)
+      this.whiteRookBb, this.castleStatus, this.inCheck, this.castleable)
   }
 
   defends (pieceBb, board) {
@@ -418,6 +419,7 @@ class BlackKingBoard extends PieceBoard {
     this.whiteBb = board.whiteBb
     this.occupied = board.bb | board.blackKingDangerSquares
     this.occupiable = ~board.blackBb
+    this.castleable = ~board.bb
     this.blackRookBb = board.blackRookBb
     this.castleStatus = board.castleStatus
     this.inCheck = board.sideInCheck
@@ -426,7 +428,7 @@ class BlackKingBoard extends PieceBoard {
   attacks (pieceBb, board) {
     this.setContext(board)
     return Direction.kingMoves(pieceBb, this.occupied, this.occupiable,
-      this.blackRookBb, this.castleStatus, this.inCheck)
+      this.blackRookBb, this.castleStatus, this.inCheck, this.castleable)
   }
 
   defends (pieceBb, board) {

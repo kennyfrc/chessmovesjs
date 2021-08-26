@@ -263,8 +263,8 @@ class Direction {
     return this.rookRays(bb, occupied, occupiable) | this.bishopRays(bb, occupied, occupiable)
   }
 
-  static kingMoves (bb, occupied, occupiable, rookBb, castleStatus, inCheck) {
-    const castlingMoves = inCheck ? 0n : this.castleCheck(bb, occupied, occupiable, rookBb, castleStatus)
+  static kingMoves (bb, occupied, occupiable, rookBb, castleStatus, inCheck, castleable) {
+    const castlingMoves = inCheck ? 0n : this.castleCheck(bb, occupied, rookBb, castleStatus, castleable)
     const bareKingMoves = this.bareKingMoves(bb)
     return (this.bareKingMoves(bb) | castlingMoves) & occupiable
   }
@@ -279,17 +279,17 @@ class Direction {
     }
   }
 
-  static castleCheck (kingBb, occupied, occupiable, rookBb, castleStatus) {
+  static castleCheck (kingBb, occupied, rookBb, castleStatus, castleable) {
     let castlingMoves = 0n
     rookBb &= castleStatus
     if (rookBb === 0n) {
       return castlingMoves
     }
     const kingSq = BitHelper.bitScanFwd(kingBb)
-    castlingMoves |= CastleRay.canCastleQs(kingSq, occupied, occupiable)
+    castlingMoves |= CastleRay.canCastleQs(kingSq, occupied, castleStatus, castleable)
       ? CastleRay.setQsCastleMove(kingSq)
       : 0n
-    castlingMoves |= CastleRay.canCastleKs(kingSq, occupied, occupiable)
+    castlingMoves |= CastleRay.canCastleKs(kingSq, occupied, castleStatus, castleable)
       ? CastleRay.setKsCastleMove(kingSq)
       : 0n
     return castlingMoves
@@ -305,16 +305,18 @@ class CastleRay {
     return BitHelper.setBit(0n, kingSq + 2)
   }
 
-  static canCastleKs (kingSq, occupied, occupiable) {
-    const ksCastleRays = Ray.castlingPosRays(kingSq, occupied) & occupiable
+  static canCastleKs (kingSq, occupied, castleStatus, castleable) {
+    const ksCastleRays = Ray.castlingPosRays(kingSq, occupied) & castleable
     const kingCanSeeKsSq = BitHelper.bitScanRev(ksCastleRays)
-    return kingCanSeeKsSq === 62 || kingCanSeeKsSq === 6
+    return (kingCanSeeKsSq === 62 && (castleStatus & BoardHelper.blackKsCastleRookSq()) !== 0n )
+      || (kingCanSeeKsSq === 6 && (castleStatus & BoardHelper.whiteKsCastleRookSq()) !== 0n )
   }
 
-  static canCastleQs (kingSq, occupied, occupiable) {
-    const qsCastleRays = Ray.castlingNegRays(kingSq, occupied) & occupiable
+  static canCastleQs (kingSq, occupied, castleStatus, castleable) {
+    const qsCastleRays = Ray.castlingNegRays(kingSq, occupied) & castleable
     const kingCanSeeQsSq = BitHelper.bitScanFwd(qsCastleRays)
-    return kingCanSeeQsSq === 57 || kingCanSeeQsSq === 1
+    return (kingCanSeeQsSq === 57 && (castleStatus & BoardHelper.blackQsCastleRookSq()) !== 0n )
+      || (kingCanSeeQsSq === 1 && (castleStatus & BoardHelper.whiteQsCastleRookSq()) !== 0n)
   }
 }
 

@@ -388,7 +388,7 @@ class WhiteKingBoard extends PieceBoard {
   setContext (board) {
     this.blackBb = board.blackBb
     this.occupied = board.bb | board.whiteKingDangerSquares
-    this.occupiable = ~board.whiteBb
+    this.occupiable = ~board.whiteBb & ~board.whiteKingDangerSquares
     this.castleable = ~board.bb
     this.whiteRookBb = board.whiteRookBb
     this.castleStatus = board.castleStatus
@@ -417,7 +417,7 @@ class BlackKingBoard extends PieceBoard {
   setContext (board) {
     this.whiteBb = board.whiteBb
     this.occupied = board.bb | board.blackKingDangerSquares
-    this.occupiable = ~board.blackBb
+    this.occupiable = ~board.blackBb & ~board.blackKingDangerSquares
     this.castleable = ~board.bb
     this.blackRookBb = board.blackRookBb
     this.castleStatus = board.castleStatus

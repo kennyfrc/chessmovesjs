@@ -42,6 +42,7 @@ class Board {
     this.whiteQueenBb = 0n
     this.whiteMinorBb = 0n
     this.whiteMajorBb = 0n
+    this.whiteSliderBb = 0n
   }
 
   initBlackBitBoards () {
@@ -54,6 +55,7 @@ class Board {
     this.blackQueenBb = 0n
     this.blackMinorBb = 0n
     this.blackMajorBb = 0n
+    this.blackSliderBb = 0n
   }
 
   initCheckEvasionData () {
@@ -66,8 +68,8 @@ class Board {
     this.blackKingDangerSquares = 0n
     this.ourCheckerRay = 0n
     this.theirCheckerRay = 0n
-    this.rayBehindWhiteKing = 0n
-    this.rayBehindBlackKing = 0n
+    this.whiteCheckerRay = 0n
+    this.blackCheckerRay = 0n
   }
 
   initPinAndXrayData () {
@@ -272,6 +274,8 @@ class Board {
     this.blackMinorBb = this.blackKnightBb | this.blackBishopBb
     this.blackBb = this.blackMajorBb | this.blackMinorBb | this.blackPawnBb |
       this.blackKingBb
+    this.whiteSliderBb = this.whiteMajorBb | this.whiteBishopBb
+    this.blackSliderBb = this.blackMajorBb | this.blackBishopBb
   }
 
   setBoardBb () {
@@ -346,8 +350,8 @@ class Board {
   }
 
   setBlockers () {
-    const opponentsSide = this.whiteToMove ? 'bs' : 'ws'
-    const ourSide = opponentsSide === 'ws' ? 'bs' : 'ws'
+    const opponentsSide = this.whiteToMove ? 'b' : 'w'
+    const ourSide = opponentsSide === 'w' ? 'b' : 'w'
     const theirBlockers = ThreatBoard.for(opponentsSide, this) & this.bb
     const ourBlockers = ThreatBoard.for(ourSide, this) & this.bb
     this.theirBlockers = theirBlockers
@@ -357,19 +361,22 @@ class Board {
   setXrayDangerSqs () {
     const opponentsSide = this.whiteToMove ? 'bs' : 'ws'
     const ourPieceBb = this.whiteToMove ? this.whiteBb : this.blackBb
-    const blockers = this.getTheirBlockers() | this.getOurBlockers()
+    const theirPieceBb = this.whiteToMove ? this.blackBb : this.whiteBb
+    const blockers = this.getTheirBlockers()
     const boardProxyNoBlockers = new BoardProxy(this)
-    boardProxyNoBlockers.bb = boardProxyNoBlockers.bb ^ blockers
+    boardProxyNoBlockers.bb = boardProxyNoBlockers.bb ^ (blockers)
     this.xrayDangerSqs = ThreatBoard.for(opponentsSide, boardProxyNoBlockers, true)
     this.ourPinList = boardProxyNoBlockers.ourPinList
     this.theirCheckerRay = boardProxyNoBlockers.theirCheckerRay
+    this.whiteCheckerRay = boardProxyNoBlockers.whiteCheckerRay
+    this.blackCheckerRay = boardProxyNoBlockers.blackCheckerRay
   }
 
   setXrayAttackSqs () {
     const ourSide = this.whiteToMove ? 'ws' : 'bs'
     const theirPieceBb = this.whiteToMove ? this.blackBb : this.whiteBb
-    const blockers = this.getTheirBlockers() | this.getOurBlockers()
     const boardProxyNoBlockers = new BoardProxy(this)
+    const blockers = this.getOurBlockers()
     boardProxyNoBlockers.bb = boardProxyNoBlockers.bb ^ blockers
     this.xrayAttackSqs = ThreatBoard.for(ourSide, boardProxyNoBlockers, false)
     this.theirPinList = boardProxyNoBlockers.theirPinList

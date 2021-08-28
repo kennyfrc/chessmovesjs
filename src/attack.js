@@ -76,6 +76,22 @@ class Ray {
     return behindRay
   }
 
+  static seekCheckerRay (sourceSq, targetBb, occupiedWoKing) {
+    let ray = 0n
+    let behindRay = 0n
+    const directions = [8, 9, 1, -7, -8, -9, -1, 7]
+    for (let i = 0; i < directions.length; i++) {
+      ray = RayCompass.seek(directions[i], sourceSq, occupiedWoKing)
+      behindRay = RayCompass.seek(-(directions[i]), sourceSq, occupiedWoKing)
+      if ((ray & targetBb) !== 0n) { 
+        break
+      }
+      ray = 0n
+      behindRay = 0n
+    }
+    return ray | behindRay
+  }
+
   // basic board rays
   static rank (sq) {
     return BoardHelper.firstRank() << (BigInt(sq) & 56n)
@@ -266,7 +282,7 @@ class Direction {
   static kingMoves (bb, occupied, occupiable, rookBb, castleStatus, inCheck, castleable) {
     const castlingMoves = inCheck ? 0n : this.castleCheck(bb, occupied, rookBb, castleStatus, castleable)
     const bareKingMoves = this.bareKingMoves(bb)
-    return (this.bareKingMoves(bb) | castlingMoves) & occupiable
+    return (bareKingMoves | castlingMoves) & occupiable
   }
 
   static bareKingMoves (bb) {

@@ -152,24 +152,7 @@ describe('Board', function () {
       const board = new Board()
       board.parseFenToBoard('8/8/8/2k5/3Pp3/8/8/4K3 b - d3 0 1')
 
-      assert.equal(board.legalMoves()[0].from, 34)
-      assert.equal(board.legalMoves()[0].to, 25)
-      assert.equal(board.legalMoves()[1].from, 34)
-      assert.equal(board.legalMoves()[1].to, 26)
-      assert.equal(board.legalMoves()[2].from, 34)
-      assert.equal(board.legalMoves()[2].to, 27)
-      assert.equal(board.legalMoves()[3].from, 34)
-      assert.equal(board.legalMoves()[3].to, 33)
-      assert.equal(board.legalMoves()[4].from, 34)
-      assert.equal(board.legalMoves()[4].to, 35)
-      assert.equal(board.legalMoves()[5].from, 34)
-      assert.equal(board.legalMoves()[5].to, 41)
-      assert.equal(board.legalMoves()[6].from, 34)
-      assert.equal(board.legalMoves()[6].to, 42)
-      assert.equal(board.legalMoves()[7].from, 34)
-      assert.equal(board.legalMoves()[7].to, 43)
-      assert.equal(board.legalMoves()[8].from, 28)
-      assert.equal(board.legalMoves()[8].to, 19)
+      assert.equal(board.legalMoves().length, 9)
     })
 
     it('knows that king cannot capture a defended piece', function () {
@@ -1104,9 +1087,15 @@ describe('Perft Tricky Positions', function () {
   it('maughan 1', function () {
     const engine = new Engine('8/3k4/8/4b3/1p1p1p2/8/1PPRP2K/8 w - -')
 
-    // if pinned pawn (pieceBb), then cancel the epSqBb move in attacks()
     engine.make(engine.board.legalMoves()[11])
+
     assert.equal(engine.board.legalMoves().length, 18)
+  })
+
+  it('maughan 2', function () {
+    const engine = new Engine('8/4rP2/8/8/4pk2/8/3P2PP/5RK1 b - - 1 1')
+
+    assert.equal(engine.board.legalMoves().length, 3)
   })
 
   it('tc1 1 - pins', function () {

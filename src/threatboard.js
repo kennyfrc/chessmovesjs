@@ -34,6 +34,8 @@ class ThreatBoard {
           let attacks = pieceBoard.attacks(pieceBb, board)
           let rayBehindKing = 0n
           if (xRaysToUs) {
+            const theirSliderBb = board.whiteToMove ? board.blackSliderBb : board.whiteSliderBb
+            if ((theirSliderBb & pieceBb) === 0n) { return attacks }
             const ourKingBb = board.whiteToMove ? board.whiteKingBb : board.blackKingBb
             const theyOccupied = board.whiteToMove ? board.blackBb : board.whiteBb
             const weOccupied = board.whiteToMove ? board.whiteBb : board.blackBb
@@ -47,18 +49,19 @@ class ThreatBoard {
               if (blockersFromOurKing === 1 && (pinnerRay !== 0n)) {
                 board.ourPinList.push(new Pin(pieceBb, pinnerRay, blockersFromOurKing, kingPinnerBb))
               }
-              if (blockersBehindOurKing >= 1) {
-                if (board.whiteToMove) {
-                  board.rayBehindWhiteKing |= rayBehindKing
-                } else {
-                  board.rayBehindBlackKing |= rayBehindKing
-                }
-              }
               if (blockersFromOurKing === 0 && (pinnerRay !== 0n)) {
+                const checkerRay = Ray.seekCheckerRay(kingSourceSq, kingPinnerBb, theyOccupied ^ ourKingBb)
+                if (board.whiteToMove) {
+                  board.blackCheckerRay |= pinnerRay  
+                } else {
+                  board.whiteCheckerRay |= pinnerRay  
+                }
                 board.theirCheckerRay |= pinnerRay
               }
             }
           } else {
+            const ourSliderBb = board.whiteToMove ? board.whiteSliderBb : board.blackSliderBb
+            if ((ourSliderBb & pieceBb) === 0n) { return attacks }
             const theirKingBb = board.whiteToMove ? board.blackKingBb : board.whiteKingBb
             const theyOccupied = board.whiteToMove ? board.blackBb : board.whiteBb
             const weOccupied = board.whiteToMove ? board.whiteBb : board.blackBb
@@ -72,14 +75,13 @@ class ThreatBoard {
               if (blockersFromTheirKing === 1 && (pinnerRay !== 0n)) {
                 board.theirPinList.push(new Pin(pieceBb, pinnerRay, blockersFromTheirKing, kingPinnerBb))   
               }
-              if (blockersBehindTheirKing >= 1) {
-                if (board.whiteToMove) {
-                  board.rayBehindBlackKing |= rayBehindKing
-                } else {
-                  board.rayBehindWhiteKing |= rayBehindKing
-                }
-              }
               if (blockersFromTheirKing === 0 && (pinnerRay !== 0n)) {
+                const checkerRay = Ray.seekCheckerRay(kingSourceSq, kingPinnerBb, theyOccupied ^ ourKingBb)
+                if (board.whiteToMove) {
+                  board.whiteCheckerRay |= pinnerRay  
+                } else {
+                  board.blackCheckerRay |= pinnerRay  
+                }
                 board.ourCheckerRay |= pinnerRay
               }
             }

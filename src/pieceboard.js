@@ -162,7 +162,6 @@ class BlackPawnBoard extends PieceBoard {
   }
 
   attacks (pieceBb, board) {
-    if (board.epSqIdx === 46) { throw new Error('wtf?')}
     this.setContext(board)
     return this.initialMoves(pieceBb) | this.doublePushMoves(pieceBb)
   }

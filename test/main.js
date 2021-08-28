@@ -747,7 +747,7 @@ describe('Engine', function () {
       assert.equal(engine.board.pieceBoardList.K.bb, 32n)
       assert.equal(engine.board.bb, 10751949189452937125n)
       assert.equal(engine.board.posKey, 1377952623175419136n)
-      assert.equal(engine.board.castleStatus, 9295429630892703873n)
+      assert.equal(engine.board.castleStatus, 9295429630892703744n)
 
       engine.unmake()
       assert.equal(engine.board.pieceBoardList.K.bb, originalKingBb)
@@ -791,7 +791,7 @@ describe('Engine', function () {
       assert.equal(engine.board.pieceBoardList.R.bb, 33n)
       assert.equal(engine.board.bb, 10751949189452937061n)
       assert.equal(engine.board.posKey, 678716279420615168n)
-      assert.equal(engine.board.castleStatus, 9295429630892703745n)
+      assert.equal(engine.board.castleStatus, 9295429630892703744n)
 
       engine.unmake()
       assert.equal(engine.board.pieceBoardList.K.bb, originalKingBb)
@@ -1091,6 +1091,22 @@ describe('Perft Tricky Positions', function () {
     engine.make(engine.board.legalMoves()[37])
 
     assert.equal(engine.board.legalMoves().length, 46)
+  })
+
+  it('kiwipete 6', function () {
+    const engine = new Engine('1r2k2r/p1ppqpb1/bn2pnp1/1B1PN3/1p2P3/2N2Q1p/PPPB1PPP/R4K1R b k - 3 2')
+
+    engine.make(engine.board.legalMoves()[38])
+
+    assert.equal(engine.board.legalMoves().length, 49)
+  })
+
+  it('maughan 1', function () {
+    const engine = new Engine('8/3k4/8/4b3/1p1p1p2/8/1PPRP2K/8 w - -')
+
+    // if pinned pawn (pieceBb), then cancel the epSqBb move in attacks()
+    engine.make(engine.board.legalMoves()[11])
+    assert.equal(engine.board.legalMoves().length, 18)
   })
 
   it('tc1 1 - pins', function () {

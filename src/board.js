@@ -310,7 +310,6 @@ class Board {
       .map((sq) => BitHelper.setBit(0n, sq))
       .forEach((pieceBb) => {
         const threats = pieceBoard.rawPawnAttacks(pieceBb, boardProxy)
-
         this.setCheckers(threats, pieceBb, boardProxy)
         this.setDangerSquares(threats, pieceBb)
       })

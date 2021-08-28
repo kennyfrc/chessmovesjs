@@ -404,18 +404,8 @@ class Engine {
     return (castleStatus & BoardHelper.blackQsCastleRookSq() & fromBit) !== 0n && fenChar === 'r'
   }
 
-  isPawnBesideTheirPinnedPiece (pawnToBit) { // kind of messy
-    let isBeside = false
-    for (let i = 0; i < this.board.theirPinList.length; i++) {
-      const pinnedPiece = this.board.theirPinList[i].pinnerRay & this.board.ourBlockers
-      isBeside = (Direction.beside(pawnToBit) & pinnedPiece) !== 0n
-      if (isBeside) { break }
-    }
-    return isBeside
-  }
-
   handleMoveWithEpRisk (epRisk, toBit) {
-    if ((epRisk && epRisk !== 0n) && (!this.isPawnBesideTheirPinnedPiece(toBit))) {
+    if (epRisk && (epRisk !== 0n)) {
       this.board.epSqBb = epRisk
       this.board.epSqIdx = BitHelper.bitScanFwd(epRisk)
       this.board.epCaptureBb = toBit

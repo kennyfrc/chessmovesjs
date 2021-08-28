@@ -8,6 +8,7 @@ const Mask = require('./mask.js').Mask
 const ThreatBoard = require('./threatboard.js').ThreatBoard
 const Pieces = require('./pieces.js').Pieces
 const PieceStatus = require('./pieces.js').PieceStatus
+const BoardProxy = require('./boardproxy.js').BoardProxy
 
 class MoveList {
   static for (fenPiece, board) {
@@ -17,6 +18,7 @@ class MoveList {
       const pieceBb = BitHelper.setBit(0n, fromIdx)
       let attacks = CheckEvasions.filter(fenPiece, pieceBoard, pieceBb, board)
       attacks = Pins.filter(fenPiece, attacks, pieceBb, board)
+      attacks = EnPassant.filter(fenPiece, attacks, pieceBb, board)
       const toIdxs = SquareHelper.indicesFor(attacks)
       if (this.isPawnAndPromotable(fenPiece, pieceBb)) {
         moveList.push(this.createPromotions(fenPiece, pieceBb, fromIdx, toIdxs, pieceBoard))
@@ -99,6 +101,20 @@ class Pins {
           attacks = pinnedPiece ? attacks & pin.pinnerRay : attacks
         }
       })      
+    }
+    return attacks
+  }
+}
+
+class EnPassant {
+  static filter (fenPiece, attacks, pieceBb, board) {
+    if ('Pp'.includes(fenPiece) && ((board.epSqBb & attacks) !== 0n)) {
+      const ourKingBb = board.whiteToMove ? board.whiteKingBb : board.blackKingBb
+      const opponentsSide = this.whiteToMove ? 'bs' : 'ws'
+      const boardProxyNoEpPieces = new BoardProxy(board)
+      boardProxyNoEpPieces.bb ^= (pieceBb | board.epCaptureBb)
+      const dangerSqs = ThreatBoard.for(opponentsSide, boardProxyNoEpPieces, true)
+      attacks ^= (ourKingBb & dangerSqs) !== 0n ? board.epSqBb : 0n 
     }
     return attacks
   }

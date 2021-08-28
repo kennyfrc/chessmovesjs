@@ -36,7 +36,6 @@ class Engine {
     const divide = {}
     let count = 0
     let nodes = 0
-    let debugMoves;
     const leaf = (depth === 2)
     const moves = this.board.legalMoves()
 
@@ -47,7 +46,7 @@ class Engine {
       } else {
         this.make(moves[i])
         count = leaf 
-          ? this.board.legalMoves().length 
+          ? this.board.legalMoves().length
           : this.perft(depth - 1, false)
         nodes += count
         this.unmake()
@@ -70,6 +69,7 @@ class Engine {
         console.log(`${san}: ${orderedMoves[san]}`)
       })
       console.log(`\n` + `Nodes searched: ${nodes}` + `\n` + `Time spent: ${Date.now() - start} ms`)
+      console.log(`Nodes per second: ${Math.round(nodes / (Date.now() - start)*1000)} Nodes/s`)
     }
 
     return nodes

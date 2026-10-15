@@ -7,6 +7,26 @@ This is a chess move generator that uses native 64-bit integers (BigInts).
 Passes perft on the standard test positions (`npm run perft`), and to full
 published depth (e.g. startpos perft 6, kiwipete perft 5).
 
+## Usage
+
+```js
+import { Engine } from 'chessmovesjs' // or require('chessmovesjs')
+
+const engine = new Engine('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1')
+engine.perft(5) // 4865609
+```
+
+## Development
+
+The toolchain is [Vite+](https://viteplus.dev) (`vp`). Node 22.18+, 24.11+ or 26+.
+
+- `npm run build`: bundle `dist/index.mjs` and `dist/index.cjs` (`vp pack`)
+- `npm test`: all tests (`vp test`); `npm run perft` runs only the perft suite
+- `npm run lint`: `standard` style and rules through Oxlint (`lint/standard.mjs`)
+- `npm run check`: lint, as `vp check`; formatting is off because Oxfmt
+  only formats Prettier style
+- `npm run bench`: perft speed on the standard positions
+
 ## How it works
 
 - Sliders use magic bitboards. `scripts/find-magics.js` generates `src/magic.js`.

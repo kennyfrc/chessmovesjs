@@ -308,7 +308,7 @@ class ViewHelper {
 class SquareHelper {
   static for (rankFile) {
     // Little-Endian Rank-File Mapping
-    /* eslint-disable object-property-newline, key-spacing */
+    /* eslint-disable @stylistic/object-property-newline, @stylistic/key-spacing */
     const indexMap = {
       a8: 56, b8: 57, c8: 58, d8: 59, e8: 60, f8: 61, g8: 62, h8: 63,
       a7: 48, b7: 49, c7: 50, d7: 51, e7: 52, f7: 53, g7: 54, h7: 55,
@@ -319,14 +319,14 @@ class SquareHelper {
       a2:  8, b2:  9, c2: 10, d2: 11, e2: 12, f2: 13, g2: 14, h2: 15,
       a1:  0, b1:  1, c1:  2, d1:  3, e1:  4, f1:  5, g1:  6, h1:  7
     }
-    /* eslint-enable object-property-newline, key-spacing */
+    /* eslint-enable @stylistic/object-property-newline, @stylistic/key-spacing */
     return indexMap[rankFile]
   }
 
   static uciFor (move) {
     const from = move.from
     const to = move.to
-    /* eslint-disable object-property-newline, key-spacing */
+    /* eslint-disable @stylistic/object-property-newline, @stylistic/key-spacing */
     const indexMap = [
       'a1', 'b1', 'c1', 'd1', 'e1', 'f1', 'g1', 'h1',
       'a2', 'b2', 'c2', 'd2', 'e2', 'f2', 'g2', 'h2',
@@ -337,7 +337,7 @@ class SquareHelper {
       'a7', 'b7', 'c7', 'd7', 'e7', 'f7', 'g7', 'h7',
       'a8', 'b8', 'c8', 'd8', 'e8', 'f8', 'g8', 'h8'
     ]
-    /* eslint-enable object-property-newline, key-spacing */
+    /* eslint-enable @stylistic/object-property-newline, @stylistic/key-spacing */
     return indexMap[from] + indexMap[to]
   }
 

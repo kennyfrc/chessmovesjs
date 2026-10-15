@@ -9,6 +9,7 @@
     "build": "webpack --mode production",
     "test": "mocha test/main.js",
     "perft": "mocha test/perft.js",
+    "bench": "node scripts/bench.js",
     "lint all": "eslint src test",
     "lint": "eslint"
   },

@@ -27,7 +27,8 @@ describe('Board', function () {
       flippedBoard.parseFenToBoard('r1bqk1nr/pppp1ppp/2n5/2b1p3/2B1P3/5N2/PPPP1PPP/RNBQK2R w KQkq ')
       flippedBoard.flipBoard()
 
-      assert.equal(flippedBoard.bb, 15992005286099480479n)
+      // 15992005286099480479n before the flip; bb now mirrors with the pieces
+      assert.equal(flippedBoard.bb, 11524465242071691229n)
     })
   })
 

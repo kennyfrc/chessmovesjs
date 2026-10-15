@@ -1,684 +1,336 @@
 const Board = require('./board.js').Board
-const Pieces = require('./pieces.js').Pieces
-const ViewHelper = require('./helpers.js').ViewHelper
-const BoardHelper = require('./helpers.js').BoardHelper
-const BitHelper = require('./helpers.js').BitHelper
-const PieceStatus = require('./pieces.js').PieceStatus
-const SquareHelper = require('./helpers.js').SquareHelper
-const Direction = require('./attack.js').Direction
+const MoveList = require('./move.js').MoveList
+const MoveKind = require('./move.js').MoveKind
+const CastleRights = require('./helpers.js').CastleRights
+const Piece = require('./pieces.js').Piece
+const BoardSlot = require('./pieces.js').BoardSlot
+const SQUARE_BB = require('./attack.js').SQUARE_BB
+
+const EMPTY = -1
+const MAX_MOVES = 256 // per position; the most any legal position has is 218
+const MAX_DEPTH = 128
 
 class ObjectHelper {
   static orderKeys (unorderedObj) {
     return Object.keys(unorderedObj).sort().reduce(
-      (obj, key) => { 
-        obj[key] = unorderedObj[key]; 
-        return obj;
-      }, 
+      (obj, key) => {
+        obj[key] = unorderedObj[key]
+        return obj
+      },
       {}
     )
   }
 }
 
+class CastleMasks {
+  // the castle rights that survive a move touching each square
+  static build () {
+    const masks = new Int8Array(64).fill(15)
+    masks[0] = 15 & ~CastleRights.Q
+    masks[7] = 15 & ~CastleRights.K
+    masks[4] = 15 & ~(CastleRights.K | CastleRights.Q)
+    masks[56] = 15 & ~CastleRights.q
+    masks[63] = 15 & ~CastleRights.k
+    masks[60] = 15 & ~(CastleRights.k | CastleRights.q)
+    return masks
+  }
+}
+
+const CASTLE_MASKS = CastleMasks.build()
+
+/**
+ * Makes and unmakes moves on a Board. Move codes come from
+ * MoveList.generate; make(move) also takes the move objects
+ * that board.legalMoves() returns.
+ * Everything unmake needs is kept in typed-array stacks, one entry per move.
+ */
 class Engine {
   constructor (fen, seed) {
     this.board = new Board(seed)
     this.board.parseFenToBoard(fen)
-    this.moveStack = new LinkedList()
-    this.captureStack = new LinkedList()
-    this.halfMoveStack = new LinkedList()
-    this.epStack = new LinkedList()
-    this.castleStack = new LinkedList()
-    this.posKeys = []
+    this.moveBuffer = new Int32Array(MAX_MOVES * MAX_DEPTH)
+    this.movesMade = 0
+    this.initStacks(256)
+    this.keyHistory[0] = this.board.bitboards[BoardSlot.POS_KEY]
   }
 
-  perft (depth, root=true) {
-    const start = Date.now()  
+  initStacks (size) {
+    this.moveStack = new Int32Array(size)
+    this.captureStack = new Int8Array(size)
+    this.castleStack = new Int8Array(size)
+    this.epStack = new Int8Array(size)
+    this.halfMoveStack = new Int32Array(size)
+    // keyHistory[n] is the position key after n moves
+    this.keyHistory = new BigUint64Array(size + 1)
+    this.keyHistory32 = new Int32Array(this.keyHistory.buffer)
+  }
+
+  growStacks () {
+    const grow = (stack, size) => {
+      const bigger = new stack.constructor(size)
+      bigger.set(stack)
+      return bigger
+    }
+    const size = this.moveStack.length * 2
+    this.moveStack = grow(this.moveStack, size)
+    this.captureStack = grow(this.captureStack, size)
+    this.castleStack = grow(this.castleStack, size)
+    this.epStack = grow(this.epStack, size)
+    this.halfMoveStack = grow(this.halfMoveStack, size)
+    this.keyHistory = grow(this.keyHistory, size + 1)
+    this.keyHistory32 = new Int32Array(this.keyHistory.buffer)
+  }
+
+  perft (depth, root = true) {
+    const start = Date.now()
     const divide = {}
-    let count = 0
+    const moves = this.moveBuffer
+    const end = MoveList.generate(this.board, moves, 0)
     let nodes = 0
-    const leaf = (depth === 2)
-    const moves = this.board.legalMoves()
 
-    for (let i = 0; i < moves.length; i++) {
-      if (root && depth <= 1) {
-        count = 1
-        nodes += 1
-      } else {
-        this.make(moves[i])
-        count = leaf 
-          ? this.board.legalMoves().length
-          : this.perft(depth - 1, false)
-        nodes += count
-        this.unmake()
+    for (let i = 0; i < end; i++) {
+      let count = 1
+      if (depth > 1) {
+        this.makeMove(moves[i])
+        count = this.countNodes(depth - 1, end)
+        this.unmakeMove()
       }
-      if (root) {
-        if (moves[i].promotion) {
-          const promoteTo = moves[i].promoteTo.toLowerCase()
-          divide[SquareHelper.uciFor(moves[i])+promoteTo] = count  
-        } else {
-          divide[SquareHelper.uciFor(moves[i])] = count
-        }
-        
-      }
+      nodes += count
+      if (root) { divide[MoveList.uciFor(moves[i])] = count }
     }
 
-    if (root) {
-      const orderedMoves = ObjectHelper.orderKeys(divide)
-      console.log(`go perft ${depth}`)
-      Object.keys(orderedMoves).forEach((san) => {
-        console.log(`${san}: ${orderedMoves[san]}`)
-      })
-      console.log(`\n` + `Nodes searched: ${nodes}` + `\n` + `Time spent: ${Date.now() - start} ms`)
-      console.log(`Nodes per second: ${Math.round(nodes / (Date.now() - start)*1000)} Nodes/s`)
-    }
-
+    if (root) { this.printDivide(depth, divide, nodes, Date.now() - start) }
     return nodes
   }
 
+  // perft below the root; moves for this ply live at moveBuffer[start...]
+  countNodes (depth, start) {
+    const moves = this.moveBuffer
+    const end = MoveList.generate(this.board, moves, start)
+    if (depth === 1) { return end - start }
+
+    let nodes = 0
+    for (let i = start; i < end; i++) {
+      this.makeMove(moves[i])
+      nodes += this.countNodes(depth - 1, end)
+      this.unmakeMove()
+    }
+    return nodes
+  }
+
+  printDivide (depth, divide, nodes, elapsedMs) {
+    const orderedMoves = ObjectHelper.orderKeys(divide)
+    console.log(`go perft ${depth}`)
+    Object.keys(orderedMoves).forEach((uci) => {
+      console.log(`${uci}: ${orderedMoves[uci]}`)
+    })
+    console.log('\n' + `Nodes searched: ${nodes}` + '\n' + `Time spent: ${elapsedMs} ms`)
+    console.log(`Nodes per second: ${Math.round(nodes / Math.max(elapsedMs, 1) * 1000)} Nodes/s`)
+  }
+
   make (move) {
-    const fromIdx = move.from
-    const toIdx = move.to
-    const fromBit = move.fromBit
-    const toBit = move.toBit
-    const check = move.check
-    const capture = move.capture
-    const fenChar = move.fenChar
-    const castle = move.castle
-    const epRisk = move.epRisk
-    const ep = move.ep
-    const promotion = move.promotion
-    const promoteTo = move.promoteTo
-    const pieceList = this.board.pieceBoardList
-    const castleStatus = this.board.castleStatus
-    const epCaptureBb = this.board.epCaptureBb
-    const posKey = this.board.posKey
-    const pieceBb = 0n
-    const pieceBoard = null
-    const pieceBoardWCapture = null
-    const rookCastleFrom = null
-    const rookCastleTo = null
-
-    // update stacks
-    this.castleStack.append(castleStatus)
-    this.moveStack.append(move)
-
-    // these are moves that require past context
-    this.handleMakeCaptureMoves(capture, pieceList, toBit, toIdx, ep, move, fenChar)
-    this.handleMakeEpCaptureMoves(move, capture, pieceList, toBit, ep, epCaptureBb)
-    this.updateEpStack()
-    this.handleMoveWithEpRisk(epRisk, toBit)
-
-    // reset the context
-    this.board.initWhiteBitBoards()
-    this.board.initBlackBitBoards()
-    this.board.initCheckEvasionData()
-    this.board.initPinAndXrayData()
-
-    // make moves now that we're on a clean slate
-    this.handleMakeKingMoves(castleStatus, fenChar)
-    this.handleMakeCastleStatuses(castleStatus, fenChar, fromBit)
-    this.handleRookMovesWhenCastling(castle, toIdx, pieceList)
-    this.handlePieceMove(pieceList, fromBit, toBit, promotion, promoteTo, fenChar)
-    this.handlePosKeysDueToMove(fenChar, fromIdx, toIdx, promotion, promoteTo)
-    this.handleMakeHalfMoveNo(fenChar)
-    this.handleThreeFoldRepetition()
-    this.incrementFullMoveNo()
-    this.updateSideToMove()
-
-    this.board.setPieceContext()    
-    this.posKeys.push(this.board.posKey)
-    this.board.ply += 1
+    this.makeMove(move.code)
   }
 
   unmake () {
-    const lastMove = this.moveStack.pop()
-    const epNode = this.epStack.pop() || new EpNode()
-    const lastCastleStatus = this.castleStack.pop()
-    const fromIdx = lastMove.from
-    const toIdx = lastMove.to
-    const fromBit = lastMove.fromBit
-    const toBit = lastMove.toBit
-    const check = lastMove.check
-    const capture = lastMove.capture
-    const fenChar = lastMove.fenChar
-    const castle = lastMove.castle
-    const promotion = lastMove.promotion
-    const promoteTo = lastMove.promoteTo
-    const ep = lastMove.ep
-    const epCaptureBb = lastMove.epBb || epNode.epCaptureBb
-    const epSqIdx = this.board.epSqIdx || epNode.epSqIdx
-    const epSqBb = this.board.epSqBb || epNode.epSqBb
-    const pieceList = this.board.pieceBoardList
-    const posKey = this.board.posKey
-    const pieceBb = 0n
-    const pieceBoard = null
-    const capturedPieceBoard = null
+    this.unmakeMove()
+  }
 
-    // these are moves that require past context
-    this.handleUnMakeCaptureMoves(lastMove, pieceList, toBit, toIdx, ep)
-    this.handleUnMakeEpCaptureMoves(lastMove, pieceList, ep, epCaptureBb, toIdx)
-    this.handleUnMakeEpRisks(epSqIdx, this.board, epNode)
+  makeMove (code) {
+    const board = this.board
+    const from = code & 63
+    const to = (code >> 6) & 63
+    const kind = code >>> 12
+    const piece = board.squares[from]
+    const captured = board.squares[to]
+    const color = board.whiteToMove ? 0 : 1
+    this.saveState(code, captured)
 
-    // reset the context
-    this.board.initWhiteBitBoards()
-    this.board.initBlackBitBoards()
-    this.board.initCheckEvasionData()
-    this.board.initPinAndXrayData()
-
-    // unmake moves now that we're on a clean slate
-    this.handleUnMakeKingMoves(fenChar, lastCastleStatus)
-    this.handleUnMakeCastleStatuses(lastCastleStatus, fenChar, fromBit)
-    this.handleRookMovesWhenCastling(castle, toIdx, pieceList)
-    this.unMakePieceMove(pieceList, fromBit, toBit, promotion, promoteTo, fenChar)
-    this.unMakePosKeysDueToMove(fenChar, fromIdx, toIdx, promotion, promoteTo)
-    this.handleUnMakeHalfMoveNo(fenChar)
-    this.decrementFullMoveNo()
+    if (captured !== EMPTY) { this.removePiece(captured, to) }
+    this.movePiece(piece, from, to)
+    this.handleSpecialMoves(kind, color, from, to)
+    if (piece === color * 6 + Piece.KING) { board.kingSqs[color] = to }
+    this.updateCastleRights(from, to)
+    this.updateEnPassant(kind, from, to)
+    this.updateHalfMoveClock(piece, captured)
+    this.updateOccupancy()
+    this.incrementFullMoveNo()
     this.updateSideToMove()
-    this.board.setPieceContext()
-    this.posKeys.pop()
-    this.board.ply -= 1
+
+    board.ply += 1
+    this.movesMade += 1
+    this.keyHistory[this.movesMade] = board.bitboards[BoardSlot.POS_KEY]
+    this.handleThreeFoldRepetition()
   }
 
-  handleThreeFoldRepetition () {
-    const length = this.posKeys.length
-    this.board.isThreeFoldRepetition = ((this.posKeys[length-1] === this.posKeys[length-5]) 
-        && (this.posKeys[length-5] === this.posKeys[length-9]))
+  unmakeMove () {
+    const board = this.board
+    const m = this.movesMade - 1
+    const code = this.moveStack[m]
+    const from = code & 63
+    const to = (code >> 6) & 63
+    const kind = code >>> 12
+    this.updateSideToMove()
+    this.decrementFullMoveNo()
+    const color = board.whiteToMove ? 0 : 1
+
+    this.undoSpecialMoves(kind, color, from, to)
+    const piece = board.squares[to]
+    this.movePiece(piece, to, from)
+    if (piece === color * 6 + Piece.KING) { board.kingSqs[color] = from }
+    if (this.captureStack[m] !== EMPTY) { this.putPiece(this.captureStack[m], to) }
+    this.restoreState(m)
+    this.updateOccupancy()
+
+    board.ply -= 1
+    this.movesMade = m
+    this.handleThreeFoldRepetition()
   }
 
-  updateEpStack () {
-    this.epStack.append(new EpNode(
-      this.board.epSqBb, 
-      this.board.epSqIdx, 
-      this.board.epCaptureBb)
-    )
+  saveState (code, captured) {
+    const board = this.board
+    const m = this.movesMade
+    if (m + 1 >= this.moveStack.length) { this.growStacks() }
+    this.moveStack[m] = code
+    this.captureStack[m] = captured
+    this.castleStack[m] = board.castleRights
+    this.epStack[m] = board.epSq
+    this.halfMoveStack[m] = board.halfMoveClock
   }
 
-  restoreFromEpStack (epNode) {
-    this.board.epSqBb = epNode.epSqBb
-    this.board.epSqIdx = epNode.epSqIdx
-    this.board.epCaptureBb = epNode.epCaptureBb
+  restoreState (m) {
+    const board = this.board
+    board.castleRights = this.castleStack[m]
+    board.epSq = this.epStack[m]
+    board.halfMoveClock = this.halfMoveStack[m]
+    board.bitboards[BoardSlot.POS_KEY] = this.keyHistory[m]
+  }
+
+  handleSpecialMoves (kind, color, from, to) {
+    switch (kind) {
+      case MoveKind.QUIET:
+      case MoveKind.DOUBLE_PUSH:
+        return
+      case MoveKind.EN_PASSANT:
+        this.removePiece(6 - color * 6 + Piece.PAWN, this.epCaptureSq(color, to))
+        return
+      case MoveKind.CASTLE:
+        this.movePiece(color * 6 + Piece.ROOK, this.castleRookFrom(from, to), this.castleRookTo(from, to))
+        return
+      default:
+        this.removePiece(color * 6 + Piece.PAWN, to)
+        this.putPiece(color * 6 + this.promotedType(kind), to)
+    }
+  }
+
+  undoSpecialMoves (kind, color, from, to) {
+    switch (kind) {
+      case MoveKind.QUIET:
+      case MoveKind.DOUBLE_PUSH:
+        return
+      case MoveKind.EN_PASSANT:
+        this.putPiece(6 - color * 6 + Piece.PAWN, this.epCaptureSq(color, to))
+        return
+      case MoveKind.CASTLE:
+        this.movePiece(color * 6 + Piece.ROOK, this.castleRookTo(from, to), this.castleRookFrom(from, to))
+        return
+      default:
+        this.removePiece(color * 6 + this.promotedType(kind), to)
+        this.putPiece(color * 6 + Piece.PAWN, to)
+    }
+  }
+
+  // the pawn taken en passant sits behind the square we land on
+  epCaptureSq (color, to) {
+    return color === 0 ? to - 8 : to + 8
+  }
+
+  castleRookFrom (kingFrom, kingTo) {
+    return kingTo > kingFrom ? kingTo + 1 : kingTo - 2
+  }
+
+  castleRookTo (kingFrom, kingTo) {
+    return kingTo > kingFrom ? kingTo - 1 : kingTo + 1
+  }
+
+  promotedType (kind) {
+    return kind - MoveKind.PROMOTE_QUEEN + Piece.QUEEN
+  }
+
+  // piece moves, side boards and position key move together
+  movePiece (piece, from, to) {
+    const board = this.board
+    const bbs = board.bitboards
+    bbs[piece] ^= SQUARE_BB[from] | SQUARE_BB[to]
+    bbs[BoardSlot.WHITE + (piece < 6 ? 0 : 1)] ^= SQUARE_BB[from] | SQUARE_BB[to]
+    bbs[BoardSlot.POS_KEY] ^= board.pieceKeys[piece * 64 + from] ^ board.pieceKeys[piece * 64 + to]
+    board.squares[from] = EMPTY
+    board.squares[to] = piece
+  }
+
+  putPiece (piece, sq) {
+    const board = this.board
+    const bbs = board.bitboards
+    bbs[piece] ^= SQUARE_BB[sq]
+    bbs[BoardSlot.WHITE + (piece < 6 ? 0 : 1)] ^= SQUARE_BB[sq]
+    bbs[BoardSlot.POS_KEY] ^= board.pieceKeys[piece * 64 + sq]
+    board.squares[sq] = piece
+  }
+
+  removePiece (piece, sq) {
+    const board = this.board
+    const bbs = board.bitboards
+    bbs[piece] ^= SQUARE_BB[sq]
+    bbs[BoardSlot.WHITE + (piece < 6 ? 0 : 1)] ^= SQUARE_BB[sq]
+    bbs[BoardSlot.POS_KEY] ^= board.pieceKeys[piece * 64 + sq]
+    board.squares[sq] = EMPTY
+  }
+
+  updateOccupancy () {
+    const bbs = this.board.bitboards
+    bbs[BoardSlot.OCCUPIED] = bbs[BoardSlot.WHITE] | bbs[BoardSlot.BLACK]
+  }
+
+  updateCastleRights (from, to) {
+    const board = this.board
+    const rights = board.castleRights & CASTLE_MASKS[from] & CASTLE_MASKS[to]
+    if (rights !== board.castleRights) {
+      board.bitboards[BoardSlot.POS_KEY] ^= board.castleDeltaKeys[rights ^ board.castleRights]
+      board.castleRights = rights
+    }
+  }
+
+  updateEnPassant (kind, from, to) {
+    this.board.epSq = kind === MoveKind.DOUBLE_PUSH ? (from + to) >> 1 : EMPTY
+  }
+
+  updateHalfMoveClock (piece, captured) {
+    const isPawnMove = piece === Piece.PAWN || piece === 6 + Piece.PAWN
+    this.board.halfMoveClock = (isPawnMove || captured !== EMPTY) ? 0 : this.board.halfMoveClock + 1
   }
 
   updateSideToMove () {
-    this.board.whiteToMove = this.board.whiteToMove 
-      ? false 
-      : true
+    this.board.whiteToMove = !this.board.whiteToMove
   }
 
-  // increment / decrement
   incrementFullMoveNo () {
-    this.board.fullMoveNo = this.board.whiteToMove 
-      ? this.board.fullMoveNo
-      : this.board.fullMoveNo + 1
+    if (!this.board.whiteToMove) { this.board.fullMoveNo += 1 }
   }
 
   decrementFullMoveNo () {
-    this.board.fullMoveNo = this.board.whiteToMove 
-      ? this.board.fullMoveNo - 1
-      : this.board.fullMoveNo
+    if (!this.board.whiteToMove) { this.board.fullMoveNo -= 1 }
   }
 
-  // make() helper functions
-  makeCaptures (pieceList, toBit, toIdx, fenChar) {
-    const pieceBoardWCapture = pieceList.firstMatch((piece) => (toBit & piece.bb) !== 0n)
-    pieceBoardWCapture.bb ^= toBit
-    const capturedFenChar = pieceBoardWCapture.fenChar
-    this.board.posKey ^= this.board.pieceKeys[capturedFenChar][toIdx]
-    this.captureStack.append(capturedFenChar)
-    this.resetHalfMoveNo()
+  // same position as 4 and 8 moves ago (the same side is to move)
+  handleThreeFoldRepetition () {
+    const m = this.movesMade
+    this.board.isThreeFoldRepetition = m >= 9 &&
+      this.isSameKey(m, m - 4) && this.isSameKey(m - 4, m - 8)
   }
 
-  makeEpCaptures (move, pieceList, toBit, epCaptureBb) {
-    const pieceBoardWCapture = ((toBit & BoardHelper.sixthRank()) !== 0n)
-      ? pieceList.p
-      : pieceList.P
-    pieceBoardWCapture.bb ^= epCaptureBb
-    const capturedFenChar = pieceBoardWCapture.fenChar
-    const epIdx = BitHelper.bitScanFwd(epCaptureBb)
-    this.board.posKey ^= this.board.pieceKeys[capturedFenChar][epIdx]
-    this.captureStack.append(capturedFenChar)
-    this.resetEnPassantSquares()
-    this.markMoveWithCaptureBb(move, epCaptureBb)
-    this.resetHalfMoveNo()
-  }
-
-  markMoveWithCaptureBb (move, epCaptureBb) {
-    move.epBb = epCaptureBb
-  }
-
-  makeWhiteKingPos () {
-    this.board.castleStatus ^= BoardHelper.whiteCastleSqs()
-    this.board.posKey ^= this.board.castleKeys[0]
-    this.board.posKey ^= this.board.castleKeys[7]
-  }
-
-  makeBlackKingPos () {
-    this.board.castleStatus ^= BoardHelper.blackCastleSqs()
-    this.board.posKey ^= this.board.castleKeys[56]
-    this.board.posKey ^= this.board.castleKeys[63]
-  }
-
-  xorWhiteKsRook (pieceList) {
-    const rook = pieceList.R
-    rook.bb ^= (BoardHelper.whiteKsCastleRookSq() | BitHelper.setBit(0n, 5))
-    this.board.posKey ^= this.board.pieceKeys.R[7]
-    this.board.posKey ^= this.board.pieceKeys.R[5]
-  }
-
-  xorWhiteQsRook (pieceList) {
-    const rook = pieceList.R
-    rook.bb ^= (BoardHelper.whiteQsCastleRookSq() | BitHelper.setBit(0n, 3))
-    this.board.posKey ^= this.board.pieceKeys.R[0]
-    this.board.posKey ^= this.board.pieceKeys.R[3]
-  }
-
-  xorBlackKsRook (pieceList) {
-    const rook = pieceList.r
-    rook.bb ^= (BoardHelper.blackKsCastleRookSq() | BitHelper.setBit(0n, 61))
-    this.board.posKey ^= this.board.pieceKeys.r[63]
-    this.board.posKey ^= this.board.pieceKeys.r[61]
-  }
-
-  xorBlackQsRook (pieceList) {
-    if (pieceList === undefined) { console.log(pieceList) }
-    const rook = pieceList.r
-    rook.bb ^= (BoardHelper.blackQsCastleRookSq() | BitHelper.setBit(0n, 59))
-    this.board.posKey ^= this.board.pieceKeys.r[56]
-    this.board.posKey ^= this.board.pieceKeys.r[59]
-  }
-
-  makeWhiteKsCastleStatus () {
-    this.board.castleStatus ^= BoardHelper.whiteKsCastleRookSq()
-    this.board.posKey ^= this.board.castleKeys[7]
-  }
-
-  makeWhiteQsCastleStatus () {
-    this.board.castleStatus ^= BoardHelper.whiteQsCastleRookSq()
-    this.board.posKey ^= this.board.castleKeys[0]
-  }
-
-  makeBlackKsCastleStatus () {
-    this.board.castleStatus ^= BoardHelper.blackKsCastleRookSq()
-    this.board.posKey ^= this.board.castleKeys[63]
-  }
-
-  makeBlackQsCastleStatus () {
-    this.board.castleStatus ^= BoardHelper.blackQsCastleRookSq()
-    this.board.posKey ^= this.board.castleKeys[56]
-  }
-
-  handlePieceMove (pieceList, fromBit, toBit, promotion, promoteTo, fenChar) {
-    if (promotion) {
-      const pieceBoard = pieceList[fenChar]
-      const promotionPieceBoard = pieceList[promoteTo]
-      pieceBoard.bb ^= fromBit
-      promotionPieceBoard.bb ^= toBit
-    } else {
-      const pieceBoard = pieceList[fenChar]
-      pieceBoard.bb ^= (fromBit | toBit)
-    }
-  }
-
-  handleMakeHalfMoveNo (fenChar) {
-    if (PieceStatus.isNotPawn(fenChar)) {
-      this.incrementHalfMoveNo()
-    } else {
-      this.resetHalfMoveNo()
-    }
-  }
-
-  incrementHalfMoveNo () {
-    this.halfMoveStack.append(this.board.halfMoveClock)
-    this.board.halfMoveClock += 1
-  }
-
-  decrementHalfMoveNo () {
-    this.halfMoveStack.pop()
-    this.board.halfMoveClock -= 1 
-  }
-
-  handleUnMakeHalfMoveNo (fenChar) {
-    if (PieceStatus.isNotPawn(fenChar)) {
-      this.decrementHalfMoveNo()
-    } else {
-      this.restoreHalfMoveNo()
-    }
-  }
-
-  resetHalfMoveNo () {
-    this.halfMoveStack.append(this.board.halfMoveClock)
-    this.board.halfMoveClock = 0
-  }
-
-  restoreHalfMoveNo () {
-    this.board.halfMoveClock = this.halfMoveStack.pop()
-  }
-
-  handlePosKeysDueToMove (fenChar, fromIdx, toIdx, promotion, promoteTo) {
-    if (promotion) {
-      this.board.posKey ^= this.board.pieceKeys[fenChar][fromIdx]
-      this.board.posKey ^= this.board.pieceKeys[promoteTo][toIdx]
-    } else {
-      this.board.posKey ^= this.board.pieceKeys[fenChar][fromIdx]
-      this.board.posKey ^= this.board.pieceKeys[fenChar][toIdx]
-    }
-  }
-
-  isWhiteKingMoveAndCastleStatusValid (castleStatus, fenChar) {
-    return (castleStatus & BoardHelper.whiteCastleSqs()) !== 0n && fenChar === 'K'
-  }
-
-  isBlackKingMoveAndCastleStatusValid (castleStatus, fenChar) {
-    return (castleStatus & BoardHelper.blackCastleSqs()) !== 0n && fenChar === 'k'
-  }
-
-  isWantingToCastleWhiteKs (castle, toIdx) {
-    return castle && (toIdx === 6)
-  }
-
-  isWantingToCastleWhiteQs (castle, toIdx) {
-    return castle && (toIdx === 2)
-  }
-
-  isWantingToCastleBlackKs (castle, toIdx) {
-    return castle && (toIdx === 62)
-  }
-
-  isWantingToCastleBlackQs (castle, toIdx) {
-    return castle && (toIdx === 58)
-  }
-
-  isWhiteRookMoveAndKsCastleStatusValid (castleStatus, fenChar, fromBit) {
-    return (castleStatus & BoardHelper.whiteKsCastleRookSq() & fromBit) !== 0n && fenChar === 'R'
-  }
-
-  isWhiteRookMoveAndQsCastleStatusValid (castleStatus, fenChar, fromBit) {
-    return (castleStatus & BoardHelper.whiteQsCastleRookSq() & fromBit) !== 0n && fenChar === 'R'
-  }
-
-  isBlackRookMoveAndKsCastleStatusValid (castleStatus, fenChar, fromBit) {
-    return (castleStatus & BoardHelper.blackKsCastleRookSq() & fromBit) !== 0n && fenChar === 'r'
-  }
-
-  isBlackRookMoveAndQsCastleStatusValid (castleStatus, fenChar, fromBit) {
-    return (castleStatus & BoardHelper.blackQsCastleRookSq() & fromBit) !== 0n && fenChar === 'r'
-  }
-
-  handleMoveWithEpRisk (epRisk, toBit) {
-    if (epRisk && (epRisk !== 0n)) {
-      this.board.epSqBb = epRisk
-      this.board.epSqIdx = BitHelper.bitScanFwd(epRisk)
-      this.board.epCaptureBb = toBit
-    } else {
-      this.board.epSqBb = 0n
-      this.board.epSqIdx = undefined
-      this.board.epCaptureBb = 0n
-    }
-  }
-
-  handleUnMakeEpRisks (epSqIdx, board, epNode) {
-    if (epSqIdx) {
-      this.board.epSqBb = epNode.epSqBb || 0n
-      this.board.epSqIdx = epNode.epSqIdx || undefined
-      this.board.epCaptureBb = epNode.epCaptureBb || 0n
-    }
-  }
-
-  handleMakeKingMoves (castleStatus, fenChar) {
-    if (this.isWhiteKingMoveAndCastleStatusValid(castleStatus, fenChar)) {
-      this.makeWhiteKingPos()
-    }
-
-    if (this.isBlackKingMoveAndCastleStatusValid(castleStatus, fenChar)) {
-      this.makeBlackKingPos()
-    }
-  }
-
-  handleMakeCastleStatuses (castleStatus, fenChar, fromBit) {
-    if (this.isWhiteRookMoveAndKsCastleStatusValid(castleStatus, fenChar, fromBit)) {
-      this.makeWhiteKsCastleStatus()
-    }
-
-    if (this.isWhiteRookMoveAndQsCastleStatusValid(castleStatus, fenChar, fromBit)) {
-      this.makeWhiteQsCastleStatus()
-    }
-
-    if (this.isBlackRookMoveAndKsCastleStatusValid(castleStatus, fenChar, fromBit)) {
-      this.makeBlackKsCastleStatus()
-    }
-
-    if (this.isBlackRookMoveAndQsCastleStatusValid(castleStatus, fenChar, fromBit)) {
-      this.makeBlackQsCastleStatus()
-    }
-  }
-
-  handleRookMovesWhenCastling (castle, toIdx, pieceList) {
-    if (this.isWantingToCastleWhiteKs(castle, toIdx)) {
-      this.xorWhiteKsRook(pieceList)
-    }
-
-    if (this.isWantingToCastleWhiteQs(castle, toIdx)) {
-      this.xorWhiteQsRook(pieceList)
-    }
-
-    if (this.isWantingToCastleBlackKs(castle, toIdx)) {
-      this.xorBlackKsRook(pieceList)
-    }
-
-    if (this.isWantingToCastleBlackQs(castle, toIdx)) {
-      this.xorBlackQsRook(pieceList)
-    }
-  }
-
-  handleMakeCaptureMoves (capture, pieceList, toBit, toIdx, ep, move, fenChar) {
-    if (capture && !ep) {
-      this.makeCaptures(pieceList, toBit, toIdx, fenChar)
-    }
-  }
-
-  handleMakeEpCaptureMoves (move, capture, pieceList, toBit, ep, epCaptureBb) {
-    if (capture && ep) {
-      this.makeEpCaptures(move, pieceList, toBit, epCaptureBb)
-    }
-  }
-
-  // utilities
-  resetEnPassantSquares () {
-    this.board.epSqIdx = null
-    this.board.epCaptureBb = 0n
-    this.board.epSqBb = 0n
-  }
-
-  restoreEnPassantSquares (toIdx, epBb) {
-    this.board.epSqIdx = toIdx
-    this.board.epCaptureBb = epBb
-    this.board.epSqBb = BitHelper.setBit(0n, toIdx)
-  }
-
-  // unmake() helper functions
-  unMakeCaptures (pieceList, toBit, toIdx) {
-    const capturedFenChar = this.captureStack.pop()
-    const capturedPieceBoard = pieceList[capturedFenChar]
-    capturedPieceBoard.bb ^= toBit
-    this.board.posKey ^= this.board.pieceKeys[capturedFenChar][toIdx]
-    this.restoreHalfMoveNo()
-  }
-
-  unMakeEpCaptures (pieceList, epBb, toIdx) {
-    const capturedFenChar = this.captureStack.pop()
-    const capturedPieceBoard = pieceList[capturedFenChar]
-    capturedPieceBoard.bb ^= epBb
-    const epIdx = BitHelper.bitScanFwd(epBb)
-    this.board.posKey ^= this.board.pieceKeys[capturedFenChar][epIdx]
-    this.restoreEnPassantSquares(toIdx, epBb)
-    this.restoreHalfMoveNo()
-  }
-
-  unMakeWhiteKingPos (lastCastleStatus) {
-    this.board.posKey ^= this.board.castleKeys[0]
-    this.board.posKey ^= this.board.castleKeys[7]
-  }
-
-  unMakeBlackKingPos (lastCastleStatus) {
-    this.board.posKey ^= this.board.castleKeys[56]
-    this.board.posKey ^= this.board.castleKeys[63]
-  }
-
-  unMakeWhiteKsCastleStatus () {
-    this.board.posKey ^= this.board.castleKeys[7]
-  }
-
-  unMakeWhiteQsCastleStatus () {
-    this.board.posKey ^= this.board.castleKeys[0]
-  }
-
-  unMakeBlackKsCastleStatus () {
-    this.board.posKey ^= this.board.castleKeys[63]
-  }
-
-  unMakeBlackQsCastleStatus () {
-    this.board.posKey ^= this.board.castleKeys[56]
-  }
-
-  unMakePieceMove (pieceList, fromBit, toBit, promotion, promoteTo, fenChar) {
-    if (promotion) {
-      const pieceBoard = pieceList[fenChar]
-      const promotionPieceBoard = pieceList[promoteTo]
-      pieceBoard.bb ^= fromBit
-      promotionPieceBoard.bb ^= toBit
-    } else {
-      const pieceBoard = pieceList[fenChar]
-      pieceBoard.bb ^= (fromBit | toBit)
-    }
-  }
-
-  unMakePosKeysDueToMove (fenChar, fromIdx, toIdx, promotion, promoteTo) {
-    if (promotion) {
-      this.board.posKey ^= this.board.pieceKeys[fenChar][fromIdx]
-      this.board.posKey ^= this.board.pieceKeys[promoteTo][toIdx]
-    } else {
-      this.board.posKey ^= this.board.pieceKeys[fenChar][toIdx]
-      this.board.posKey ^= this.board.pieceKeys[fenChar][fromIdx]
-    }
-  }
-
-  isWhiteKing (fenChar) {
-    return fenChar === 'K'
-  }
-
-  isBlackKing (fenChar) {
-    return fenChar === 'k'
-  }
-
-  isWhiteRookAndLastMoveIsRookKsHome (lastCastleStatus, fenChar, fromBit) {
-    return (fenChar === 'R') && ((fromBit & lastCastleStatus) & BoardHelper.whiteKsCastleRookSq()) !== 0n
-  }
-
-  isWhiteRookAndLastMoveIsRookQsHome (lastCastleStatus, fenChar, fromBit) {
-    return (fenChar === 'R') && ((fromBit & lastCastleStatus) & BoardHelper.whiteQsCastleRookSq()) !== 0n
-  }
-
-  isBlackRookAndLastMoveIsRookKsHome (lastCastleStatus, fenChar, fromBit) {
-    return (fenChar === 'r') && ((fromBit & lastCastleStatus) & BoardHelper.blackKsCastleRookSq()) !== 0n
-  }
-
-  isBlackRookAndLastMoveIsRookQsHome (lastCastleStatus, fenChar, fromBit) {
-    return (fenChar === 'r') && ((fromBit & lastCastleStatus) & BoardHelper.blackQsCastleRookSq()) !== 0n
-  }
-
-  handleUnMakeCaptureMoves (lastMove, pieceList, toBit, toIdx, ep) {
-    if (lastMove.capture && !ep) {
-      this.unMakeCaptures(pieceList, toBit, toIdx)
-    }
-  }
-
-  handleUnMakeEpCaptureMoves (lastMove, pieceList, ep, epCaptureBb, toIdx) {
-    if (lastMove.capture && ep) {
-      this.unMakeEpCaptures(pieceList, epCaptureBb, toIdx)
-    }
-  }
-
-  handleUnMakeKingMoves (fenChar) {
-    if (this.isWhiteKing(fenChar)) {
-      this.unMakeWhiteKingPos()
-    }
-
-    if (this.isBlackKing(fenChar)) {
-      this.unMakeBlackKingPos()
-    }
-  }
-
-  handleUnMakeCastleStatuses (lastCastleStatus, fenChar, fromBit) {
-    if (this.isWhiteRookAndLastMoveIsRookKsHome(lastCastleStatus, fenChar, fromBit)) {
-      this.unMakeWhiteKsCastleStatus()
-    }
-
-    if (this.isWhiteRookAndLastMoveIsRookQsHome(lastCastleStatus, fenChar, fromBit)) {
-      this.unMakeWhiteQsCastleStatus()
-    }
-
-    if (this.isBlackRookAndLastMoveIsRookKsHome(lastCastleStatus, fenChar, fromBit)) {
-      this.unMakeBlackKsCastleStatus()
-    }
-
-    if (this.isBlackRookAndLastMoveIsRookQsHome(lastCastleStatus, fenChar, fromBit)) {
-      this.unMakeBlackQsCastleStatus()
-    }
-    this.board.castleStatus = lastCastleStatus
-  }
-}
-
-class EpNode {
-  constructor (epSqBb, epSqIdx, epCaptureBb) {
-    this.epSqBb = epSqBb
-    this.epSqIdx = epSqIdx
-    this.epCaptureBb = epCaptureBb
-  }
-}
-
-class Node {
-  constructor (element) {
-    this.element = element
-    this.next = null
-  }
-}
-
-class LinkedList {
-  constructor () {
-    this.head = null
-    this.tail = null
-    this.length = 0
-  }
-
-  append (element) {
-    const node = new Node(element)
-    let current = null
-    if (this.head === null) {
-      this.head = node
-    } else {
-      current = this.head
-      while (current.next) {
-        current = current.next
-      }
-      current.next = node
-      this.tail = node
-    }
-    this.length++
-  }
-
-  pop () {
-    if (!this.head) { return undefined }
-    let current = this.head
-    let previous = null
-    while (current.next) {
-      previous = current
-      current = current.next
-    }
-    if (previous) { previous.next = null };
-    this.tail = previous
-    this.length--
-    if (this.length === 0) { this.head = null }
-    return current.element
+  isSameKey (a, b) {
+    const keys = this.keyHistory32
+    return keys[2 * a] === keys[2 * b] && keys[2 * a + 1] === keys[2 * b + 1]
   }
 }
 

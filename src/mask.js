@@ -1,17 +1,18 @@
-const ViewHelper = require('./helpers.js').ViewHelper
+const U64 = require('./helpers.js').U64
 
+// left shifts are truncated so bitboards never grow past 64 bits
 class Mask {
   // basic Mask
   static northOne (bb) {
-    return bb << 8n
+    return U64(bb << 8n)
   }
 
   static northEastOne (bb) {
-    return bb << 9n
+    return U64(bb << 9n)
   }
 
   static eastOne (bb) {
-    return bb << 1n
+    return U64(bb << 1n)
   }
 
   static southEastOne (bb) {
@@ -31,7 +32,7 @@ class Mask {
   }
 
   static northWestOne (bb) {
-    return bb << 7n
+    return U64(bb << 7n)
   }
 
   // king moves
@@ -43,11 +44,11 @@ class Mask {
 
   // knight moves
   static noNoEast (bb) {
-    return bb << 17n
+    return U64(bb << 17n)
   }
 
   static noEaEast (bb) {
-    return bb << 10n
+    return U64(bb << 10n)
   }
 
   static soEaEast (bb) {
@@ -59,11 +60,11 @@ class Mask {
   }
 
   static noNoWest (bb) {
-    return bb << 15n
+    return U64(bb << 15n)
   }
 
   static noWeWest (bb) {
-    return bb << 6n
+    return U64(bb << 6n)
   }
 
   static soWeWest (bb) {

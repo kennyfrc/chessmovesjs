@@ -1,14 +1,13 @@
 const BitHelper = require('./helpers.js').BitHelper
-const BoardHelper = require('./helpers.js').BoardHelper
-// const SquareHelper = require('./helpers.js').SquareHelper
-const ViewHelper = require('./helpers.js').ViewHelper
-const Direction = require('./attack.js').Direction
-// const MoveList = require('./move.js').MoveList
-const Mask = require('./mask.js').Mask
 const Pieces = require('./pieces.js').Pieces
 
+/**
+ * A PieceBoard is a live view of one piece's bitboard inside a Board.
+ * setContext() snapshots what a move of this piece needs to describe
+ * itself (check, capture, threat).
+ */
 class PieceBoard {
-  static for (fenChar, pieceBit) {
+  static for (fenChar, board) {
     let PieceClass
     switch (fenChar) {
       case 'k':
@@ -48,41 +47,27 @@ class PieceBoard {
         PieceClass = WhitePawnBoard
         break
     }
-    return new PieceClass(pieceBit)
+    return new PieceClass(board, fenChar)
+  }
+
+  constructor (board, fenChar) {
+    this.board = board
+    this.fenChar = fenChar
+    this.piece = Pieces.indexFor(fenChar)
+  }
+
+  get bb () {
+    return this.board.bitboards[this.piece]
+  }
+
+  set bb (bb) {
+    this.board.setPieceBb(this.piece, bb)
   }
 }
 
 class WhitePawnBoard extends PieceBoard {
-  constructor (bb) {
-    super()
-    this.bb = bb
-    this.fenChar = 'P'
-  }
-
-  atSecondRank (pieceBb) {
-    return pieceBb & BoardHelper.secondRank()
-  }
-
-  canDoublePush (pieceBb) {
-    return Direction.wDoublePush(pieceBb, this.emptySq)
-  }
-
-  canSinglePush (pieceBb) {
-    return Direction.wSinglePush(pieceBb, this.emptySq)
-  }
-
-  rawPawnAttacks (pieceBb, board) {
-    this.setContext(board)
-    return this.pawnAttacks(pieceBb)
-  }
-
-  pawnAttacks (pieceBb) {
-    return Direction.wPawnAttacks(pieceBb) & (this.blackBb | this.epSqBb)
-  }
-
   setContext (board) {
     this.blackBb = board.blackBb
-    this.mainBoardBb = board.bb
     this.emptySq = ~board.bb
     this.blackKingBb = board.blackKingBb
     this.blackMinorBb = board.blackMinorBb
@@ -92,57 +77,11 @@ class WhitePawnBoard extends PieceBoard {
     this.occupied = board.bb
     this.occupiable = ~board.whiteBb
   }
-
-  initialMoves (pieceBb) {
-    return this.canSinglePush(pieceBb) | this.pawnAttacks(pieceBb)
-  }
-
-  doublePushMoves (pieceBb) {
-    return this.atSecondRank(pieceBb) ? this.canDoublePush(pieceBb) : 0n
-  }
-
-  attacks (pieceBb, board) {
-    this.setContext(board)
-    return this.initialMoves(pieceBb) | this.doublePushMoves(pieceBb)
-  }
-
-  defends (pieceBb, board) {
-    this.setContext(board)
-    return Direction.wPawnAttacks(pieceBb) & (board.whiteBb)
-  }
 }
 
 class BlackPawnBoard extends PieceBoard {
-  constructor (bb) {
-    super()
-    this.bb = bb
-    this.fenChar = 'p'
-  }
-
-  atSeventhRank (pieceBb) {
-    return pieceBb & BoardHelper.seventhRank()
-  }
-
-  canDoublePush (pieceBb) {
-    return Direction.bDoublePush(pieceBb, this.emptySq)
-  }
-
-  canSinglePush (pieceBb) {
-    return Direction.bSinglePush(pieceBb, this.emptySq)
-  }
-
-  rawPawnAttacks (pieceBb, board) {
-    this.setContext(board)
-    return this.pawnAttacks(pieceBb)
-  }
-
-  pawnAttacks (pieceBb) {
-    return Direction.bPawnAttacks(pieceBb) & (this.whiteBb | this.epSqBb)
-  }
-
   setContext (board) {
     this.whiteBb = board.whiteBb
-    this.mainBoardBb = board.bb
     this.emptySq = ~board.bb
     this.whiteKingBb = board.whiteKingBb
     this.whiteMinorBb = board.whiteMinorBb
@@ -152,85 +91,25 @@ class BlackPawnBoard extends PieceBoard {
     this.occupied = board.bb
     this.occupiable = ~board.blackBb
   }
-
-  initialMoves (pieceBb) {
-    return this.canSinglePush(pieceBb) | this.pawnAttacks(pieceBb)
-  }
-
-  doublePushMoves (pieceBb) {
-    return this.atSeventhRank(pieceBb) ? this.canDoublePush(pieceBb) : 0n
-  }
-
-  attacks (pieceBb, board) {
-    this.setContext(board)
-    return this.initialMoves(pieceBb) | this.doublePushMoves(pieceBb)
-  }
-
-  defends (pieceBb, board) {
-    this.setContext(board)
-    return Direction.bPawnAttacks(pieceBb) & (board.blackBb)
-  }
 }
 
 class WhiteKnightBoard extends PieceBoard {
-  constructor (bb) {
-    super()
-    this.bb = bb
-    this.fenChar = 'N'
-  }
-
   setContext (board) {
     this.blackKingBb = board.blackKingBb
     this.blackMajorBb = board.blackMajorBb
     this.blackBb = board.blackBb
-    this.occupied = board.bb
-    this.occupiable = ~board.whiteBb
-  }
-
-  attacks (pieceBb, board) {
-    this.setContext(board)
-    return Direction.knightAttacks(pieceBb) & this.occupiable
-  }
-
-  defends (pieceBb, board) {
-    this.setContext(board)
-    return Direction.knightAttacks(pieceBb) & board.whiteBb
   }
 }
 
 class BlackKnightBoard extends PieceBoard {
-  constructor (bb) {
-    super()
-    this.bb = bb
-    this.fenChar = 'n'
-  }
-
   setContext (board) {
     this.whiteKingBb = board.whiteKingBb
     this.whiteMajorBb = board.whiteMajorBb
     this.whiteBb = board.whiteBb
-    this.occupied = board.bb
-    this.occupiable = ~board.blackBb
-  }
-
-  attacks (pieceBb, board) {
-    this.setContext(board)
-    return Direction.knightAttacks(pieceBb) & this.occupiable
-  }
-
-  defends (pieceBb, board) {
-    this.setContext(board)
-    return Direction.knightAttacks(pieceBb) & board.blackBb
   }
 }
 
 class WhiteBishopBoard extends PieceBoard {
-  constructor (bb) {
-    super()
-    this.bb = bb
-    this.fenChar = 'B'
-  }
-
   setContext (board) {
     this.blackKingBb = board.blackKingBb
     this.blackMajorBb = board.blackMajorBb
@@ -238,25 +117,9 @@ class WhiteBishopBoard extends PieceBoard {
     this.occupied = board.bb
     this.occupiable = ~board.whiteBb
   }
-
-  attacks (pieceBb, board) {
-    this.setContext(board)
-    return Direction.bishopRays(pieceBb, this.occupied, this.occupiable)
-  }
-
-  defends (pieceBb, board) {
-    this.setContext(board)
-    return Direction.bishopRays(pieceBb, this.occupied, board.whiteBb)
-  }
 }
 
 class BlackBishopBoard extends PieceBoard {
-  constructor (bb) {
-    super()
-    this.bb = bb
-    this.fenChar = 'b'
-  }
-
   setContext (board) {
     this.whiteKingBb = board.whiteKingBb
     this.whiteMajorBb = board.whiteMajorBb
@@ -264,25 +127,9 @@ class BlackBishopBoard extends PieceBoard {
     this.occupied = board.bb
     this.occupiable = ~board.blackBb
   }
-
-  attacks (pieceBb, board) {
-    this.setContext(board)
-    return Direction.bishopRays(pieceBb, this.occupied, this.occupiable)
-  }
-
-  defends (pieceBb, board) {
-    this.setContext(board)
-    return Direction.bishopRays(pieceBb, this.occupied, board.blackBb)
-  }
 }
 
 class WhiteRookBoard extends PieceBoard {
-  constructor (bb) {
-    super()
-    this.bb = bb
-    this.fenChar = 'R'
-  }
-
   setContext (board) {
     this.blackKingBb = board.blackKingBb
     this.blackQueenBb = board.blackQueenBb
@@ -290,25 +137,9 @@ class WhiteRookBoard extends PieceBoard {
     this.occupied = board.bb
     this.occupiable = ~board.whiteBb
   }
-
-  attacks (pieceBb, board) {
-    this.setContext(board)
-    return Direction.rookRays(pieceBb, this.occupied, this.occupiable)
-  }
-
-  defends (pieceBb, board) {
-    this.setContext(board)
-    return Direction.rookRays(pieceBb, this.occupied, board.whiteBb)
-  }
 }
 
 class BlackRookBoard extends PieceBoard {
-  constructor (bb) {
-    super()
-    this.bb = bb
-    this.fenChar = 'r'
-  }
-
   setContext (board) {
     this.whiteKingBb = board.whiteKingBb
     this.whiteQueenBb = board.whiteQueenBb
@@ -316,150 +147,52 @@ class BlackRookBoard extends PieceBoard {
     this.occupied = board.bb
     this.occupiable = ~board.blackBb
   }
-
-  attacks (pieceBb, board) {
-    this.setContext(board)
-    return Direction.rookRays(pieceBb, this.occupied, this.occupiable)
-  }
-
-  defends (pieceBb, board) {
-    this.setContext(board)
-    return Direction.rookRays(pieceBb, this.occupied, board.blackBb)
-  }
 }
 
 class WhiteQueenBoard extends PieceBoard {
-  constructor (bb) {
-    super()
-    this.bb = bb
-    this.fenChar = 'Q'
-  }
-
   setContext (board) {
     this.occupied = board.bb
     this.occupiable = ~board.whiteBb
     this.blackKingBb = board.blackKingBb
     this.blackBb = board.blackBb
   }
-
-  attacks (pieceBb, board) {
-    this.setContext(board)
-    return Direction.queenRays(pieceBb, this.occupied, this.occupiable)
-  }
-
-  defends (pieceBb, board) {
-    this.setContext(board)
-    return Direction.queenRays(pieceBb, this.occupied, board.whiteBb)
-  }
 }
 
 class BlackQueenBoard extends PieceBoard {
-  constructor (bb) {
-    super()
-    this.bb = bb
-    this.fenChar = 'q'
-  }
-
   setContext (board) {
     this.occupied = board.bb
     this.occupiable = ~board.blackBb
     this.whiteKingBb = board.whiteKingBb
     this.whiteBb = board.whiteBb
   }
-
-  attacks (pieceBb, board) {
-    this.setContext(board)
-    return Direction.queenRays(pieceBb, this.occupied, this.occupiable)
-  }
-
-  defends (pieceBb, board) {
-    this.setContext(board)
-    return Direction.queenRays(pieceBb, this.occupied, board.blackBb)
-  }
 }
 
 class WhiteKingBoard extends PieceBoard {
-  constructor (bb) {
-    super()
-    this.bb = bb
-    this.fenChar = 'K'
-  }
-
   setContext (board) {
     this.blackBb = board.blackBb
-    this.occupied = board.bb | board.whiteKingDangerSquares
-    this.occupiable = ~board.whiteBb & ~board.whiteKingDangerSquares
-    this.castleable = ~board.bb
-    this.whiteRookBb = board.whiteRookBb
-    this.castleStatus = board.castleStatus
-    this.inCheck = board.sideInCheck
-  }
-
-  attacks (pieceBb, board) {
-    this.setContext(board)
-    return Direction.kingMoves(pieceBb, this.occupied, this.occupiable,
-      this.whiteRookBb, this.castleStatus, this.inCheck, this.castleable)
-  }
-
-  defends (pieceBb, board) {
-    this.setContext(board)
-    return Direction.bareKingMoves(pieceBb) & board.whiteBb
   }
 }
 
 class BlackKingBoard extends PieceBoard {
-  constructor (bb) {
-    super()
-    this.bb = bb
-    this.fenChar = 'k'
-  }
-
   setContext (board) {
     this.whiteBb = board.whiteBb
-    this.occupied = board.bb | board.blackKingDangerSquares
-    this.occupiable = ~board.blackBb & ~board.blackKingDangerSquares
-    this.castleable = ~board.bb
-    this.blackRookBb = board.blackRookBb
-    this.castleStatus = board.castleStatus
-    this.inCheck = board.sideInCheck
-  }
-
-  attacks (pieceBb, board) {
-    this.setContext(board)
-    return Direction.kingMoves(pieceBb, this.occupied, this.occupiable,
-      this.blackRookBb, this.castleStatus, this.inCheck, this.castleable)
-  }
-
-  defends (pieceBb, board) {
-    this.setContext(board)
-    return Direction.bareKingMoves(pieceBb) & board.blackBb
   }
 }
 
 class PieceBoardList {
-  constructor () {
-    this.K = PieceBoard.for('K', 0n)
-    this.Q = PieceBoard.for('Q', 0n)
-    this.R = PieceBoard.for('R', 0n)
-    this.B = PieceBoard.for('B', 0n)
-    this.N = PieceBoard.for('N', 0n)
-    this.P = PieceBoard.for('P', 0n)
-    this.k = PieceBoard.for('k', 0n)
-    this.q = PieceBoard.for('q', 0n)
-    this.r = PieceBoard.for('r', 0n)
-    this.b = PieceBoard.for('b', 0n)
-    this.n = PieceBoard.for('n', 0n)
-    this.p = PieceBoard.for('p', 0n)
-  }
-
-  firstMatch (callback) {
-    let val;
-    Pieces.for('all').forEach((fenChar) => {
-      if (callback(this[fenChar])) {
-        val = this[fenChar]
-      }
-    })
-    return val
+  constructor (board) {
+    this.K = PieceBoard.for('K', board)
+    this.Q = PieceBoard.for('Q', board)
+    this.R = PieceBoard.for('R', board)
+    this.B = PieceBoard.for('B', board)
+    this.N = PieceBoard.for('N', board)
+    this.P = PieceBoard.for('P', board)
+    this.k = PieceBoard.for('k', board)
+    this.q = PieceBoard.for('q', board)
+    this.r = PieceBoard.for('r', board)
+    this.b = PieceBoard.for('b', board)
+    this.n = PieceBoard.for('n', board)
+    this.p = PieceBoard.for('p', board)
   }
 }
 

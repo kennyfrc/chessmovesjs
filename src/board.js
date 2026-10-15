@@ -1,27 +1,32 @@
 const FenReader = require('./fen.js').FenReader
 const BitHelper = require('./helpers.js').BitHelper
-const PieceBoard = require('./pieceboard.js').PieceBoard
-const PieceBoardList = require('./pieceboard.js').PieceBoardList
-const ViewHelper = require('./helpers.js').ViewHelper
 const SquareHelper = require('./helpers.js').SquareHelper
-const BoardHelper = require('./helpers.js').BoardHelper
+const CastleRights = require('./helpers.js').CastleRights
+const PieceBoardList = require('./pieceboard.js').PieceBoardList
 const Pieces = require('./pieces.js').Pieces
+const Piece = require('./pieces.js').Piece
+const BoardSlot = require('./pieces.js').BoardSlot
 const MoveList = require('./move.js').MoveList
 const ThreatBoard = require('./threatboard.js').ThreatBoard
-const BoardProxy = require('./boardproxy.js').BoardProxy
-const PieceStatus = require('./pieces.js').PieceStatus
-const Direction = require('./attack.js').Direction
+const SQUARE_BB = require('./attack.js').SQUARE_BB
 const LCG = require('./prng.js').LCG
-const PinList = require('./move.js').PinList
 
+const EMPTY = -1
+
+/**
+ * Board state lives in typed arrays so the move generator and
+ * make/unmake can work on it without allocating:
+ * - bitboards: 12 piece boards, then the BoardSlot boards (white, black,
+ *   occupied, position key)
+ * - squares: which piece sits on each square (a mailbox), EMPTY if none
+ * The getters below expose the same state as BigInts for everyone else.
+ */
 class Board {
-  constructor (seed=91289n) {
-    this.bb = 0n
-    this.initWhiteBitBoards()
-    this.initBlackBitBoards()
+  constructor (seed = 91289n) {
+    this.bitboards = new BigUint64Array(16)
+    this.squares = new Int8Array(64).fill(EMPTY)
+    this.kingSqs = new Int8Array(2)
     this.initPieceBoardList()
-    this.initCheckEvasionData()
-    this.initPinAndXrayData()
     this.initEnPassantData()
     this.initZobristKey(seed)
     this.initMoveCounters()
@@ -32,67 +37,16 @@ class Board {
     this.isThreeFoldRepetition = false
   }
 
-  initWhiteBitBoards () {
-    this.whiteBb = 0n
-    this.whiteKingBb = 0n
-    this.whitePawnBb = 0n
-    this.whiteKnightBb = 0n
-    this.whiteBishopBb = 0n
-    this.whiteRookBb = 0n
-    this.whiteQueenBb = 0n
-    this.whiteMinorBb = 0n
-    this.whiteMajorBb = 0n
-    this.whiteSliderBb = 0n
-  }
-
-  initBlackBitBoards () {
-    this.blackBb = 0n
-    this.blackKingBb = 0n
-    this.blackPawnBb = 0n
-    this.blackKnightBb = 0n
-    this.blackBishopBb = 0n
-    this.blackRookBb = 0n
-    this.blackQueenBb = 0n
-    this.blackMinorBb = 0n
-    this.blackMajorBb = 0n
-    this.blackSliderBb = 0n
-  }
-
-  initCheckEvasionData () {
-    this.sideInCheck = false
-    this.checkersBb = 0n
-    this.checkerCount = 0
-    this.checkingPiece = null
-    this.kingDangerSquares = 0n
-    this.whiteKingDangerSquares = 0n
-    this.blackKingDangerSquares = 0n
-    this.ourCheckerRay = 0n
-    this.theirCheckerRay = 0n
-    this.whiteCheckerRay = 0n
-    this.blackCheckerRay = 0n
-  }
-
-  initPinAndXrayData () {
-    this.xrayDangerSqs = 0n
-    this.xrayAttackSqs = 0n
-    this.theirBlockers = 0n
-    this.ourBlockers = 0n
-    this.ourPinList = []
-    this.theirPinList = []
-  }
-
   initPieceBoardList () {
-    this.pieceBoardList = new PieceBoardList()
+    this.pieceBoardList = new PieceBoardList(this)
   }
 
   initEnPassantData () {
-    this.epSqIdx = undefined
-    this.epSqBb = 0n
-    this.epCaptureBb = 0n
+    this.epSq = EMPTY
   }
 
   initCastleData () {
-    this.castleStatus = 0n
+    this.castleRights = 0
     this.castleBit = {
       K: 0x80n,
       Q: 0x1n,
@@ -103,11 +57,11 @@ class Board {
 
   initZobristKey (seed) {
     this.lcg = new LCG(seed)
-    this.posKey = 0n
-    this.pieceKeys = new PieceKeys()
+    this.pieceKeys = new BigUint64Array(12 * 64)
     this.enPassantKeys = new BigUint64Array(64)
     this.sideKey = new BigUint64Array(2)
     this.castleKeys = new BigUint64Array(64)
+    this.castleDeltaKeys = new BigUint64Array(16)
   }
 
   initMoveCounters () {
@@ -124,32 +78,23 @@ class Board {
 
     for (let i = 0; i < fen.length; i++) {
       if (FenReader.finishedReadingBoard(ranksRead, whiteSpace)) {
-        if (FenReader.isSidetoMove(fen[i])) {
-          this.whiteToMove = fen[i] === 'w' ? true : false
+        if (FenReader.isSidetoMove(fen[i], whiteSpace)) {
+          this.whiteToMove = fen[i] === 'w'
           this.posKey ^= fen[i] === 'w' ? this.sideKey[0] : this.sideKey[1]
         }
 
-        if (FenReader.isCastlingSymbol(fen[i])) {
-          const castleBit = this.castleBit[fen[i]]
-          const castleIdx = BitHelper.bitScanFwd(castleBit)
-          this.castleStatus |= castleBit
+        if (FenReader.isCastlingSymbol(fen[i], whiteSpace)) {
+          const castleIdx = BitHelper.bitScanFwd(this.castleBit[fen[i]])
+          this.castleRights |= CastleRights[fen[i]]
           this.posKey ^= this.castleKeys[castleIdx]
         }
 
         if (FenReader.isEnPassantChar(fen[i], whiteSpace)) {
-          const epSq = fen[i] + fen[i + 1]
-          this.epSqIdx = SquareHelper.for(epSq)
-          this.epSqBb = BitHelper.setBit(0n, this.epSqIdx)
-          this.epCaptureBb = this.getEpCaptureBb()
-          this.posKey ^= this.enPassantKeys[this.epSqIdx]
+          this.epSq = SquareHelper.for(fen[i] + fen[i + 1])
+          this.posKey ^= this.enPassantKeys[this.epSq]
           i += 1
         }
 
-        /**
-         * TODO: There will be an external class that decides whether
-         * a pawn is advanced or there was a capture
-         * both of the above require move history
-         **/
         if (FenReader.isHalfMoveClock(fen[i], whiteSpace)) {
           if (FenReader.isSpace(fen[i + 1])) {
             this.halfMoveClock = parseInt(fen[i])
@@ -162,25 +107,17 @@ class Board {
         if (FenReader.isFullMoveNo(fen[i], whiteSpace)) {
           if (FenReader.isUndefined(fen[i + 1])) {
             this.fullMoveNo = parseInt(fen[i])
-            this.ply = this.whiteToMove ? this.fullMoveNo * 2 - 2 : this.fullMoveNo * 2 - 1
           } else {
             this.fullMoveNo = parseInt(fen[i] + fen[i + 1])
-            this.ply = this.whiteToMove ? this.fullMoveNo * 2 - 2 : this.fullMoveNo * 2 - 1
             i += 1
           }
+          this.ply = this.whiteToMove ? this.fullMoveNo * 2 - 2 : this.fullMoveNo * 2 - 1
         }
       } else {
-        if (FenReader.isWhitePiece(fen[i])) {
-          const pieceBit = BitHelper.setBit(this.pieceBoardList[fen[i]].bb, boardIndex)
-          this.pieceBoardList[fen[i]] = PieceBoard.for(fen[i], pieceBit)
-          this.posKey ^= this.pieceKeys[fen[i]][boardIndex]
-          boardIndex += 1
-        }
-
-        if (FenReader.isBlackPiece(fen[i])) {
-          const pieceBit = BitHelper.setBit(this.pieceBoardList[fen[i]].bb, boardIndex)
-          this.pieceBoardList[fen[i]] = PieceBoard.for(fen[i], pieceBit)
-          this.posKey ^= this.pieceKeys[fen[i]][boardIndex]
+        if (FenReader.isWhitePiece(fen[i]) || FenReader.isBlackPiece(fen[i])) {
+          const piece = Pieces.indexFor(fen[i])
+          this.bitboards[piece] |= SQUARE_BB[boardIndex]
+          this.posKey ^= this.pieceKeys[piece * 64 + boardIndex]
           boardIndex += 1
         }
 
@@ -198,308 +135,154 @@ class Board {
       }
     }
 
-    this.setPieceContext()
+    this.setDerivedBbs()
+    this.verifyCastleStatus()
   }
 
   resetBoard () {
-    this.pieceBoardList = new PieceBoardList()
+    this.bitboards.fill(0n)
+    this.squares.fill(EMPTY)
+    this.castleRights = 0
+    this.epSq = EMPTY
+  }
+
+  // used by PieceBoard's bb setter
+  setPieceBb (piece, bb) {
+    this.bitboards[piece] = bb
+    this.setDerivedBbs()
+  }
+
+  // rebuilds side boards, mailbox and king squares from the piece boards
+  setDerivedBbs () {
+    const bbs = this.bitboards
+    bbs[BoardSlot.WHITE] = bbs[0] | bbs[1] | bbs[2] | bbs[3] | bbs[4] | bbs[5]
+    bbs[BoardSlot.BLACK] = bbs[6] | bbs[7] | bbs[8] | bbs[9] | bbs[10] | bbs[11]
+    bbs[BoardSlot.OCCUPIED] = bbs[BoardSlot.WHITE] | bbs[BoardSlot.BLACK]
+    this.squares.fill(EMPTY)
+    for (let piece = 0; piece < 12; piece++) {
+      SquareHelper.indicesFor(bbs[piece]).forEach((sq) => { this.squares[sq] = piece })
+    }
+    this.kingSqs[0] = Math.max(BitHelper.bitScanFwd(bbs[Piece.KING]), 0)
+    this.kingSqs[1] = Math.max(BitHelper.bitScanFwd(bbs[6 + Piece.KING]), 0)
   }
 
   /**
    * A8 = 56 thus, that's where we do the exclusive xor (where you flip)
-   * you might need to flip the main boards first
    */
   flipBoard () {
-    for (let sq = 0; sq < 32; sq++) {
-      for (const [piece, pboard] of Object.entries(this.pieceBoardList)) {
-        const bit = BitHelper.getBit(pboard.bb, sq)
-        const invertedBit = BitHelper.getBit(pboard.bb, sq ^ 56)
-        pboard.bb = BitHelper.updateBit(pboard.bb, sq, invertedBit)
-        pboard.bb = BitHelper.updateBit(pboard.bb, sq ^ 56, bit)
-        this.pieceBoardList[piece] = pboard
-      }
+    for (let piece = 0; piece < 12; piece++) {
+      this.bitboards[piece] = BitHelper.flipVertical(this.bitboards[piece])
     }
+    this.setDerivedBbs()
   }
 
-  clearPieceBbs () {
-    this.whiteKingBb = 0n
-    this.blackKingBb = 0n
-    this.whiteQueenBb = 0n
-    this.blackQueenBb = 0n
-    this.whiteRookBb = 0n
-    this.blackRookBb = 0n
-    this.whiteBishopBb = 0n
-    this.blackBishopBb = 0n
-    this.whiteKnightBb = 0n
-    this.blackKnightBb = 0n
-    this.whitePawnBb = 0n
-    this.blackPawnBb = 0n
-  }
-
-  setPieceContext () {
-    this.clearPieceBbs()
-    this.setPieceBbs()
-    this.setPieceSetBbs()
-    this.setBoardBb()
-    this.setBlockers()
-    this.setThreats()
-    this.setInCheck()
-    this.setCheckerCount()
-    this.setXrayDangerSqs()
-    this.setXrayAttackSqs()
-    this.verifyCastleStatus()
-  }
-
-  setPieceBbs () {
-    this.whiteKingBb |= this.pieceBoardList.K.bb
-    this.blackKingBb |= this.pieceBoardList.k.bb
-    this.whiteQueenBb |= this.pieceBoardList.Q.bb
-    this.blackQueenBb |= this.pieceBoardList.q.bb
-    this.whiteRookBb |= this.pieceBoardList.R.bb
-    this.blackRookBb |= this.pieceBoardList.r.bb
-    this.whiteBishopBb |= this.pieceBoardList.B.bb
-    this.blackBishopBb |= this.pieceBoardList.b.bb
-    this.whiteKnightBb |= this.pieceBoardList.N.bb
-    this.blackKnightBb |= this.pieceBoardList.n.bb
-    this.whitePawnBb |= this.pieceBoardList.P.bb
-    this.blackPawnBb |= this.pieceBoardList.p.bb
-  }
-
-  setPieceSetBbs () {
-    this.whiteMajorBb = this.whiteRookBb | this.whiteQueenBb
-    this.whiteMinorBb = this.whiteKnightBb | this.whiteBishopBb
-    this.whiteBb = this.whiteMajorBb | this.whiteMinorBb | this.whitePawnBb |
-      this.whiteKingBb
-    this.blackMajorBb = this.blackRookBb | this.blackQueenBb
-    this.blackMinorBb = this.blackKnightBb | this.blackBishopBb
-    this.blackBb = this.blackMajorBb | this.blackMinorBb | this.blackPawnBb |
-      this.blackKingBb
-    this.whiteSliderBb = this.whiteMajorBb | this.whiteBishopBb
-    this.blackSliderBb = this.blackMajorBb | this.blackBishopBb
-  }
-
-  setBoardBb () {
-    this.bb = this.whiteBb | this.blackBb
-  }
-
-  setInCheck () {
-    const kingBb = this.whiteToMove ? this.whiteKingBb : this.blackKingBb
-    this.sideInCheck = (this.kingDangerSquares & kingBb) !== 0n
-  }
-
-  setCheckerCount () {
-    this.checkerCount = this.sideInCheck ? BitHelper.popCount(this.checkersBb) : 0
-  }
-
-  setThreats () {
-    const sideToAttack = this.whiteToMove ? 'b' : 'w'
-    const kingToMove = this.whiteToMove ? 'K' : 'k'
-    const boardProxyNoKing = new BoardProxy(this)
-    boardProxyNoKing.bb ^= boardProxyNoKing.pieceBoardList[kingToMove].bb
-    this.setKingDangerThreats(sideToAttack, boardProxyNoKing, true)
-  }
-
-  setKingDangerThreats (byPieceOrSide, boardProxy, findCheckers = false) {
-    Pieces.for(byPieceOrSide)
-      .forEach((fenPiece) => {
-        PieceStatus.isPawn(fenPiece)
-          ? this.setPawnThreats(boardProxy, fenPiece)
-          : this.setPieceThreats(boardProxy, fenPiece)
-      })
-  }
-
-  setPawnThreats (boardProxy, fenPiece) {
-    const pieceBoard = boardProxy.pieceBoardList[fenPiece]
-    SquareHelper.indicesFor(pieceBoard.bb)
-      .map((sq) => BitHelper.setBit(0n, sq))
-      .forEach((pieceBb) => {
-        const threats = pieceBoard.rawPawnAttacks(pieceBb, boardProxy)
-        this.setCheckers(threats, pieceBb, boardProxy)
-        this.setDangerSquares(threats, pieceBb)
-      })
-  }
-
-  setPieceThreats (boardProxy, fenPiece) {
-    const pieceBoard = boardProxy.pieceBoardList[fenPiece]
-    SquareHelper.indicesFor(pieceBoard.bb)
-      .map((sq) => BitHelper.setBit(0n, sq))
-      .forEach((pieceBb) => {
-        const threats = pieceBoard.attacks(pieceBb, boardProxy) | pieceBoard.defends(pieceBb, this)
-        const kingBb = boardProxy.whiteToMove ? boardProxy.whiteKingBb : boardProxy.blackKingBb
-        this.setCheckers(threats, pieceBb, boardProxy)
-        this.setDangerSquares(threats, pieceBb, fenPiece)
-      })    
-  }
-
-  setDangerSquares (threats, pieceBb, fenPiece) {
-    let pawnAttacks = 0n
-    if (this.whiteToMove) {
-      pawnAttacks = Direction.bPawnAttacks(this.pieceBoardList.p.bb)
-      this.whiteKingDangerSquares |= (threats | pawnAttacks)
-      this.kingDangerSquares |= (this.whiteKingDangerSquares)
-    } else {
-      pawnAttacks = Direction.wPawnAttacks(this.pieceBoardList.P.bb)
-      this.blackKingDangerSquares |= (threats | pawnAttacks)
-      this.kingDangerSquares |= (this.blackKingDangerSquares)
-    }
-  }
-
-  setCheckers (threats, pieceBb, boardProxy) {
-    const kingBb = boardProxy.whiteToMove ? boardProxy.whiteKingBb : boardProxy.blackKingBb
-    this.checkersBb |= ((threats & kingBb) !== 0n) ? pieceBb : 0n
-  }
-
-  setBlockers () {
-    const opponentsSide = this.whiteToMove ? 'b' : 'w'
-    const ourSide = opponentsSide === 'w' ? 'b' : 'w'
-    const theirBlockers = ThreatBoard.for(opponentsSide, this) & this.bb
-    const ourBlockers = ThreatBoard.for(ourSide, this) & this.bb
-    this.theirBlockers = theirBlockers
-    this.ourBlockers = ourBlockers
-  }
-
-  setXrayDangerSqs () {
-    const opponentsSide = this.whiteToMove ? 'bs' : 'ws'
-    const ourPieceBb = this.whiteToMove ? this.whiteBb : this.blackBb
-    const theirPieceBb = this.whiteToMove ? this.blackBb : this.whiteBb
-    const blockers = this.getTheirBlockers()
-    const boardProxyNoBlockers = new BoardProxy(this)
-    boardProxyNoBlockers.bb = boardProxyNoBlockers.bb ^ (blockers)
-    this.xrayDangerSqs = ThreatBoard.for(opponentsSide, boardProxyNoBlockers, true)
-    this.ourPinList = boardProxyNoBlockers.ourPinList
-    this.theirCheckerRay = boardProxyNoBlockers.theirCheckerRay
-    this.whiteCheckerRay = boardProxyNoBlockers.whiteCheckerRay
-    this.blackCheckerRay = boardProxyNoBlockers.blackCheckerRay
-  }
-
-  setXrayAttackSqs () {
-    const ourSide = this.whiteToMove ? 'ws' : 'bs'
-    const theirPieceBb = this.whiteToMove ? this.blackBb : this.whiteBb
-    const boardProxyNoBlockers = new BoardProxy(this)
-    const blockers = this.getOurBlockers()
-    boardProxyNoBlockers.bb = boardProxyNoBlockers.bb ^ blockers
-    this.xrayAttackSqs = ThreatBoard.for(ourSide, boardProxyNoBlockers, false)
-    this.theirPinList = boardProxyNoBlockers.theirPinList
-    this.ourCheckerRay = boardProxyNoBlockers.ourCheckerRay
-  }
-
+  // castling needs the rook on its corner
   verifyCastleStatus () {
-    this.castleStatus &= (this.blackRookBb & (BoardHelper.blackKsCastleRookSq() | BoardHelper.blackQsCastleRookSq()))
-      | (this.whiteRookBb & (BoardHelper.whiteKsCastleRookSq() | BoardHelper.whiteQsCastleRookSq()))
+    const rookAt = (piece, sq) => this.squares[sq] === piece
+    if (!rookAt(Piece.ROOK, 7)) { this.castleRights &= ~CastleRights.K }
+    if (!rookAt(Piece.ROOK, 0)) { this.castleRights &= ~CastleRights.Q }
+    if (!rookAt(6 + Piece.ROOK, 63)) { this.castleRights &= ~CastleRights.k }
+    if (!rookAt(6 + Piece.ROOK, 56)) { this.castleRights &= ~CastleRights.q }
   }
 
   initKeys () {
-    Pieces.for('all').forEach((piece) => {
-      [...Array(64).keys()].forEach((sq) => {
-        this.pieceKeys[piece][sq] = this.lcg.randomBigInt()
-      })
-    });
-
-    [...Array(64).keys()].forEach((sq) => {
-      this.enPassantKeys[sq] = this.lcg.randomBigInt()
-    });
-
-    [...Array(64).keys()].forEach((sq) => {
-      this.castleKeys[sq] = this.lcg.randomBigInt()
+    Pieces.for('all').forEach((fenChar) => {
+      const piece = Pieces.indexFor(fenChar)
+      for (let sq = 0; sq < 64; sq++) {
+        this.pieceKeys[piece * 64 + sq] = this.lcg.randomBigInt()
+      }
     })
+
+    for (let sq = 0; sq < 64; sq++) {
+      this.enPassantKeys[sq] = this.lcg.randomBigInt()
+    }
+
+    for (let sq = 0; sq < 64; sq++) {
+      this.castleKeys[sq] = this.lcg.randomBigInt()
+    }
 
     this.sideKey[0] = 0n
     this.sideKey[1] = this.lcg.randomBigInt()
+
+    // castleDeltaKeys[lostRights] xors out every castle key in lostRights
+    const rookSqs = [7, 0, 63, 56] // K, Q, k, q
+    for (let rights = 0; rights < 16; rights++) {
+      this.castleDeltaKeys[rights] = rookSqs
+        .filter((sq, bit) => (rights & (1 << bit)) !== 0)
+        .reduce((key, sq) => key ^ this.castleKeys[sq], 0n)
+    }
   }
 
-  getEpCaptureBb () {
-    return this.whiteToMove ? this.epSqBb >> 8n : this.epSqBb << 8n
+  // bitboard views
+  get bb () { return this.bitboards[BoardSlot.OCCUPIED] }
+  set bb (bb) { this.bitboards[BoardSlot.OCCUPIED] = bb }
+  get posKey () { return this.bitboards[BoardSlot.POS_KEY] }
+  set posKey (key) { this.bitboards[BoardSlot.POS_KEY] = key }
+
+  get whiteBb () { return this.bitboards[BoardSlot.WHITE] }
+  get whiteKingBb () { return this.bitboards[Piece.KING] }
+  get whiteQueenBb () { return this.bitboards[Piece.QUEEN] }
+  get whiteRookBb () { return this.bitboards[Piece.ROOK] }
+  get whiteBishopBb () { return this.bitboards[Piece.BISHOP] }
+  get whiteKnightBb () { return this.bitboards[Piece.KNIGHT] }
+  get whitePawnBb () { return this.bitboards[Piece.PAWN] }
+  get whiteMinorBb () { return this.whiteKnightBb | this.whiteBishopBb }
+  get whiteMajorBb () { return this.whiteRookBb | this.whiteQueenBb }
+  get whiteSliderBb () { return this.whiteMajorBb | this.whiteBishopBb }
+
+  get blackBb () { return this.bitboards[BoardSlot.BLACK] }
+  get blackKingBb () { return this.bitboards[6 + Piece.KING] }
+  get blackQueenBb () { return this.bitboards[6 + Piece.QUEEN] }
+  get blackRookBb () { return this.bitboards[6 + Piece.ROOK] }
+  get blackBishopBb () { return this.bitboards[6 + Piece.BISHOP] }
+  get blackKnightBb () { return this.bitboards[6 + Piece.KNIGHT] }
+  get blackPawnBb () { return this.bitboards[6 + Piece.PAWN] }
+  get blackMinorBb () { return this.blackKnightBb | this.blackBishopBb }
+  get blackMajorBb () { return this.blackRookBb | this.blackQueenBb }
+  get blackSliderBb () { return this.blackMajorBb | this.blackBishopBb }
+
+  // the rook squares that can still castle, e.g. 0x81n = both white rooks
+  get castleStatus () {
+    return Object.keys(CastleRights)
+      .filter((symbol) => (this.castleRights & CastleRights[symbol]) !== 0)
+      .reduce((status, symbol) => status | this.castleBit[symbol], 0n)
   }
 
-  getTheirBlockers () {
-    return this.theirBlockers
+  get epSqIdx () { return this.epSq === EMPTY ? undefined : this.epSq }
+  get epSqBb () { return this.epSq === EMPTY ? 0n : SQUARE_BB[this.epSq] }
+
+  // the pawn that can be captured en passant
+  get epCaptureBb () {
+    if (this.epSq === EMPTY) { return 0n }
+    return SQUARE_BB[this.whiteToMove ? this.epSq - 8 : this.epSq + 8]
   }
 
-  getOurBlockers () {
-    return this.ourBlockers
-  }
-
-  getXrayDangerBb () {
-    return this.xrayDangerSqs
-  }
-
-  getXrayAttackBb () {
-    return this.xrayAttackSqs
-  }
+  get checkersBb () { return ThreatBoard.checkers(this) }
+  get checkerCount () { return BitHelper.popCount(this.checkersBb) }
+  get sideInCheck () { return this.checkersBb !== 0n }
 
   legalMoves () {
     return MoveList.legalMoves(this)
   }
 
   moves (fenPiece = 'all') {
-    return fenPiece ? MoveList.for(fenPiece, this) : MoveList.legalMoves(this)
+    return MoveList.for(fenPiece, this)
   }
 
   isSqAttacked (sq, byPieceOrSide = 'all') {
-    return BoardStatus.isSqAttacked(this, sq, byPieceOrSide)
+    return ThreatBoard.isSqAttacked(this, sq, byPieceOrSide)
   }
 
   isOurKingXrayed () {
-    return BoardStatus.isOurKingXrayed(this)
+    return ThreatBoard.isOurKingXrayed(this)
   }
 
   isTheirKingXrayed () {
-    return BoardStatus.isTheirKingXrayed(this)
-  }
-
-  isOurPiecePinnedToKing () {
-    return BoardStatus.isOurPiecePinnedToKing(this)
-  }
-
-  isTheirPiecePinnedToTheirKing () {
-    return BoardStatus.isTheirPiecePinnedToTheirKing(this)
+    return ThreatBoard.isTheirKingXrayed(this)
   }
 
   isInCheck () {
-    return BoardStatus.isInCheck(this)
-  }
-}
-
-class BoardStatus {
-  static isSqAttacked (board, sq, byPieceOrSide = 'all') {
-    const targetSq = BitHelper.setBit(0n, sq)
-    const attacks = ThreatBoard.for(byPieceOrSide, board)
-    return (targetSq & attacks) !== 0n
-  }
-
-  static isOurKingXrayed (board) {
-    const ourKingFen = board.whiteToMove ? 'K' : 'k'
-    const ourKing = board.pieceBoardList[ourKingFen].bb
-    const opponentXrays = board.getXrayDangerBb()
-    return (ourKing & opponentXrays) !== 0n
-  }
-
-  static isTheirKingXrayed (board) {
-    const theirKingFen = board.whiteToMove ? 'k' : 'K'
-    const theirKing = board.pieceBoardList[theirKingFen].bb
-    const ourXrays = board.getXrayAttackBb()
-    return (theirKing & ourXrays) !== 0n
-  }
-
-  static isInCheck (board) {
-    return board.sideInCheck
-  }
-}
-
-class PieceKeys {
-  constructor () {
-    this.K = new BigUint64Array(64)
-    this.Q = new BigUint64Array(64)
-    this.R = new BigUint64Array(64)
-    this.B = new BigUint64Array(64)
-    this.N = new BigUint64Array(64)
-    this.P = new BigUint64Array(64)
-    this.k = new BigUint64Array(64)
-    this.q = new BigUint64Array(64)
-    this.r = new BigUint64Array(64)
-    this.b = new BigUint64Array(64)
-    this.n = new BigUint64Array(64)
-    this.p = new BigUint64Array(64)
+    return this.sideInCheck
   }
 }
 

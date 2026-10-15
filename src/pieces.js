@@ -1,4 +1,35 @@
+const FEN_CHARS = 'KQRBNPkqrbnp'
+
+/**
+ * Piece types index Board#bitboards. A black piece is its white
+ * counterpart + 6, so `color * 6 + type` finds any piece.
+ */
+const Piece = {
+  KING: 0,
+  QUEEN: 1,
+  ROOK: 2,
+  BISHOP: 3,
+  KNIGHT: 4,
+  PAWN: 5
+}
+
+// Board#bitboards slots after the 12 piece boards
+const BoardSlot = {
+  WHITE: 12,
+  BLACK: 13,
+  OCCUPIED: 14,
+  POS_KEY: 15
+}
+
 class Pieces {
+  static indexFor (fenChar) {
+    return FEN_CHARS.indexOf(fenChar)
+  }
+
+  static fenCharFor (index) {
+    return FEN_CHARS[index]
+  }
+
   static for (fromPieceOrSide) {
     switch (fromPieceOrSide) {
       case 'w':
@@ -36,6 +67,8 @@ class PieceStatus {
 }
 
 module.exports = {
+  Piece: Piece,
+  BoardSlot: BoardSlot,
   Pieces: Pieces,
   PieceStatus: PieceStatus
 }

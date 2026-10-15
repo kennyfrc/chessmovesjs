@@ -1,5 +1,20 @@
 const Pieces = require('./pieces.js').Pieces
-// const PieceList = require('./pieceboard.js').PieceList
+
+/**
+ * V8 only keeps BigInt math unboxed (fast) when the result is written into a
+ * BigUint64Array. So hot code writes bitboards into typed "scratch" slots
+ * and reads them back as two 32-bit halves through an Int32Array view.
+ * The halves are [low, high] on little-endian platforms.
+ */
+if (new Uint8Array(new Uint32Array([1]).buffer)[0] !== 1) {
+  throw new Error('chessmovesjs needs a little-endian platform')
+}
+
+const SCRATCH = new BigUint64Array(1)
+const SCRATCH32 = new Int32Array(SCRATCH.buffer)
+
+// castling rights as bit flags, keyed by their fen symbol
+const CastleRights = { K: 1, Q: 2, k: 4, q: 8 }
 
 function U64 (int) {
   return BigInt.asUintN(64, BigInt(int))
@@ -33,53 +48,45 @@ class BitHelper {
       .reduce((accBit, currBit) => accBit | currBit, 0n)
   }
 
-  static deBruijnMagicNum () {
-    return 0x03f79d71b4cb0a89n
-  }
-
-  /* eslint-disable */
-  static deBruijnTable() {
-    return [    0, 47,  1, 56, 48, 27,  2, 60,
-               57, 49, 41, 37, 28, 16,  3, 61,
-               54, 58, 35, 52, 50, 42, 21, 44,
-               38, 32, 29, 23, 17, 11,  4, 62,
-               46, 55, 26, 59, 40, 36, 15, 53,
-               34, 51, 20, 43, 31, 22, 10, 45,
-               25, 39, 14, 33, 19, 30,  9, 24,
-               13, 18,  8, 12,  7,  6,  5, 63 ];
-  }
-  /* eslint-enable */
-
-  /**
-    * De Bruijn Multiplication
-    */
+  // index of the least significant set bit, or -1 for an empty board
   static bitScanFwd (bb) {
-    bb = bb ^ (bb - 1n)
-    return BitHelper.deBruijnTable()[(U64(bb * BitHelper.deBruijnMagicNum()) >> 58n)]
+    SCRATCH[0] = bb
+    const lo = SCRATCH32[0]
+    const hi = SCRATCH32[1]
+    if (lo !== 0) { return 31 - Math.clz32(lo & -lo) }
+    if (hi !== 0) { return 63 - Math.clz32(hi & -hi) }
+    return -1
   }
 
+  // index of the most significant set bit, or -1 for an empty board
   static bitScanRev (bb) {
-    bb |= bb >> 1n
-    bb |= bb >> 2n
-    bb |= bb >> 4n
-    bb |= bb >> 8n
-    bb |= bb >> 16n
-    bb |= bb >> 32n
-    return BitHelper.deBruijnTable()[(U64(bb * BitHelper.deBruijnMagicNum()) >> 58n)]
+    SCRATCH[0] = bb
+    const lo = SCRATCH32[0]
+    const hi = SCRATCH32[1]
+    if (hi !== 0) { return 63 - Math.clz32(hi) }
+    if (lo !== 0) { return 31 - Math.clz32(lo) }
+    return -1
   }
 
-  /** counting bits:
-   *  www-graphics.stanford.edu/~seander/bithacks.html#CountBitsSetKernighan
-   **/
   static popCount (bb) {
-    let count = 0
+    SCRATCH[0] = bb
+    return BitHelper.popCount32(SCRATCH32[0]) + BitHelper.popCount32(SCRATCH32[1])
+  }
 
-    while (bb > 0) {
-      count++
-      bb &= bb - 1n // reset LS1B
+  // SWAR popcount on a 32-bit int
+  static popCount32 (bits) {
+    bits = bits - ((bits >>> 1) & 0x55555555)
+    bits = (bits & 0x33333333) + ((bits >>> 2) & 0x33333333)
+    return (((bits + (bits >>> 4)) & 0x0F0F0F0F) * 0x01010101) >>> 24
+  }
+
+  // mirrors the board vertically (a1 <-> a8)
+  static flipVertical (bb) {
+    let flipped = 0n
+    for (let rank = 0n; rank < 8n; rank++) {
+      flipped |= ((bb >> (8n * rank)) & 0xFFn) << (8n * (7n - rank))
     }
-
-    return count
+    return flipped
   }
 }
 
@@ -334,19 +341,18 @@ class SquareHelper {
     return indexMap[from] + indexMap[to]
   }
 
-  /* eslint-disable no-cond-assign */
   static indicesFor (board) {
     const someList = []
-    if (U64(board) !== 0n) {
-      do {
-        const idx = BitHelper.bitScanFwd(board)
-        someList.push(idx)
-      } while (board &= U64(board) - 1n)
+    SCRATCH[0] = board
+    for (let half = 0; half < 2; half++) {
+      let bits = SCRATCH32[half]
+      while (bits !== 0) {
+        someList.push((half << 5) | (31 - Math.clz32(bits & -bits)))
+        bits &= bits - 1
+      }
     }
-
     return someList
   }
-  /* eslint-enable no-cond-assign */
 }
 
 class PieceList {
@@ -392,6 +398,8 @@ class PerftHelper {
 }
 
 module.exports = {
+  U64: U64,
+  CastleRights: CastleRights,
   BitHelper: BitHelper,
   BoardHelper: BoardHelper,
   ViewHelper: ViewHelper,

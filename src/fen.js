@@ -3,12 +3,13 @@ class FenReader {
     return ranksRead === 8 && whiteSpace >= 1
   }
 
-  static isSidetoMove (fenChar) {
-    return 'wb'.includes(fenChar)
+  // fields are separated by spaces: board, side, castling, en passant, clocks
+  static isSidetoMove (fenChar, whiteSpace) {
+    return 'wb'.includes(fenChar) && whiteSpace === 1
   }
 
-  static isCastlingSymbol (fenChar) {
-    return 'KQkq'.includes(fenChar)
+  static isCastlingSymbol (fenChar, whiteSpace) {
+    return 'KQkq'.includes(fenChar) && whiteSpace === 2
   }
 
   static isWhitePiece (fenChar) {

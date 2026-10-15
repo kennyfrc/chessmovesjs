@@ -12,7 +12,6 @@ const BISHOP_RAYS = require('./attack.js').BISHOP_RAYS
 const BETWEEN = require('./attack.js').BETWEEN
 const LINE = require('./attack.js').LINE
 const Mask = require('./mask.js').Mask
-const ThreatBoard = require('./threatboard.js').ThreatBoard
 const Pieces = require('./pieces.js').Pieces
 const Piece = require('./pieces.js').Piece
 const BoardSlot = require('./pieces.js').BoardSlot
@@ -47,11 +46,25 @@ const KING_OCC = 6
 const EP_OCC = 7
 const EP_PAWNS = 8
 const EP_ATTACKERS = 9
-const GEN = new BigUint64Array(10)
+const PINNED = 10 // our pinned pieces
+const PAWNS = 11
+const EMPTY_SQS = 12
+const PUSHES = 13
+const DOUBLE_PUSHES = 14
+const WEST_CAPTURES = 15 // toward the a-file
+const EAST_CAPTURES = 16 // toward the h-file
+const PROMOTIONS = 17
+const THEIR_ROOKS = 18 // their rooks and queens
+const THEIR_BISHOPS = 19 // their bishops and queens
+const ATTACKERS = 20
+const GEN = new BigUint64Array(21)
 const GEN32 = new Int32Array(GEN.buffer)
 
-// our pinned pieces, as [squares 0-31, squares 32-63] bit sets
-const PINNED = new Int32Array(2)
+const NOT_FILE_A = 0xFEFEFEFEFEFEFEFEn
+const NOT_FILE_H = 0x7F7F7F7F7F7F7F7Fn
+const RANK_3 = 0x0000000000FF0000n
+const RANK_6 = 0x0000FF0000000000n
+const RANK_1_AND_8 = 0xFF000000000000FFn
 
 class MoveList {
   static for (fenPiece, board) {
@@ -122,23 +135,154 @@ class MoveList {
     return this.addPawnMoves(board, moves, n, color, kingSq)
   }
 
-  static addKingMoves (board, moves, n, color, kingSq, checkerCount) {
+  /**
+   * The number of legal moves, same as generate() would write. Perft
+   * calls it at the last ply, where only the count matters, so each
+   * piece's destinations are counted instead of written out.
+   */
+  static count (board) {
+    const color = board.whiteToMove ? 0 : 1
+    const kingSq = board.kingSqs[color]
+    const checkerCount = CheckEvasions.setTargets(board, color, kingSq)
+    this.setKingMoves(board, color, kingSq, checkerCount)
+    let count = this.countMoves()
+    if (checkerCount > 1) { return count }
+    Pins.find(board, color, kingSq)
+    count += this.countRookMoves(board, color, kingSq)
+    count += this.countBishopMoves(board, color, kingSq)
+    count += this.countKnightMoves(board, color)
+    return count + this.countPawnMoves(board, color, kingSq)
+  }
+
+  // a queen moves like a rook plus a bishop, so both counts include it
+  static countRookMoves (board, color, kingSq) {
     const bbs = board.bitboards
-    // sliders see through the king's old square
-    GEN[KING_OCC] = bbs[BoardSlot.OCCUPIED] ^ SQUARE_BB[kingSq]
-    GEN[MOVES] = KING_ATTACKS[kingSq] & (bbs[BoardSlot.WHITE + color] ^ ALL_SQUARES)
+    let count = 0
+    GEN[PIECES] = bbs[color * 6 + Piece.ROOK] | bbs[color * 6 + Piece.QUEEN]
     for (let half = 0; half < 2; half++) {
-      let targets = GEN32[2 * MOVES + half]
-      while (targets !== 0) {
-        const bit = targets & -targets
-        targets ^= bit
-        if (ThreatBoard.isAttacked(board, (half << 5) | (31 - Math.clz32(bit)), color, GEN[KING_OCC])) {
-          GEN32[2 * MOVES + half] ^= bit
-        }
+      let pieces = GEN32[2 * PIECES + half]
+      while (pieces !== 0) {
+        const from = (half << 5) | (31 - Math.clz32(pieces & -pieces))
+        pieces &= pieces - 1
+        GEN[MOVES] = Ray.rookAttacks(from, bbs[BoardSlot.OCCUPIED]) & GEN[TARGETS]
+        if (Pins.isPinned(from)) { GEN[MOVES] = GEN[MOVES] & LINE[kingSq * 64 + from] }
+        count += this.countMoves()
       }
     }
-    if (checkerCount === 0) { Castling.addTargets(board, color) }
+    return count
+  }
 
+  static countBishopMoves (board, color, kingSq) {
+    const bbs = board.bitboards
+    let count = 0
+    GEN[PIECES] = bbs[color * 6 + Piece.BISHOP] | bbs[color * 6 + Piece.QUEEN]
+    for (let half = 0; half < 2; half++) {
+      let pieces = GEN32[2 * PIECES + half]
+      while (pieces !== 0) {
+        const from = (half << 5) | (31 - Math.clz32(pieces & -pieces))
+        pieces &= pieces - 1
+        GEN[MOVES] = Ray.bishopAttacks(from, bbs[BoardSlot.OCCUPIED]) & GEN[TARGETS]
+        if (Pins.isPinned(from)) { GEN[MOVES] = GEN[MOVES] & LINE[kingSq * 64 + from] }
+        count += this.countMoves()
+      }
+    }
+    return count
+  }
+
+  // a pinned knight can never move
+  static countKnightMoves (board, color) {
+    let count = 0
+    GEN[PIECES] = board.bitboards[color * 6 + Piece.KNIGHT]
+    GEN[PIECES] = GEN[PIECES] ^ (GEN[PIECES] & GEN[PINNED])
+    for (let half = 0; half < 2; half++) {
+      let pieces = GEN32[2 * PIECES + half]
+      while (pieces !== 0) {
+        const from = (half << 5) | (31 - Math.clz32(pieces & -pieces))
+        pieces &= pieces - 1
+        GEN[MOVES] = KNIGHT_ATTACKS[from] & GEN[TARGETS]
+        count += this.countMoves()
+      }
+    }
+    return count
+  }
+
+  /**
+   * Counts all unpinned pawns at once by shifting the pawn board.
+   * Pinned pawns and en passant are rare and go one pawn at a time.
+   */
+  static countPawnMoves (board, color, kingSq) {
+    const bbs = board.bitboards
+    GEN[PAWNS] = bbs[color * 6 + Piece.PAWN]
+    const count = this.countPinnedPawnMoves(board, color, kingSq) + this.countEnPassant(board, color, kingSq)
+    GEN[PAWNS] = GEN[PAWNS] ^ (GEN[PAWNS] & GEN[PINNED])
+    GEN[EMPTY_SQS] = bbs[BoardSlot.OCCUPIED] ^ ALL_SQUARES
+    if (color === 0) {
+      GEN[PUSHES] = (GEN[PAWNS] << 8n) & GEN[EMPTY_SQS]
+      GEN[DOUBLE_PUSHES] = ((GEN[PUSHES] & RANK_3) << 8n) & GEN[EMPTY_SQS]
+      GEN[WEST_CAPTURES] = ((GEN[PAWNS] & NOT_FILE_A) << 7n) & bbs[BoardSlot.BLACK]
+      GEN[EAST_CAPTURES] = ((GEN[PAWNS] & NOT_FILE_H) << 9n) & bbs[BoardSlot.BLACK]
+    } else {
+      GEN[PUSHES] = (GEN[PAWNS] >> 8n) & GEN[EMPTY_SQS]
+      GEN[DOUBLE_PUSHES] = ((GEN[PUSHES] & RANK_6) >> 8n) & GEN[EMPTY_SQS]
+      GEN[WEST_CAPTURES] = ((GEN[PAWNS] & NOT_FILE_A) >> 9n) & bbs[BoardSlot.WHITE]
+      GEN[EAST_CAPTURES] = ((GEN[PAWNS] & NOT_FILE_H) >> 7n) & bbs[BoardSlot.WHITE]
+    }
+    GEN[PUSHES] = GEN[PUSHES] & GEN[TARGETS]
+    GEN[DOUBLE_PUSHES] = GEN[DOUBLE_PUSHES] & GEN[TARGETS]
+    GEN[WEST_CAPTURES] = GEN[WEST_CAPTURES] & GEN[TARGETS]
+    GEN[EAST_CAPTURES] = GEN[EAST_CAPTURES] & GEN[TARGETS]
+    // a promotion is four moves: queen, rook, bishop, knight
+    GEN[PROMOTIONS] = (GEN[PUSHES] | GEN[WEST_CAPTURES] | GEN[EAST_CAPTURES]) & RANK_1_AND_8
+    // no square takes both a single and a double push
+    GEN[PUSHES] = GEN[PUSHES] | GEN[DOUBLE_PUSHES]
+    return count + this.countSlot(PUSHES) + this.countSlot(WEST_CAPTURES) + this.countSlot(EAST_CAPTURES) +
+      3 * this.countSlot(PROMOTIONS)
+  }
+
+  static countPinnedPawnMoves (board, color, kingSq) {
+    const promotionRank = color === 0 ? 6 : 1
+    let count = 0
+    GEN[PIECES] = GEN[PAWNS] & GEN[PINNED]
+    for (let half = 0; half < 2; half++) {
+      let pawns = GEN32[2 * PIECES + half]
+      while (pawns !== 0) {
+        const from = (half << 5) | (31 - Math.clz32(pawns & -pawns))
+        pawns &= pawns - 1
+        this.setPawnMoves(board, color, from)
+        GEN[MOVES] = GEN[MOVES] & LINE[kingSq * 64 + from]
+        count += (from >> 3) === promotionRank ? 4 * this.countMoves() : this.countMoves()
+      }
+    }
+    return count
+  }
+
+  // our pawns that could take en passant sit where their pawn on epSq would attack
+  static countEnPassant (board, color, kingSq) {
+    const epSq = board.epSq
+    if (epSq === EMPTY) { return 0 }
+    let count = 0
+    GEN[PIECES] = PAWN_ATTACKS[(1 - color) * 64 + epSq] & GEN[PAWNS]
+    for (let half = 0; half < 2; half++) {
+      let pawns = GEN32[2 * PIECES + half]
+      while (pawns !== 0) {
+        const from = (half << 5) | (31 - Math.clz32(pawns & -pawns))
+        pawns &= pawns - 1
+        if (EnPassant.isLegal(board, color, kingSq, from, epSq)) { count++ }
+      }
+    }
+    return count
+  }
+
+  static countSlot (slot) {
+    return BitHelper.popCount32(GEN32[2 * slot]) + BitHelper.popCount32(GEN32[2 * slot + 1])
+  }
+
+  static countMoves () {
+    return this.countSlot(MOVES)
+  }
+
+  static addKingMoves (board, moves, n, color, kingSq, checkerCount) {
+    this.setKingMoves(board, color, kingSq, checkerCount)
     for (let half = 0; half < 2; half++) {
       let targets = GEN32[2 * MOVES + half]
       while (targets !== 0) {
@@ -149,6 +293,30 @@ class MoveList {
       }
     }
     return n
+  }
+
+  // the king's safe squares, plus castling squares, go into MOVES
+  static setKingMoves (board, color, kingSq, checkerCount) {
+    const bbs = board.bitboards
+    const them = 6 - color * 6
+    GEN[MOVES] = KING_ATTACKS[kingSq] & (bbs[BoardSlot.WHITE + color] ^ ALL_SQUARES)
+    const canCastle = checkerCount === 0 && ((board.castleRights >> (color * 2)) & 3) !== 0
+    if ((GEN32[2 * MOVES] | GEN32[2 * MOVES + 1]) === 0 && !canCastle) { return }
+    // sliders see through the king's old square
+    GEN[KING_OCC] = bbs[BoardSlot.OCCUPIED] ^ SQUARE_BB[kingSq]
+    GEN[THEIR_ROOKS] = bbs[them + Piece.ROOK] | bbs[them + Piece.QUEEN]
+    GEN[THEIR_BISHOPS] = bbs[them + Piece.BISHOP] | bbs[them + Piece.QUEEN]
+    for (let half = 0; half < 2; half++) {
+      let targets = GEN32[2 * MOVES + half]
+      while (targets !== 0) {
+        const bit = targets & -targets
+        targets ^= bit
+        if (KingSafety.isAttacked(board, (half << 5) | (31 - Math.clz32(bit)), color)) {
+          GEN32[2 * MOVES + half] ^= bit
+        }
+      }
+    }
+    if (canCastle) { Castling.addTargets(board, color) }
   }
 
   static addPieceMoves (board, moves, n, color, kingSq, type) {
@@ -268,7 +436,7 @@ class CheckEvasions {
   static setTargets (board, color, kingSq) {
     const bbs = board.bitboards
     const them = 6 - color * 6
-    // short steps keep V8's BigInt math unboxed (see ThreatBoard.isAttacked)
+    // short steps keep V8's BigInt math unboxed (see KingSafety.isAttacked)
     GEN[CHECKERS] = (KNIGHT_ATTACKS[kingSq] & bbs[them + Piece.KNIGHT]) |
       (PAWN_ATTACKS[color * 64 + kingSq] & bbs[them + Piece.PAWN])
     GEN[CHECKERS] = GEN[CHECKERS] |
@@ -294,8 +462,7 @@ class Pins {
   static find (board, color, kingSq) {
     const bbs = board.bitboards
     const them = 6 - color * 6
-    PINNED[0] = 0
-    PINNED[1] = 0
+    GEN[PINNED] = 0n
     GEN[SNIPERS] = ROOK_RAYS[kingSq] & (bbs[them + Piece.ROOK] | bbs[them + Piece.QUEEN])
     GEN[SNIPERS] = GEN[SNIPERS] | (BISHOP_RAYS[kingSq] & (bbs[them + Piece.BISHOP] | bbs[them + Piece.QUEEN]))
     for (let half = 0; half < 2; half++) {
@@ -318,12 +485,12 @@ class Pins {
     const sq = lo !== 0 ? 31 - Math.clz32(lo) : 63 - Math.clz32(hi)
     const piece = board.squares[sq]
     if (piece >= color * 6 && piece < color * 6 + 6) {
-      PINNED[sq >> 5] |= 1 << (sq & 31)
+      GEN32[2 * PINNED + (sq >> 5)] |= 1 << (sq & 31)
     }
   }
 
   static isPinned (sq) {
-    return ((PINNED[sq >> 5] >>> (sq & 31)) & 1) !== 0
+    return ((GEN32[2 * PINNED + (sq >> 5)] >>> (sq & 31)) & 1) !== 0
   }
 }
 
@@ -356,19 +523,53 @@ class EnPassant {
   }
 }
 
+class KingSafety {
+  /**
+   * Is sq attacked by their pieces, looking through our king?
+   * setKingMoves fills KING_OCC, THEIR_ROOKS and THEIR_BISHOPS first.
+   * A slider lookup only runs when one of their sliders is on an open
+   * board ray from sq.
+   */
+  static isAttacked (board, sq, color) {
+    const bbs = board.bitboards
+    const them = 6 - color * 6
+    GEN[ATTACKERS] = (KNIGHT_ATTACKS[sq] & bbs[them + Piece.KNIGHT]) |
+      (PAWN_ATTACKS[color * 64 + sq] & bbs[them + Piece.PAWN]) |
+      (KING_ATTACKS[sq] & bbs[them + Piece.KING])
+    if ((GEN32[2 * ATTACKERS] | GEN32[2 * ATTACKERS + 1]) !== 0) { return true }
+    GEN[ATTACKERS] = BISHOP_RAYS[sq] & GEN[THEIR_BISHOPS]
+    if ((GEN32[2 * ATTACKERS] | GEN32[2 * ATTACKERS + 1]) !== 0) {
+      GEN[ATTACKERS] = Ray.bishopAttacks(sq, GEN[KING_OCC]) & GEN[THEIR_BISHOPS]
+      if ((GEN32[2 * ATTACKERS] | GEN32[2 * ATTACKERS + 1]) !== 0) { return true }
+    }
+    GEN[ATTACKERS] = ROOK_RAYS[sq] & GEN[THEIR_ROOKS]
+    if ((GEN32[2 * ATTACKERS] | GEN32[2 * ATTACKERS + 1]) === 0) { return false }
+    GEN[ATTACKERS] = Ray.rookAttacks(sq, GEN[KING_OCC]) & GEN[THEIR_ROOKS]
+    return (GEN32[2 * ATTACKERS] | GEN32[2 * ATTACKERS + 1]) !== 0
+  }
+}
+
 class Castling {
-  // adds the castling squares to the king's MOVES
+  /**
+   * Adds the castling squares to the king's MOVES. The square the king
+   * crosses (f1 or d1) is next to it, so MOVES already says if it is safe.
+   * Looking through the king changes nothing here, since we are not in check.
+   */
   static addTargets (board, color) {
     const rights = board.castleRights >> (color * 2) // black's k, q line up with K, Q
     const home = color * 56
     if ((rights & CastleRights.K) !== 0 && this.isPathClear(board, home + 5, home + 6) &&
-      this.isSafe(board, color, home + 5) && this.isSafe(board, color, home + 6)) {
+      this.isTarget(home + 5) && !KingSafety.isAttacked(board, home + 6, color)) {
       this.addTarget(home + 6)
     }
     if ((rights & CastleRights.Q) !== 0 && this.isPathClear(board, home + 1, home + 3) &&
-      this.isSafe(board, color, home + 3) && this.isSafe(board, color, home + 2)) {
+      this.isTarget(home + 3) && !KingSafety.isAttacked(board, home + 2, color)) {
       this.addTarget(home + 2)
     }
+  }
+
+  static isTarget (sq) {
+    return ((GEN32[2 * MOVES + (sq >> 5)] >>> (sq & 31)) & 1) !== 0
   }
 
   static isPathClear (board, fromSq, toSq) {
@@ -378,10 +579,7 @@ class Castling {
     return true
   }
 
-  static isSafe (board, color, sq) {
-    return !ThreatBoard.isAttacked(board, sq, color, board.bitboards[BoardSlot.OCCUPIED])
-  }
-
+  // reads the DANGER map that setKingMoves built
   static addTarget (sq) {
     GEN32[2 * MOVES + (sq >> 5)] |= 1 << (sq & 31)
   }

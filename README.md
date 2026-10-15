@@ -32,6 +32,9 @@ The toolchain is [Vite+](https://viteplus.dev) (`vp`). Node 22.18+, 24.11+ or 26
 - Sliders use magic bitboards. `scripts/find-magics.js` generates `src/magic.js`.
 - Moves are generated legal: check evasion targets, pins and en passant are
   resolved before a move is written, so perft never has to make the leaf moves.
+- At the last ply, perft only counts moves (`MoveList.count`). Each piece's
+  destinations are popcounted instead of written out, and unpinned pawns
+  are counted all at once by shifting the pawn bitboard.
 - Board state lives in typed arrays (`BigUint64Array` for bitboards, an
   `Int8Array` mailbox), and moves are ints, so perft does not allocate.
 - V8 only keeps BigInt math fast when each result goes straight into a
@@ -40,7 +43,8 @@ The toolchain is [Vite+](https://viteplus.dev) (`vp`). Node 22.18+, 24.11+ or 26
 
 ## Speed
 
-`npm run bench` on an M1 Pro, Node 22 to 26: about 55-90M nodes/s with bulk
-counting (startpos perft 5 in ~85 ms). For comparison, chess-movegen-js's
-BigInt bitboard generator measured 3-4M nodes/s on the same positions and
-machine.
+`npm run bench` on an M1 Pro, Node 22 to 26: about 85-90M nodes/s with bulk
+counting (startpos perft 5 in ~75 ms). Deeper runs reach about 145M nodes/s
+(kiwipete perft 5 at ~190M), since the warm-up share is smaller. For
+comparison, chess-movegen-js's BigInt bitboard generator measured 3-4M
+nodes/s on the same positions and machine.

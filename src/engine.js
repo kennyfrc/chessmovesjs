@@ -106,9 +106,9 @@ class Engine {
 
   // perft below the root; moves for this ply live at moveBuffer[start...]
   countNodes (depth, start) {
+    if (depth === 1) { return MoveList.count(this.board) }
     const moves = this.moveBuffer
     const end = MoveList.generate(this.board, moves, start)
-    if (depth === 1) { return end - start }
 
     let nodes = 0
     for (let i = start; i < end; i++) {

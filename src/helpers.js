@@ -10,6 +10,10 @@ if (new Uint8Array(new Uint32Array([1]).buffer)[0] !== 1) {
   throw new Error('chessmovesjs needs a little-endian platform')
 }
 
+// set bits in every 16-bit number; two lookups beat a SWAR popcount in perft
+const POP16 = new Uint8Array(1 << 16)
+for (let i = 1; i < POP16.length; i++) { POP16[i] = (i & 1) + POP16[i >> 1] }
+
 const SCRATCH = new BigUint64Array(1)
 const SCRATCH32 = new Int32Array(SCRATCH.buffer)
 
@@ -73,11 +77,8 @@ class BitHelper {
     return BitHelper.popCount32(SCRATCH32[0]) + BitHelper.popCount32(SCRATCH32[1])
   }
 
-  // SWAR popcount on a 32-bit int
   static popCount32 (bits) {
-    bits = bits - ((bits >>> 1) & 0x55555555)
-    bits = (bits & 0x33333333) + ((bits >>> 2) & 0x33333333)
-    return (((bits + (bits >>> 4)) & 0x0F0F0F0F) * 0x01010101) >>> 24
+    return POP16[bits & 0xFFFF] + POP16[bits >>> 16]
   }
 
   // mirrors the board vertically (a1 <-> a8)

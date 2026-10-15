@@ -3,8 +3,6 @@ const Board = require('../src/board.js').Board
 const BoardView = require('../src/boardview.js').BoardView
 const SquareHelper = require('../src/helpers.js').SquareHelper
 // const PieceBoard = require('../src/board.js').PieceBoard
-const ViewHelper = require('../src/helpers.js').ViewHelper
-const PerftHelper = require('../src/helpers.js').PerftHelper
 const Engine = require('../src/engine.js').Engine
 // const PieceBoardList = require('../src/pieceboard.js').PieceBoardList
 
@@ -649,8 +647,6 @@ describe('SquareHelper', function () {
       const board = new Board()
       board.parseFenToBoard('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1')
       const rookBoard = board.pieceBoardList.r
-      const bKingBoard = board.pieceBoardList.k
-      const wKingBoard = board.pieceBoardList.K
 
       assert.equal(SquareHelper.indicesFor(rookBoard.bb)[0], 56)
       assert.equal(SquareHelper.indicesFor(rookBoard.bb)[1], 63)
@@ -659,9 +655,7 @@ describe('SquareHelper', function () {
     it('shows indices of black king', function () {
       const board = new Board()
       board.parseFenToBoard('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1')
-      const rookBoard = board.pieceBoardList.r
       const bKingBoard = board.pieceBoardList.k
-      const wKingBoard = board.pieceBoardList.K
 
       assert.equal(SquareHelper.indicesFor(bKingBoard.bb)[0], 60)
     })
@@ -669,8 +663,6 @@ describe('SquareHelper', function () {
     it('shows indices of white king', function () {
       const board = new Board()
       board.parseFenToBoard('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1')
-      const rookBoard = board.pieceBoardList.r
-      const bKingBoard = board.pieceBoardList.k
       const wKingBoard = board.pieceBoardList.K
 
       assert.equal(SquareHelper.indicesFor(wKingBoard.bb)[0], 4)
@@ -857,7 +849,7 @@ describe('Engine', function () {
       assert.equal(engineWEpOpps.board.epCaptureBb, originalEpCaptureBb)
     })
 
-    it('should make and unmake promotions', function() {
+    it('should make and unmake promotions', function () {
       const engine = new Engine('r2qkb1r/pP1b1ppp/2n2n2/4p3/8/2N2N2/PPPP1PPP/R1BQKB1R w KQkq - 3 7')
       const moves = engine.board.legalMoves()
       const originalWhitePawnBb = engine.board.pieceBoardList.P.bb
@@ -878,7 +870,7 @@ describe('Engine', function () {
       assert.equal(engine.board.posKey, originalPosKey)
     })
 
-    it('should test full move number', function() {
+    it('should test full move number', function () {
       const engine = new Engine('r2qkb1r/pP1b1ppp/2n2n2/4p3/8/2N2N2/PPPP1PPP/R1BQKB1R w KQkq - 3 7')
       const originalCount = engine.board.fullMoveNo
       engine.make(engine.board.legalMoves()[1])
@@ -890,20 +882,20 @@ describe('Engine', function () {
       assert.equal(engine.board.fullMoveNo, originalCount)
     })
 
-    it('should test half-move clock', function() {
+    it('should test half-move clock', function () {
       const engine = new Engine('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1')
       engine.make(engine.board.legalMoves()[0])
       engine.unmake()
       assert.equal(engine.board.halfMoveClock, 0)
       engine.make(engine.board.legalMoves()[0])
       assert.equal(engine.board.halfMoveClock, 1)
-      
+
       engine.make(engine.board.legalMoves()[4])
       engine.unmake()
       assert.equal(engine.board.halfMoveClock, 1)
       engine.make(engine.board.legalMoves()[4])
       assert.equal(engine.board.halfMoveClock, 0)
-      
+
       engine.make(engine.board.legalMoves()[4])
       engine.unmake()
       assert.equal(engine.board.halfMoveClock, 0)
@@ -929,7 +921,7 @@ describe('Engine', function () {
       assert.equal(engine.board.halfMoveClock, 0)
     })
 
-    it('verify check evasions - capture checker', function() {
+    it('verify check evasions - capture checker', function () {
       const engine = new Engine('3K4/8/8/8/8/2b5/1N6/3k4 b - - 0 1')
       const originalMoves = engine.board.legalMoves()
 
@@ -939,7 +931,7 @@ describe('Engine', function () {
       assert.equal(engine.board.legalMoves().length, originalMoves.length)
     })
 
-    it('verify check evasions - block checker', function() {
+    it('verify check evasions - block checker', function () {
       const engine = new Engine('3K4/8/8/3Q4/8/2b5/8/3k4 b - - 0 1')
       const originalMoves = engine.board.legalMoves()
 
@@ -949,7 +941,7 @@ describe('Engine', function () {
       assert.equal(engine.board.legalMoves().length, originalMoves.length)
     })
 
-    it('verify check evasions - king moves', function() {
+    it('verify check evasions - king moves', function () {
       const engine = new Engine('4k3/6N1/5b2/4R3/8/8/8/4K3 b - - 0 1')
       const originalMoves = engine.board.legalMoves()
 
@@ -959,7 +951,7 @@ describe('Engine', function () {
       assert.equal(engine.board.legalMoves().length, originalMoves.length)
     })
 
-    it('verify check evasions - en passant check evasion', function() {
+    it('verify check evasions - en passant check evasion', function () {
       const engine = new Engine('8/8/8/2k5/3Pp3/8/8/4K3 b - d3 0 1')
       const originalMoves = engine.board.legalMoves()
 
@@ -969,7 +961,7 @@ describe('Engine', function () {
       assert.equal(engine.board.legalMoves().length, originalMoves.length)
     })
 
-    it('verify check evasions - file pin', function() {
+    it('verify check evasions - file pin', function () {
       const engine = new Engine('4k3/8/4r3/8/8/4Q3/8/2K5 b - - 0 1')
       const originalMoves = engine.board.legalMoves()
 
@@ -979,7 +971,7 @@ describe('Engine', function () {
       assert.equal(engine.board.legalMoves().length, originalMoves.length)
     })
 
-    it('verify check evasions - file pin pawn', function() {
+    it('verify check evasions - file pin pawn', function () {
       const engine = new Engine('4k3/4p3/3P4/8/4Q3/8/8/2K5 b - - 0 1')
       const originalMoves = engine.board.legalMoves()
 
@@ -989,7 +981,7 @@ describe('Engine', function () {
       assert.equal(engine.board.legalMoves().length, originalMoves.length)
     })
 
-    it('verify check evasions - rank pin', function() {
+    it('verify check evasions - rank pin', function () {
       const engine = new Engine('R2rk3/8/8/8/8/8/8/2K5 b - - 0 1')
       const originalMoves = engine.board.legalMoves()
 
@@ -999,7 +991,7 @@ describe('Engine', function () {
       assert.equal(engine.board.legalMoves().length, originalMoves.length)
     })
 
-    it('verify check evasions - rank pin pawn', function() {
+    it('verify check evasions - rank pin pawn', function () {
       const engine = new Engine('8/1R2pk2/8/8/8/8/8/2K5 b - - 0 1')
       const originalMoves = engine.board.legalMoves()
 
@@ -1009,7 +1001,7 @@ describe('Engine', function () {
       assert.equal(engine.board.legalMoves().length, originalMoves.length)
     })
 
-    it('should show threefold repetition', function() {
+    it('should show threefold repetition', function () {
       const engine = new Engine('1kr5/1b3R2/1B2p3/4Pn1p/R7/2P3p1/1KP4r/8 w - - 0 1')
 
       engine.make(engine.board.legalMoves()[35])
@@ -1058,13 +1050,13 @@ describe('Perft Tricky Positions', function () {
 
     const secondCastleStatus = engine.board.castleStatus
     engine.make(engine.board.legalMoves()[2])
-    
+
     engine.unmake()
     assert.equal(engine.board.castleStatus, secondCastleStatus)
-    
+
     engine.unmake()
     assert.equal(engine.board.castleStatus, firstCastleStatus)
-    
+
     engine.unmake()
     assert.equal(engine.board.castleStatus, initialCastleStatus)
   })
@@ -1250,4 +1242,3 @@ describe('Perft Tricky Positions', function () {
     assert.equal(engine.board.legalMoves().length, 40)
   })
 })
-

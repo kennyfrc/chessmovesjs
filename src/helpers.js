@@ -268,7 +268,7 @@ class ViewHelper {
 
     console.log(`=BEGIN ${message}` + '\n' +
       `piece on index: ${userView[viewIdx]}` + '\n' +
-      `board` + `\n` +
+      'board' + '\n' +
       userView[SquareHelper.for('a8')] + userView[SquareHelper.for('b8')] +
       userView[SquareHelper.for('c8')] + userView[SquareHelper.for('d8')] +
       userView[SquareHelper.for('e8')] + userView[SquareHelper.for('f8')] +
@@ -391,10 +391,10 @@ class PerftHelper {
   static countMoves (moveList) {
     const pieceList = new PieceList()
     moveList.forEach((move) => {
-      pieceList[move.fenChar] += 1  
+      pieceList[move.fenChar] += 1
     })
     console.log(pieceList)
-  } 
+  }
 }
 
 module.exports = {

@@ -67,7 +67,8 @@ class Engine {
 
   growStacks () {
     const grow = (stack, size) => {
-      const bigger = new stack.constructor(size)
+      const TypedArray = stack.constructor
+      const bigger = new TypedArray(size)
       bigger.set(stack)
       return bigger
     }

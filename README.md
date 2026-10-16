@@ -7,6 +7,10 @@ This is a chess move generator that uses native 64-bit integers (BigInts).
 Passes perft on the standard test positions (`npm run perft`), and to full
 published depth (e.g. startpos perft 6, kiwipete perft 5).
 
+It also has a small alpha-beta search (`engine.search(depth)`) with a
+material and piece-square eval. It isn't a full engine yet: there is no UCI
+protocol and no time management.
+
 ## Usage
 
 ```js
@@ -14,7 +18,13 @@ import { Engine } from 'chessmovesjs' // or require('chessmovesjs')
 
 const engine = new Engine('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1')
 engine.perft(5) // 4865609
+
+new Engine('6k1/5ppp/8/8/8/8/5PPP/3R2K1 w - - 0 1').search(3)
+// { move: 'd1d8', score: 30999, mate: 1, depth: 3, nodes: 126, pv: ['d1d8'] }
 ```
+
+`score` is in centipawns for the side to move. `mate` counts moves to mate,
+negative when the side to move gets mated.
 
 ## Development
 
@@ -26,6 +36,8 @@ The toolchain is [Vite+](https://viteplus.dev) (`vp`). Node 22.18+, 24.11+ or 26
 - `npm run check`: lint, as `vp check`; formatting is off because Oxfmt
   only formats Prettier style
 - `npm run bench`: perft speed on the standard positions
+- `npm run bench:search`: search speed and node counts at depth 7; pass
+  another depth with `npm run bench:search -- 6`
 
 ## About the design
 
@@ -54,6 +66,41 @@ ints is a pair of fast lookups, while the same count on a BigInt is much
 slower. If you take the first row away, most of the speed in the other rows
 goes with it.
 
+## About the search
+
+`engine.search(depth)` is an alpha-beta search. At the end of each line it
+searches captures until the position is quiet, and a hash table keeps earlier
+results. The eval is only material plus piece-square tables. The search keeps
+that score up to date move by move, so evaluating a position takes two array
+reads.
+
+Alpha-beta gives the same score whatever order it tries the moves in. The
+order decides how soon it meets a move that refutes a position, and so how
+many positions it has to search and evaluate. That's why the ideas from
+Smirnov's books went into the move order and not into the eval. Below, alpha
+is the score the side to move is already sure of.
+
+| Choice | Example | Why | Cost |
+|---|---|---|---|
+| **Moves come in stages: good captures, then quiet moves, then losing captures** | In the depth-7 bench, about 60% of the nodes at depth 1 (the last ply before the capture-only search) stop at a capture that refutes them. They never generate a quiet move. | Smirnov looks at forcing moves first (*Calculation*, p50). A refutation is usually a capture, so the quiet moves are often not needed. | Three generators (`generateCaptures`, `generateQuiets`, `generateQuietChecks`) that must match `generate`. Tests compare them on random games. |
+| **A capture that loses material waits until after the quiet moves** | Qd1xd5 loses the queen for a pawn when a pawn on c6 defends d5. `Exchange.isLosing` plays out the captures on d5 to see that. | Smirnov counts a capture as forcing only when the opponent has to answer it (*Calculation*, p52-53). After a capture that loses material, the opponent just wins material. Moving these captures back cut the nodes by 18%. | A static exchange evaluation. It only runs when the capturing piece is worth more than the piece it takes. |
+| **Quiet moves are sorted by how much more active the piece gets** | Ng1-f3 goes from 3 controlled squares to 8 and gains 40 centipawns. Ng1-h3 reaches 4 squares and gains 8, so Nf3 is tried first. | This is Smirnov's "maximum activity" (*Positional Understanding*, p13-22). The tables count the squares each piece controls, so one table serves both the eval and the move order. It cut the nodes by 3%. | Two table reads per quiet move. It mostly breaks ties: history scores, which learn from earlier cutoffs, soon outweigh it. |
+| **Pawn and knight moves that attack a bigger piece come first among the quiet moves** | After 1.e4 Nf6, the push 2.e5 attacks the knight. | Attacking moves force an answer (*Calculation*, p31-34). This cut the nodes by 3.3% at depth 7. | One bitboard per node, then one bit test per quiet move. Doing the bitboard work for each move instead cut about as many nodes but cost 15% more instructions. |
+| **At depth 1, a node that can't reach alpha only tries checks** | If the score plus 50 centipawns is still below alpha, only `generateQuietChecks` runs. | After a quiet move without check, the other side takes the static score or does better with a capture. No quiet move adds more than 50 (a pawn push to the 7th rank gains the most), so only checks can still reach alpha. This removed about 15% of the instructions. | `MAX_QUIET_GAIN` must stay a true bound if the tables change. It's computed from the tables when the module loads, and a test checks it on random games. |
+| **The eval is updated before each move is made** | `Evaluation.update` writes the score after the move into a stack with one entry per ply. | The search knows a move's static score before playing it. At depth 1 and in the capture search, a move that can't reach alpha and gives no check is skipped without `makeMove`. That cut the nodes by 65% but the time by only about 15%, since most of the skipped nodes would only have returned their static score. | The search must call `update` before every `makeMove`. |
+
+Some of Smirnov's rules didn't pay off here. A bonus for quiet checks made the
+search visit 4% more nodes. Trying the least active piece first saved 1.4% of
+the nodes but cost 8% more instructions. Two other rules changed the node
+count by about 1% or less: moving pieces away from enemy pawn attacks first,
+and trying the most forward moves first. The search doesn't use any of these.
+
+The last row was there from the start. That first version ordered moves by
+the hash move, captures by value, killers and history alone. Against it, the
+other five rows and a faster pawn-capture generator cut the instructions by
+38% at depth 7 on the 29 positions in `npm run bench:search`. Both versions
+return the same moves and scores.
+
 ## Speed
 
 `npm run bench` on an M1 Pro, Node 22 to 26: about 105-135M nodes/s with bulk
@@ -61,3 +108,6 @@ counting (startpos perft 5 in 45-65 ms). Deeper runs reach about 180-195M
 nodes/s (kiwipete perft 5 at 215-230M), since the warm-up share is smaller. For
 comparison, chess-movegen-js's BigInt bitboard generator measured 3-4M
 nodes/s on the same positions and machine.
+
+`npm run bench:search` runs at about 2.5M nodes/s: 15.3M nodes at depth 7 in
+about 6 s. Those nodes include the capture-only search.

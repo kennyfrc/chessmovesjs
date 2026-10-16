@@ -89,11 +89,31 @@ is the score the side to move is already sure of.
 | **At depth 1, a node that can't reach alpha only tries checks** | If the score plus 50 centipawns is still below alpha, only `generateQuietChecks` runs. | After a quiet move without check, the other side takes the static score or does better with a capture. No quiet move adds more than 50 (a pawn push to the 7th rank gains the most), so only checks can still reach alpha. This removed about 15% of the instructions. | `MAX_QUIET_GAIN` must stay a true bound if the tables change. It's computed from the tables when the module loads, and a test checks it on random games. |
 | **The eval is updated before each move is made** | `Evaluation.update` writes the score after the move into a stack with one entry per ply. | The search knows a move's static score before playing it. At depth 1 and in the capture search, a move that can't reach alpha and gives no check is skipped without `makeMove`. That cut the nodes by 65% but the time by only about 15%, since most of the skipped nodes would only have returned their static score. | The search must call `update` before every `makeMove`. |
 
-Some of Smirnov's rules didn't pay off here. A bonus for quiet checks made the
-search visit 4% more nodes. Trying the least active piece first saved 1.4% of
-the nodes but cost 8% more instructions. Two other rules changed the node
-count by about 1% or less: moving pieces away from enemy pawn attacks first,
-and trying the most forward moves first. The search doesn't use any of these.
+Smirnov's other rules didn't pay off here. The order above already tries the
+refuting move first at 98.4% of the nodes that cut off. A perfect order would
+save at most 19% of the nodes, and each rule below adds work at every node.
+None of them changed the moves or scores, so speed alone decided. The numbers
+are for depth 7. Brackets give depth 8 for the rules tested there too.
+
+| Rule | Smirnov | Nodes | Cost |
+|---|---|---|---|
+| A piece that a cheaper piece attacks moves first, and no piece moves into such an attack | The blunder check (*Calculation*, p29, p109) | −0.2% (−0.4%) | +3.0% (+3.0%) instructions |
+| Bishop moves that attack a rook or queen, and rook moves that attack a queen | Attacking moves force an answer (*Calculation*, p31-34) | −0.1% (+2.0%) | +0.9% (+2.9%) instructions |
+| Moves that attack an undefended piece or pawn | Undefended pieces are weak (*Calculation*, p120) | +3.2% | +5.9% instructions |
+| A knight move to a weak square on their half | *Positional Understanding*, p64 | −0.1% (+0.3%) | +1.4% (+1.9%) instructions |
+| A rook move to a file without our pawns | *Positional Understanding*, p157 | +1.8% | +3.0% instructions |
+| The quiet move that last refuted the same enemy move (a countermove), just below the killers | The opponent's strongest reply first (*Calculation*, p56-58) | +1.6% | +2.2% instructions |
+| Attacking moves before the killers | Forcing moves first (*Calculation*, p50) | +12.6% | +10.7% instructions |
+| Even trades after the quiet moves | Keep the tension unless a capture gains something (*Calculation*, p36-38) | +251% | +222% instructions |
+| Losing captures last in the capture search too | A capture is forcing only when the opponent has to answer it (*Calculation*, p52-53) | −2.7% (−1.8%) | +0.2% (+1.0%) instructions |
+| A bonus for quiet checks | Checks are forcing (*Calculation*, p50) | +3.8% | +21% time |
+| The least active piece first | *Positional Understanding*, p19-22 | −1.4% | +8% instructions |
+| The most forward moves first | Maximum activity (*Calculation*, p45-46) | −1.1% | +2% time |
+
+Two results explain most of the table. Killers beat every forcing rule. A
+quiet move that refuted a sibling position is a better guess than a move that
+only threatens something. And most even trades in a search are recaptures,
+which are often the only good move.
 
 The last row was there from the start. That first version ordered moves by
 the hash move, captures by value, killers and history alone. Against it, the

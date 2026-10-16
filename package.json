@@ -18,6 +18,7 @@
     "test": "vp test",
     "perft": "vp test test/perft.js",
     "bench": "node scripts/bench.js",
+    "bench:search": "node scripts/search-bench.js",
     "lint": "vp lint",
     "check": "vp check"
   },

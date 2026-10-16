@@ -28,16 +28,28 @@ negative when the side to move gets mated.
 
 ## Development
 
-The toolchain is [Vite+](https://viteplus.dev) (`vp`). Node 22.18+, 24.11+ or 26+.
+The source is TypeScript with the strictest compiler settings. The file
+`tsconfig.json` turns on `strict`, `noUncheckedIndexedAccess` and
+`exactOptionalPropertyTypes`, among others. Lint rules ban `any` and
+`@ts-ignore`. With `noUncheckedIndexedAccess`, reading an array by index
+gives `T | undefined`, so the hot code adds `!` there. The build erases it,
+so it costs nothing at run time.
 
-- `npm run build`: bundle `dist/index.mjs` and `dist/index.cjs` (`vp pack`)
+The toolchain is [Vite+](https://viteplus.dev) (`vp`). Node 22.18+, 24.11+ or
+26+ runs `.ts` files as they are, so a script such as `scripts/find-magics.ts`
+needs no build step.
+
+- `npm run build`: bundle `dist/index.mjs` and `dist/index.cjs`, with type
+  declarations (`vp pack`)
 - `npm test`: all tests (`vp test`); `npm run perft` runs only the perft suite
-- `npm run lint`: `standard` style and rules through Oxlint (`lint/standard.mjs`)
-- `npm run check`: lint, as `vp check`; formatting is off because Oxfmt
-  only formats Prettier style
-- `npm run bench`: perft speed on the standard positions
-- `npm run bench:search`: search speed and node counts at depth 7; pass
-  another depth with `npm run bench:search -- 6`
+- `npm run typecheck`: the type checker alone (`vp check --no-lint`)
+- `npm run lint`: type errors plus the `standard` style and rules, through
+  Oxlint (`lint/standard.ts`)
+- `npm run check`: lint and type check in one run, as `vp check`; formatting
+  is off because Oxfmt only formats Prettier style
+- `npm run bench`: perft speed of the built bundle on the standard positions
+- `npm run bench:search`: search speed and node counts of the built bundle at
+  depth 7; pass another depth with `npm run bench:search -- 6`
 
 ## About the design
 
@@ -53,7 +65,7 @@ of them cost some readability.
 |---|---|---|---|
 | **Bitboards live in `BigUint64Array` slots and are read back as two 32-bit halves** | `GEN[MOVES] = KNIGHT_ATTACKS[from] & GEN[TARGETS]`, then `GEN32[2 * MOVES]` holds squares 0-31 and `GEN32[2 * MOVES + 1]` holds squares 32-63. | V8 keeps BigInt math unboxed only when the result goes straight into a typed array. The 32-bit halves let `Math.clz32` find set bits without any BigInt math. A loop over the bits of a BigInt in a local variable took about 7x longer. | Hot code writes to named scratch slots instead of plain variables, so it reads a bit like assembly. |
 | **BigInts never cross a function call** | `Ray.setRookAttacks(GEN, MOVES, from, bbs, BoardSlot.OCCUPIED)` writes the rook's attacks into a slot instead of returning them. | A BigInt passed to or returned from a call that V8 doesn't inline becomes a heap object: about 330 ns and 80 bytes per call, against about 9 ns through a slot. Right shifts have a similar trap. `(x >> 8n) & mask` on a value read straight from a typed array takes about 3 ns, but `(x & mask) >> 9n` allocates and takes about 300 ns. | Lookups take slot numbers instead of arguments and return values, and pawn code has to shift before it masks. |
-| **Sliders use magic bitboards** | `(occupied & ROOK_MASKS[sq]) * ROOK_MAGIC_BBS[sq]`. The top bits of the product pick the attack set out of `ROOK_TABLE`. | A rook or bishop attack set is one multiply and one lookup, whatever pieces are in the way. Doing the multiply in 32-bit halves with `Math.imul` was about 1.5x slower. | 841 KB of tables, built in about 25 ms when the module loads. The magic numbers come from `scripts/find-magics.js`. |
+| **Sliders use magic bitboards** | `(occupied & ROOK_MASKS[sq]) * ROOK_MAGIC_BBS[sq]`. The top bits of the product pick the attack set out of `ROOK_TABLE`. | A rook or bishop attack set is one multiply and one lookup, whatever pieces are in the way. Doing the multiply in 32-bit halves with `Math.imul` was about 1.5x slower. | 841 KB of tables, built in about 25 ms when the module loads. The magic numbers come from `scripts/find-magics.ts`. |
 | **Only legal moves are generated** | White king on e5, white pawn on d5, black rook on a5. Black plays c7-c5. Taking en passant (dxc6) removes both pawns from rank 5 and opens the rank to the king, so `EnPassant.isLegal` rejects it. | Perft never has to play a last-ply move just to test it. Generating every possible move and rejecting the illegal ones is simpler, but each move has to be made and unmade first. | Rare cases like the one in the example need their own code. |
 | **The last ply counts moves instead of listing them** | `GEN[PUSHES] = (GEN[PAWNS] << 8n) & GEN[EMPTY_SQS]` gives every unpinned pawn's single push at once. A bit count then gives the total. | At the last ply, perft only needs the number of moves. Building the list and taking its length writes moves that nothing reads. | Two code paths (`generate` and `count`) that must always agree. The perft suite is what keeps them in step. |
 | **The king's squares are checked one at a time** | A king on g1 with three free squares makes three `KingSafety.isAttacked` calls. A slider lookup only runs when one of their sliders is on an open line to the square. | The king has at most 8 squares, so testing each one is cheaper than mapping every attacked square. The full map was about 6% slower. | Castling has to reuse the king-move result for f1 or d1 to stay cheap. |
@@ -131,3 +143,9 @@ nodes/s on the same positions and machine.
 
 `npm run bench:search` runs at about 2.5M nodes/s: 15.3M nodes at depth 7 in
 about 6 s. Those nodes include the capture-only search.
+
+Both benchmarks time the built bundle, which is the code the package ships.
+The separate modules in `src/` run about a third slower when Node loads them
+directly. In a test, copying the imported values into local constants won back
+more than half of that loss, so reading imports is most of the cost. The
+bundler removes it by putting every module in one scope.

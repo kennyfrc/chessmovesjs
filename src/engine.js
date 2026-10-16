@@ -5,6 +5,7 @@ const CastleRights = require('./helpers.js').CastleRights
 const Piece = require('./pieces.js').Piece
 const BoardSlot = require('./pieces.js').BoardSlot
 const SQUARE_BB = require('./attack.js').SQUARE_BB
+const Search = require('./search.js').Search
 
 const EMPTY = -1
 const MAX_MOVES = 256 // per position; the most any legal position has is 218
@@ -128,6 +129,16 @@ class Engine {
     })
     console.log('\n' + `Nodes searched: ${nodes}` + '\n' + `Time spent: ${elapsedMs} ms`)
     console.log(`Nodes per second: ${Math.round(nodes / Math.max(elapsedMs, 1) * 1000)} Nodes/s`)
+  }
+
+  /**
+   * The best move after an alpha-beta search depth plies deep, as
+   * { move, score, mate, depth, nodes, pv } with UCI moves and the score in
+   * centipawns for the side to move. The hash table lives on between calls.
+   */
+  search (depth) {
+    if (this.searcher === undefined) { this.searcher = new Search(this) }
+    return this.searcher.run(depth)
   }
 
   make (move) {

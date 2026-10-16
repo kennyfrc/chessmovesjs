@@ -58,14 +58,20 @@ const THEIR_ROOKS = 18 // their rooks and queens
 const THEIR_BISHOPS = 19 // their bishops and queens
 const ATTACKERS = 20
 const ATTACKS = 21 // one slider's attacks, before masking
-const GEN = new BigUint64Array(22)
+const PAWN_TARGETS = 22 // generateCaptures: captures plus promotion squares
+const CHECK_SQUARES = 23 // Checks: 4 slots, one per piece type that can check
+const DISCOVERERS = 27 // our pieces blocking our own slider's line to their king
+const CHECKING = 28 // generateQuietChecks: where the piece being expanded would check
+const GEN = new BigUint64Array(29)
 const GEN32 = new Int32Array(GEN.buffer)
+const LINE32 = new Int32Array(LINE.buffer)
 
 const NOT_FILE_A = 0xFEFEFEFEFEFEFEFEn
 const NOT_FILE_H = 0x7F7F7F7F7F7F7F7Fn
 const RANK_4 = 0x00000000FF000000n
 const RANK_5 = 0x000000FF00000000n
 const RANK_1_AND_8 = 0xFF000000000000FFn
+const RANK_2_TO_7 = 0x00FFFFFFFFFFFF00n
 
 class MoveList {
   static for (fenPiece, board) {
@@ -133,6 +139,90 @@ class MoveList {
     n = this.addPieceMoves(board, moves, n, color, kingSq, Piece.BISHOP)
     n = this.addPieceMoves(board, moves, n, color, kingSq, Piece.KNIGHT)
     return this.addPawnMoves(board, moves, n, color, kingSq)
+  }
+
+  /**
+   * Writes the legal captures and promotions for the side to move, the moves
+   * quiescence search looks at. They are the moves of generate() that take
+   * a piece or promote, with the pawn moves in another order.
+   */
+  static generateCaptures (board, moves, n) {
+    const bbs = board.bitboards
+    const color = board.whiteToMove ? 0 : 1
+    const kingSq = board.kingSqs[color]
+    const checkerCount = CheckEvasions.setTargets(board, color, kingSq)
+    n = this.addKingCaptures(board, moves, n, color, kingSq)
+    if (checkerCount > 1) { return n }
+    // a pawn may also push onto an empty promotion square
+    GEN[PAWN_TARGETS] = GEN[TARGETS] & (bbs[BoardSlot.BLACK - color] | RANK_1_AND_8)
+    GEN[TARGETS] = GEN[TARGETS] & bbs[BoardSlot.BLACK - color]
+    n = this.addPieceMoves(board, moves, n, color, kingSq, Piece.QUEEN)
+    n = this.addPieceMoves(board, moves, n, color, kingSq, Piece.ROOK)
+    n = this.addPieceMoves(board, moves, n, color, kingSq, Piece.BISHOP)
+    n = this.addPieceMoves(board, moves, n, color, kingSq, Piece.KNIGHT)
+    GEN[TARGETS] = GEN[PAWN_TARGETS]
+    return this.addPawnCaptures(board, moves, n, color, kingSq)
+  }
+
+  /**
+   * Writes the legal moves generateCaptures leaves out: castling and the
+   * king, piece and pawn moves onto empty squares that do not promote. The
+   * two lists together hold exactly the moves generate() writes.
+   */
+  static generateQuiets (board, moves, n) {
+    const bbs = board.bitboards
+    const color = board.whiteToMove ? 0 : 1
+    const kingSq = board.kingSqs[color]
+    const checkerCount = CheckEvasions.setTargets(board, color, kingSq)
+    n = this.addKingQuiets(board, moves, n, color, kingSq, checkerCount)
+    if (checkerCount > 1) { return n }
+    GEN[EMPTY_SQS] = bbs[BoardSlot.OCCUPIED] ^ ALL_SQUARES
+    GEN[TARGETS] = GEN[TARGETS] & GEN[EMPTY_SQS]
+    n = this.addPieceMoves(board, moves, n, color, kingSq, Piece.QUEEN)
+    n = this.addPieceMoves(board, moves, n, color, kingSq, Piece.ROOK)
+    n = this.addPieceMoves(board, moves, n, color, kingSq, Piece.BISHOP)
+    n = this.addPieceMoves(board, moves, n, color, kingSq, Piece.KNIGHT)
+    GEN[TARGETS] = GEN[TARGETS] & RANK_2_TO_7
+    return this.addPawnPushes(board, moves, n, color, kingSq)
+  }
+
+  /**
+   * Writes the quiet moves that may give check: onto a square that attacks
+   * their king, any move of a piece that uncovers a check, and castling.
+   * When no quiet move can lift the score to alpha, these are the only
+   * quiet moves the search needs. Fills out[at...] as Checks.setSquares
+   * does, so givesCheck can tell which ones really check.
+   */
+  static generateQuietChecks (board, moves, n, out, at) {
+    const bbs = board.bitboards
+    const color = board.whiteToMove ? 0 : 1
+    const kingSq = board.kingSqs[color]
+    const checkerCount = CheckEvasions.setTargets(board, color, kingSq)
+    Checks.setSquares(board, out, at)
+    n = this.addKingChecks(board, moves, n, color, kingSq, checkerCount)
+    if (checkerCount > 1) { return n }
+    GEN[EMPTY_SQS] = bbs[BoardSlot.OCCUPIED] ^ ALL_SQUARES
+    GEN[TARGETS] = GEN[TARGETS] & GEN[EMPTY_SQS]
+    GEN[CHECKING] = GEN[CHECK_SQUARES + 2] | GEN[CHECK_SQUARES + 3]
+    n = this.addPieceChecks(board, moves, n, color, kingSq, Piece.QUEEN)
+    GEN[CHECKING] = GEN[CHECK_SQUARES + 3]
+    n = this.addPieceChecks(board, moves, n, color, kingSq, Piece.ROOK)
+    GEN[CHECKING] = GEN[CHECK_SQUARES + 2]
+    n = this.addPieceChecks(board, moves, n, color, kingSq, Piece.BISHOP)
+    GEN[CHECKING] = GEN[CHECK_SQUARES]
+    n = this.addPieceChecks(board, moves, n, color, kingSq, Piece.KNIGHT)
+    GEN[TARGETS] = GEN[TARGETS] & RANK_2_TO_7
+    return this.addPawnChecks(board, moves, n, color, kingSq)
+  }
+
+  static isInCheck (board) {
+    const bbs = board.bitboards
+    const color = board.whiteToMove ? 0 : 1
+    const them = 6 - color * 6
+    GEN[KING_OCC] = bbs[BoardSlot.OCCUPIED]
+    GEN[THEIR_ROOKS] = bbs[them + Piece.ROOK] | bbs[them + Piece.QUEEN]
+    GEN[THEIR_BISHOPS] = bbs[them + Piece.BISHOP] | bbs[them + Piece.QUEEN]
+    return KingSafety.isAttacked(board, board.kingSqs[color], color)
   }
 
   /**
@@ -289,6 +379,38 @@ class MoveList {
 
   static addKingMoves (board, moves, n, color, kingSq, checkerCount) {
     this.setKingMoves(board, color, kingSq, checkerCount)
+    return this.addKingTargets(moves, n, kingSq)
+  }
+
+  // castling and the king's steps onto empty squares; addKingCaptures has the rest
+  static addKingQuiets (board, moves, n, color, kingSq, checkerCount) {
+    this.setKingMoves(board, color, kingSq, checkerCount)
+    GEN[MOVES] = GEN[MOVES] & (board.bitboards[BoardSlot.OCCUPIED] ^ ALL_SQUARES)
+    return this.addKingTargets(moves, n, kingSq)
+  }
+
+  // castling, and the king's steps when the king itself blocks a check
+  static addKingChecks (board, moves, n, color, kingSq, checkerCount) {
+    const uncovers = Checks.isDiscoverer(kingSq)
+    if (!uncovers && (checkerCount !== 0 || ((board.castleRights >> (color * 2)) & 3) === 0)) { return n }
+    this.setKingMoves(board, color, kingSq, checkerCount)
+    GEN[MOVES] = GEN[MOVES] & (board.bitboards[BoardSlot.OCCUPIED] ^ ALL_SQUARES)
+    for (let half = 0; half < 2; half++) {
+      let targets = GEN32[2 * MOVES + half]
+      while (targets !== 0) {
+        const to = (half << 5) | (31 - Math.clz32(targets & -targets))
+        targets &= targets - 1
+        if (to - kingSq === 2 || kingSq - to === 2) {
+          moves[n++] = kingSq | (to << 6) | (MoveKind.CASTLE << 12)
+        } else if (uncovers) {
+          moves[n++] = kingSq | (to << 6)
+        }
+      }
+    }
+    return n
+  }
+
+  static addKingTargets (moves, n, kingSq) {
     for (let half = 0; half < 2; half++) {
       let targets = GEN32[2 * MOVES + half]
       while (targets !== 0) {
@@ -296,6 +418,26 @@ class MoveList {
         targets &= targets - 1
         const kind = (to - kingSq === 2 || kingSq - to === 2) ? MoveKind.CASTLE : MoveKind.QUIET
         moves[n++] = kingSq | (to << 6) | (kind << 12)
+      }
+    }
+    return n
+  }
+
+  // castling never captures, so only the safety test from setKingMoves remains
+  static addKingCaptures (board, moves, n, color, kingSq) {
+    const bbs = board.bitboards
+    const them = 6 - color * 6
+    GEN[MOVES] = KING_ATTACKS[kingSq] & bbs[BoardSlot.BLACK - color]
+    if ((GEN32[2 * MOVES] | GEN32[2 * MOVES + 1]) === 0) { return n }
+    GEN[KING_OCC] = bbs[BoardSlot.OCCUPIED] ^ SQUARE_BB[kingSq]
+    GEN[THEIR_ROOKS] = bbs[them + Piece.ROOK] | bbs[them + Piece.QUEEN]
+    GEN[THEIR_BISHOPS] = bbs[them + Piece.BISHOP] | bbs[them + Piece.QUEEN]
+    for (let half = 0; half < 2; half++) {
+      let targets = GEN32[2 * MOVES + half]
+      while (targets !== 0) {
+        const to = (half << 5) | (31 - Math.clz32(targets & -targets))
+        targets &= targets - 1
+        if (!KingSafety.isAttacked(board, to, color)) { moves[n++] = kingSq | (to << 6) }
       }
     }
     return n
@@ -336,6 +478,23 @@ class MoveList {
         pieces &= pieces - 1
         this.setPieceMoves(board.bitboards, type, from)
         if (Pins.isPinned(from)) { GEN[MOVES] = GEN[MOVES] & LINE[kingSq * 64 + from] }
+        n = this.addMoves(moves, n, from)
+      }
+    }
+    return n
+  }
+
+  // as addPieceMoves, onto the squares in CHECKING unless the piece uncovers a check
+  static addPieceChecks (board, moves, n, color, kingSq, type) {
+    GEN[PIECES] = board.bitboards[color * 6 + type]
+    for (let half = 0; half < 2; half++) {
+      let pieces = GEN32[2 * PIECES + half]
+      while (pieces !== 0) {
+        const from = (half << 5) | (31 - Math.clz32(pieces & -pieces))
+        pieces &= pieces - 1
+        this.setPieceMoves(board.bitboards, type, from)
+        if (Pins.isPinned(from)) { GEN[MOVES] = GEN[MOVES] & LINE[kingSq * 64 + from] }
+        if (!Checks.isDiscoverer(from)) { GEN[MOVES] = GEN[MOVES] & GEN[CHECKING] }
         n = this.addMoves(moves, n, from)
       }
     }
@@ -390,6 +549,181 @@ class MoveList {
         n = (from >> 3) === promotionRank
           ? this.addPromotions(moves, n, from)
           : this.addPawnMovesFrom(moves, n, from, epSq)
+      }
+    }
+    return n
+  }
+
+  /**
+   * Captures and promotions for generateCaptures, all unpinned pawns at
+   * once as in countPawnMoves. TARGETS holds their pieces and the empty
+   * squares on the last ranks.
+   */
+  static addPawnCaptures (board, moves, n, color, kingSq) {
+    const bbs = board.bitboards
+    GEN[PAWNS] = bbs[color * 6 + Piece.PAWN]
+    if ((GEN32[2 * PINNED] | GEN32[2 * PINNED + 1]) !== 0) {
+      n = this.addPinnedPawnMoves(board, moves, n, color, kingSq)
+      GEN[PAWNS] = GEN[PAWNS] ^ (GEN[PAWNS] & GEN[PINNED])
+    }
+    if (board.epSq !== EMPTY) { n = this.addEnPassant(board, moves, n, color, kingSq) }
+    GEN[EMPTY_SQS] = bbs[BoardSlot.OCCUPIED] ^ ALL_SQUARES
+    // shift first, then mask (see countPawnMoves)
+    if (color === 0) {
+      GEN[PUSHES] = (GEN[PAWNS] << 8n) & GEN[EMPTY_SQS]
+      GEN[WEST_CAPTURES] = (GEN[PAWNS] << 7n) & NOT_FILE_H & bbs[BoardSlot.BLACK]
+      GEN[EAST_CAPTURES] = (GEN[PAWNS] << 9n) & NOT_FILE_A & bbs[BoardSlot.BLACK]
+    } else {
+      GEN[PUSHES] = (GEN[PAWNS] >> 8n) & GEN[EMPTY_SQS]
+      GEN[WEST_CAPTURES] = (GEN[PAWNS] >> 9n) & NOT_FILE_H & bbs[BoardSlot.WHITE]
+      GEN[EAST_CAPTURES] = (GEN[PAWNS] >> 7n) & NOT_FILE_A & bbs[BoardSlot.WHITE]
+    }
+    GEN[PUSHES] = GEN[PUSHES] & GEN[TARGETS]
+    GEN[WEST_CAPTURES] = GEN[WEST_CAPTURES] & GEN[TARGETS]
+    GEN[EAST_CAPTURES] = GEN[EAST_CAPTURES] & GEN[TARGETS]
+    const forward = color === 0 ? 8 : -8
+    n = this.addPawnTargets(moves, n, WEST_CAPTURES, forward - 1)
+    n = this.addPawnTargets(moves, n, EAST_CAPTURES, forward + 1)
+    return this.addPawnTargets(moves, n, PUSHES, forward)
+  }
+
+  // a move to each square in slot from the square delta behind it, four on the last ranks
+  static addPawnTargets (moves, n, slot, delta) {
+    for (let half = 0; half < 2; half++) {
+      let targets = GEN32[2 * slot + half]
+      while (targets !== 0) {
+        const to = (half << 5) | (31 - Math.clz32(targets & -targets))
+        targets &= targets - 1
+        const code = (to - delta) | (to << 6)
+        if (to < 8 || to > 55) {
+          moves[n++] = code | (MoveKind.PROMOTE_QUEEN << 12)
+          moves[n++] = code | (MoveKind.PROMOTE_ROOK << 12)
+          moves[n++] = code | (MoveKind.PROMOTE_BISHOP << 12)
+          moves[n++] = code | (MoveKind.PROMOTE_KNIGHT << 12)
+        } else {
+          moves[n++] = code
+        }
+      }
+    }
+    return n
+  }
+
+  // a pinned pawn may only move along its pin line
+  static addPinnedPawnMoves (board, moves, n, color, kingSq) {
+    const promotionRank = color === 0 ? 6 : 1
+    GEN[PIECES] = GEN[PAWNS] & GEN[PINNED]
+    for (let half = 0; half < 2; half++) {
+      let pawns = GEN32[2 * PIECES + half]
+      while (pawns !== 0) {
+        const from = (half << 5) | (31 - Math.clz32(pawns & -pawns))
+        pawns &= pawns - 1
+        this.setPawnMoves(board, color, from)
+        GEN[MOVES] = GEN[MOVES] & LINE[kingSq * 64 + from]
+        if (board.epSq !== EMPTY && EnPassant.isLegal(board, color, kingSq, from, board.epSq)) {
+          GEN[MOVES] = GEN[MOVES] | SQUARE_BB[board.epSq]
+        }
+        n = (from >> 3) === promotionRank
+          ? this.addPromotions(moves, n, from)
+          : this.addPawnMovesFrom(moves, n, from, board.epSq)
+      }
+    }
+    return n
+  }
+
+  // our unpinned pawns that could take en passant, as in countEnPassant
+  static addEnPassant (board, moves, n, color, kingSq) {
+    const epSq = board.epSq
+    GEN[PIECES] = PAWN_ATTACKS[(1 - color) * 64 + epSq] & GEN[PAWNS]
+    for (let half = 0; half < 2; half++) {
+      let pawns = GEN32[2 * PIECES + half]
+      while (pawns !== 0) {
+        const from = (half << 5) | (31 - Math.clz32(pawns & -pawns))
+        pawns &= pawns - 1
+        if (EnPassant.isLegal(board, color, kingSq, from, epSq)) {
+          moves[n++] = from | (epSq << 6) | (MoveKind.EN_PASSANT << 12)
+        }
+      }
+    }
+    return n
+  }
+
+  /**
+   * Pushes for generateQuiets, all unpinned pawns at once as in
+   * countPawnMoves. TARGETS holds only empty squares off the last ranks.
+   */
+  static addPawnPushes (board, moves, n, color, kingSq) {
+    GEN[PAWNS] = board.bitboards[color * 6 + Piece.PAWN]
+    if ((GEN32[2 * PINNED] | GEN32[2 * PINNED + 1]) !== 0) {
+      n = this.addPinnedPawnPushes(board, moves, n, color, kingSq)
+      GEN[PAWNS] = GEN[PAWNS] ^ (GEN[PAWNS] & GEN[PINNED])
+    }
+    // shift first, then mask (see countPawnMoves)
+    if (color === 0) {
+      GEN[PUSHES] = (GEN[PAWNS] << 8n) & GEN[EMPTY_SQS]
+      GEN[DOUBLE_PUSHES] = (GEN[PUSHES] << 8n) & GEN[EMPTY_SQS] & RANK_4
+    } else {
+      GEN[PUSHES] = (GEN[PAWNS] >> 8n) & GEN[EMPTY_SQS]
+      GEN[DOUBLE_PUSHES] = (GEN[PUSHES] >> 8n) & GEN[EMPTY_SQS] & RANK_5
+    }
+    GEN[PUSHES] = GEN[PUSHES] & GEN[TARGETS]
+    GEN[DOUBLE_PUSHES] = GEN[DOUBLE_PUSHES] & GEN[TARGETS]
+    const forward = color === 0 ? 8 : -8
+    n = this.addPushes(moves, n, PUSHES, forward, MoveKind.QUIET)
+    return this.addPushes(moves, n, DOUBLE_PUSHES, 2 * forward, MoveKind.DOUBLE_PUSH)
+  }
+
+  /**
+   * Pushes onto a square where a pawn attacks their king, or by a pawn
+   * that uncovers a check. A pinned pawn's pushes all go in; they are rare.
+   */
+  static addPawnChecks (board, moves, n, color, kingSq) {
+    GEN[PAWNS] = board.bitboards[color * 6 + Piece.PAWN]
+    if ((GEN32[2 * PINNED] | GEN32[2 * PINNED + 1]) !== 0) {
+      n = this.addPinnedPawnPushes(board, moves, n, color, kingSq)
+      GEN[PAWNS] = GEN[PAWNS] ^ (GEN[PAWNS] & GEN[PINNED])
+    }
+    GEN[PIECES] = GEN[PAWNS] & GEN[DISCOVERERS]
+    // shift first, then mask (see countPawnMoves)
+    if (color === 0) {
+      GEN[PUSHES] = (GEN[PAWNS] << 8n) & GEN[EMPTY_SQS]
+      GEN[DOUBLE_PUSHES] = (GEN[PUSHES] << 8n) & GEN[EMPTY_SQS] & RANK_4
+      GEN[CHECKING] = GEN[CHECK_SQUARES + 1] | (GEN[PIECES] << 8n) | (GEN[PIECES] << 16n)
+    } else {
+      GEN[PUSHES] = (GEN[PAWNS] >> 8n) & GEN[EMPTY_SQS]
+      GEN[DOUBLE_PUSHES] = (GEN[PUSHES] >> 8n) & GEN[EMPTY_SQS] & RANK_5
+      GEN[CHECKING] = GEN[CHECK_SQUARES + 1] | (GEN[PIECES] >> 8n) | (GEN[PIECES] >> 16n)
+    }
+    GEN[PUSHES] = GEN[PUSHES] & GEN[TARGETS] & GEN[CHECKING]
+    GEN[DOUBLE_PUSHES] = GEN[DOUBLE_PUSHES] & GEN[TARGETS] & GEN[CHECKING]
+    const forward = color === 0 ? 8 : -8
+    n = this.addPushes(moves, n, PUSHES, forward, MoveKind.QUIET)
+    return this.addPushes(moves, n, DOUBLE_PUSHES, 2 * forward, MoveKind.DOUBLE_PUSH)
+  }
+
+  // a move to each square in slot, from the square delta behind it
+  static addPushes (moves, n, slot, delta, kind) {
+    for (let half = 0; half < 2; half++) {
+      let targets = GEN32[2 * slot + half]
+      while (targets !== 0) {
+        const to = (half << 5) | (31 - Math.clz32(targets & -targets))
+        targets &= targets - 1
+        moves[n++] = (to - delta) | (to << 6) | (kind << 12)
+      }
+    }
+    return n
+  }
+
+  // a pinned pawn may only push along its pin line
+  static addPinnedPawnPushes (board, moves, n, color, kingSq) {
+    GEN[PIECES] = GEN[PAWNS] & GEN[PINNED]
+    for (let half = 0; half < 2; half++) {
+      let pawns = GEN32[2 * PIECES + half]
+      while (pawns !== 0) {
+        const from = (half << 5) | (31 - Math.clz32(pawns & -pawns))
+        pawns &= pawns - 1
+        this.setPawnMoves(board, color, from)
+        GEN[MOVES] = GEN[MOVES] & LINE[kingSq * 64 + from]
+        n = this.addPawnMovesFrom(moves, n, from, EMPTY)
       }
     }
     return n
@@ -600,6 +934,90 @@ class Castling {
 
   static addTarget (sq) {
     GEN32[2 * MOVES + (sq >> 5)] |= 1 << (sq & 31)
+  }
+}
+
+/**
+ * Which moves give check, for the side to move. setSquares writes 5
+ * bitboards as ints into out[at...]: the squares a knight, pawn, bishop or
+ * rook would check their king from (a queen uses both slider boards), then
+ * our pieces that uncover a check by leaving their line. The search keeps
+ * them per ply, since the generator's slots change below this node.
+ */
+class Checks {
+  static setSquares (board, out, at) {
+    const bbs = board.bitboards
+    const color = board.whiteToMove ? 0 : 1
+    const us = color * 6
+    const kingSq = board.kingSqs[1 - color]
+    GEN[CHECK_SQUARES] = KNIGHT_ATTACKS[kingSq]
+    GEN[CHECK_SQUARES + 1] = PAWN_ATTACKS[(1 - color) * 64 + kingSq] // where our pawns would attack it
+    Ray.setBishopAttacks(GEN, CHECK_SQUARES + 2, kingSq, bbs, BoardSlot.OCCUPIED)
+    Ray.setRookAttacks(GEN, CHECK_SQUARES + 3, kingSq, bbs, BoardSlot.OCCUPIED)
+    GEN[DISCOVERERS] = 0n
+    GEN[SNIPERS] = ROOK_RAYS[kingSq] & (bbs[us + Piece.ROOK] | bbs[us + Piece.QUEEN])
+    GEN[SNIPERS] = GEN[SNIPERS] | (BISHOP_RAYS[kingSq] & (bbs[us + Piece.BISHOP] | bbs[us + Piece.QUEEN]))
+    for (let half = 0; half < 2; half++) {
+      let snipers = GEN32[2 * SNIPERS + half]
+      while (snipers !== 0) {
+        const sniperSq = (half << 5) | (31 - Math.clz32(snipers & -snipers))
+        snipers &= snipers - 1
+        this.addDiscoverer(board, us, kingSq, sniperSq)
+      }
+    }
+    for (let i = 0; i < 10; i++) { out[at + i] = GEN32[2 * CHECK_SQUARES + i] }
+  }
+
+  // after setSquares: does our piece on sq block our own slider's line to their king?
+  static isDiscoverer (sq) {
+    return ((GEN32[2 * DISCOVERERS + (sq >> 5)] >>> (sq & 31)) & 1) !== 0
+  }
+
+  // a lone piece of ours between our sniper and their king
+  static addDiscoverer (board, us, kingSq, sniperSq) {
+    GEN[BLOCKERS] = BETWEEN[kingSq * 64 + sniperSq] & board.bitboards[BoardSlot.OCCUPIED]
+    const lo = GEN32[2 * BLOCKERS]
+    const hi = GEN32[2 * BLOCKERS + 1]
+    if ((lo !== 0 && hi !== 0) || ((lo | hi) & ((lo | hi) - 1)) !== 0) { return }
+    const sq = lo !== 0 ? 31 - Math.clz32(lo) : 63 - Math.clz32(hi)
+    const piece = board.squares[sq]
+    if (piece >= us && piece < us + 6) { GEN32[2 * DISCOVERERS + (sq >> 5)] |= 1 << (sq & 31) }
+  }
+
+  /**
+   * Does code give check, given the squares setSquares wrote? Castling,
+   * en passant and promotions always answer yes: they are rare, and they
+   * move a second piece or open lines through another square.
+   */
+  static givesCheck (board, out, at, code) {
+    const from = code & 63
+    const to = (code >> 6) & 63
+    if ((code >>> 12) >= MoveKind.CASTLE) { return true }
+    const piece = board.squares[from]
+    const type = piece < 6 ? piece : piece - 6
+    const toBit = 1 << (to & 31)
+    const half = to >> 5
+    switch (type) {
+      case Piece.QUEEN:
+        if (((out[at + 4 + half] | out[at + 6 + half]) & toBit) !== 0) { return true }
+        break
+      case Piece.ROOK:
+        if ((out[at + 6 + half] & toBit) !== 0) { return true }
+        break
+      case Piece.BISHOP:
+        if ((out[at + 4 + half] & toBit) !== 0) { return true }
+        break
+      case Piece.KNIGHT:
+        if ((out[at + half] & toBit) !== 0) { return true }
+        break
+      case Piece.PAWN:
+        if ((out[at + 2 + half] & toBit) !== 0) { return true }
+        break
+    }
+    if (((out[at + 8 + (from >> 5)] >>> (from & 31)) & 1) === 0) { return false }
+    // a discoverer only uncovers the check when it leaves the line
+    const line = 2 * ((board.kingSqs[board.whiteToMove ? 1 : 0] << 6) + from) + half
+    return ((LINE32[line] >>> (to & 31)) & 1) === 0
   }
 }
 
@@ -1012,6 +1430,7 @@ class BlackKingMove {
 }
 
 module.exports = {
+  Checks: Checks,
   WhitePawnMove: WhitePawnMove,
   BlackPawnMove: BlackPawnMove,
   Move: Move,

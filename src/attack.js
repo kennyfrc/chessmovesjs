@@ -200,6 +200,21 @@ class Ray {
     return BISHOP_TABLE[BISHOP_OFFSETS[sq] + (MAGIC_SCRATCH32[1] >>> BISHOP_SHIFTS[sq])]
   }
 
+  /**
+   * The same lookups, reading the occupancy from occ[occIdx] and writing
+   * the attacks to out[outIdx]. A BigInt passed to or returned from a call
+   * that V8 does not inline gets boxed on the heap; typed array slots never do.
+   */
+  static setRookAttacks (out, outIdx, sq, occ, occIdx) {
+    MAGIC_SCRATCH[0] = (occ[occIdx] & ROOK_MASKS[sq]) * ROOK_MAGIC_BBS[sq]
+    out[outIdx] = ROOK_TABLE[ROOK_OFFSETS[sq] + (MAGIC_SCRATCH32[1] >>> ROOK_SHIFTS[sq])]
+  }
+
+  static setBishopAttacks (out, outIdx, sq, occ, occIdx) {
+    MAGIC_SCRATCH[0] = (occ[occIdx] & BISHOP_MASKS[sq]) * BISHOP_MAGIC_BBS[sq]
+    out[outIdx] = BISHOP_TABLE[BISHOP_OFFSETS[sq] + (MAGIC_SCRATCH32[1] >>> BISHOP_SHIFTS[sq])]
+  }
+
   static queenAttacks (sq, occupied) {
     return BigInt.asUintN(64, Ray.rookAttacks(sq, occupied) | Ray.bishopAttacks(sq, occupied))
   }

@@ -113,7 +113,8 @@ class Engine {
     let nodes = 0
     for (let i = start; i < end; i++) {
       this.makeMove(moves[i])
-      nodes += this.countNodes(depth - 1, end)
+      // one call less for each leaf's parent: count the last ply right here
+      nodes += depth === 2 ? MoveList.count(this.board) : this.countNodes(depth - 1, end)
       this.unmakeMove()
     }
     return nodes
@@ -149,7 +150,8 @@ class Engine {
 
     if (captured !== EMPTY) { this.removePiece(captured, to) }
     this.movePiece(piece, from, to)
-    this.handleSpecialMoves(kind, color, from, to)
+    // only castling, en passant and promotions touch a second piece
+    if (kind >= MoveKind.CASTLE) { this.handleSpecialMoves(kind, color, from, to) }
     if (piece === color * 6 + Piece.KING) { board.kingSqs[color] = to }
     this.updateCastleRights(from, to)
     this.updateEnPassant(kind, from, to)
@@ -175,7 +177,7 @@ class Engine {
     this.decrementFullMoveNo()
     const color = board.whiteToMove ? 0 : 1
 
-    this.undoSpecialMoves(kind, color, from, to)
+    if (kind >= MoveKind.CASTLE) { this.undoSpecialMoves(kind, color, from, to) }
     const piece = board.squares[to]
     this.movePiece(piece, to, from)
     if (piece === color * 6 + Piece.KING) { board.kingSqs[color] = from }

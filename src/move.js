@@ -57,13 +57,14 @@ const PROMOTIONS = 17
 const THEIR_ROOKS = 18 // their rooks and queens
 const THEIR_BISHOPS = 19 // their bishops and queens
 const ATTACKERS = 20
-const GEN = new BigUint64Array(21)
+const ATTACKS = 21 // one slider's attacks, before masking
+const GEN = new BigUint64Array(22)
 const GEN32 = new Int32Array(GEN.buffer)
 
 const NOT_FILE_A = 0xFEFEFEFEFEFEFEFEn
 const NOT_FILE_H = 0x7F7F7F7F7F7F7F7Fn
-const RANK_3 = 0x0000000000FF0000n
-const RANK_6 = 0x0000FF0000000000n
+const RANK_4 = 0x00000000FF000000n
+const RANK_5 = 0x000000FF00000000n
 const RANK_1_AND_8 = 0xFF000000000000FFn
 
 class MoveList {
@@ -127,7 +128,6 @@ class MoveList {
     const checkerCount = CheckEvasions.setTargets(board, color, kingSq)
     n = this.addKingMoves(board, moves, n, color, kingSq, checkerCount)
     if (checkerCount > 1) { return n }
-    Pins.find(board, color, kingSq)
     n = this.addPieceMoves(board, moves, n, color, kingSq, Piece.QUEEN)
     n = this.addPieceMoves(board, moves, n, color, kingSq, Piece.ROOK)
     n = this.addPieceMoves(board, moves, n, color, kingSq, Piece.BISHOP)
@@ -147,7 +147,6 @@ class MoveList {
     this.setKingMoves(board, color, kingSq, checkerCount)
     let count = this.countMoves()
     if (checkerCount > 1) { return count }
-    Pins.find(board, color, kingSq)
     count += this.countRookMoves(board, color, kingSq)
     count += this.countBishopMoves(board, color, kingSq)
     count += this.countKnightMoves(board, color)
@@ -164,7 +163,8 @@ class MoveList {
       while (pieces !== 0) {
         const from = (half << 5) | (31 - Math.clz32(pieces & -pieces))
         pieces &= pieces - 1
-        GEN[MOVES] = Ray.rookAttacks(from, bbs[BoardSlot.OCCUPIED]) & GEN[TARGETS]
+        Ray.setRookAttacks(GEN, MOVES, from, bbs, BoardSlot.OCCUPIED)
+        GEN[MOVES] = GEN[MOVES] & GEN[TARGETS]
         if (Pins.isPinned(from)) { GEN[MOVES] = GEN[MOVES] & LINE[kingSq * 64 + from] }
         count += this.countMoves()
       }
@@ -181,7 +181,8 @@ class MoveList {
       while (pieces !== 0) {
         const from = (half << 5) | (31 - Math.clz32(pieces & -pieces))
         pieces &= pieces - 1
-        GEN[MOVES] = Ray.bishopAttacks(from, bbs[BoardSlot.OCCUPIED]) & GEN[TARGETS]
+        Ray.setBishopAttacks(GEN, MOVES, from, bbs, BoardSlot.OCCUPIED)
+        GEN[MOVES] = GEN[MOVES] & GEN[TARGETS]
         if (Pins.isPinned(from)) { GEN[MOVES] = GEN[MOVES] & LINE[kingSq * 64 + from] }
         count += this.countMoves()
       }
@@ -213,19 +214,24 @@ class MoveList {
   static countPawnMoves (board, color, kingSq) {
     const bbs = board.bitboards
     GEN[PAWNS] = bbs[color * 6 + Piece.PAWN]
-    const count = this.countPinnedPawnMoves(board, color, kingSq) + this.countEnPassant(board, color, kingSq)
-    GEN[PAWNS] = GEN[PAWNS] ^ (GEN[PAWNS] & GEN[PINNED])
+    let count = this.countEnPassant(board, color, kingSq)
+    if ((GEN32[2 * PINNED] | GEN32[2 * PINNED + 1]) !== 0) {
+      count += this.countPinnedPawnMoves(board, color, kingSq)
+      GEN[PAWNS] = GEN[PAWNS] ^ (GEN[PAWNS] & GEN[PINNED])
+    }
     GEN[EMPTY_SQS] = bbs[BoardSlot.OCCUPIED] ^ ALL_SQUARES
+    // shift first, then mask the landing squares: V8 only turns a BigInt >>
+    // into a machine shift when the value comes straight from a BigUint64Array
     if (color === 0) {
       GEN[PUSHES] = (GEN[PAWNS] << 8n) & GEN[EMPTY_SQS]
-      GEN[DOUBLE_PUSHES] = ((GEN[PUSHES] & RANK_3) << 8n) & GEN[EMPTY_SQS]
-      GEN[WEST_CAPTURES] = ((GEN[PAWNS] & NOT_FILE_A) << 7n) & bbs[BoardSlot.BLACK]
-      GEN[EAST_CAPTURES] = ((GEN[PAWNS] & NOT_FILE_H) << 9n) & bbs[BoardSlot.BLACK]
+      GEN[DOUBLE_PUSHES] = (GEN[PUSHES] << 8n) & GEN[EMPTY_SQS] & RANK_4
+      GEN[WEST_CAPTURES] = (GEN[PAWNS] << 7n) & NOT_FILE_H & bbs[BoardSlot.BLACK]
+      GEN[EAST_CAPTURES] = (GEN[PAWNS] << 9n) & NOT_FILE_A & bbs[BoardSlot.BLACK]
     } else {
       GEN[PUSHES] = (GEN[PAWNS] >> 8n) & GEN[EMPTY_SQS]
-      GEN[DOUBLE_PUSHES] = ((GEN[PUSHES] & RANK_6) >> 8n) & GEN[EMPTY_SQS]
-      GEN[WEST_CAPTURES] = ((GEN[PAWNS] & NOT_FILE_A) >> 9n) & bbs[BoardSlot.WHITE]
-      GEN[EAST_CAPTURES] = ((GEN[PAWNS] & NOT_FILE_H) >> 7n) & bbs[BoardSlot.WHITE]
+      GEN[DOUBLE_PUSHES] = (GEN[PUSHES] >> 8n) & GEN[EMPTY_SQS] & RANK_5
+      GEN[WEST_CAPTURES] = (GEN[PAWNS] >> 9n) & NOT_FILE_H & bbs[BoardSlot.WHITE]
+      GEN[EAST_CAPTURES] = (GEN[PAWNS] >> 7n) & NOT_FILE_A & bbs[BoardSlot.WHITE]
     }
     GEN[PUSHES] = GEN[PUSHES] & GEN[TARGETS]
     GEN[DOUBLE_PUSHES] = GEN[DOUBLE_PUSHES] & GEN[TARGETS]
@@ -300,8 +306,8 @@ class MoveList {
     const bbs = board.bitboards
     const them = 6 - color * 6
     GEN[MOVES] = KING_ATTACKS[kingSq] & (bbs[BoardSlot.WHITE + color] ^ ALL_SQUARES)
-    const canCastle = checkerCount === 0 && ((board.castleRights >> (color * 2)) & 3) !== 0
-    if ((GEN32[2 * MOVES] | GEN32[2 * MOVES + 1]) === 0 && !canCastle) { return }
+    // castling crosses a square next to the king, so it needs one of these too
+    if ((GEN32[2 * MOVES] | GEN32[2 * MOVES + 1]) === 0) { return }
     // sliders see through the king's old square
     GEN[KING_OCC] = bbs[BoardSlot.OCCUPIED] ^ SQUARE_BB[kingSq]
     GEN[THEIR_ROOKS] = bbs[them + Piece.ROOK] | bbs[them + Piece.QUEEN]
@@ -316,7 +322,9 @@ class MoveList {
         }
       }
     }
-    if (canCastle) { Castling.addTargets(board, color) }
+    if (checkerCount === 0 && ((board.castleRights >> (color * 2)) & 3) !== 0) {
+      Castling.addTargets(board, color)
+    }
   }
 
   static addPieceMoves (board, moves, n, color, kingSq, type) {
@@ -337,14 +345,17 @@ class MoveList {
   static setPieceMoves (bbs, type, from) {
     switch (type) {
       case Piece.QUEEN:
-        GEN[MOVES] = Ray.rookAttacks(from, bbs[BoardSlot.OCCUPIED]) & GEN[TARGETS]
-        GEN[MOVES] = GEN[MOVES] | (Ray.bishopAttacks(from, bbs[BoardSlot.OCCUPIED]) & GEN[TARGETS])
+        Ray.setRookAttacks(GEN, MOVES, from, bbs, BoardSlot.OCCUPIED)
+        Ray.setBishopAttacks(GEN, ATTACKS, from, bbs, BoardSlot.OCCUPIED)
+        GEN[MOVES] = (GEN[MOVES] | GEN[ATTACKS]) & GEN[TARGETS]
         break
       case Piece.ROOK:
-        GEN[MOVES] = Ray.rookAttacks(from, bbs[BoardSlot.OCCUPIED]) & GEN[TARGETS]
+        Ray.setRookAttacks(GEN, MOVES, from, bbs, BoardSlot.OCCUPIED)
+        GEN[MOVES] = GEN[MOVES] & GEN[TARGETS]
         break
       case Piece.BISHOP:
-        GEN[MOVES] = Ray.bishopAttacks(from, bbs[BoardSlot.OCCUPIED]) & GEN[TARGETS]
+        Ray.setBishopAttacks(GEN, MOVES, from, bbs, BoardSlot.OCCUPIED)
+        GEN[MOVES] = GEN[MOVES] & GEN[TARGETS]
         break
       default:
         GEN[MOVES] = KNIGHT_ATTACKS[from] & GEN[TARGETS]
@@ -432,17 +443,27 @@ class MoveList {
 }
 
 class CheckEvasions {
-  // sets TARGETS for non-king moves and returns the checker count (2 means 2+)
+  /**
+   * Sets TARGETS for our non-king moves and PINNED for our pinned pieces,
+   * and returns the checker count (2 means 2+). Checks and pins by sliders
+   * both come from one pass over the snipers (see Pins.checkLine).
+   */
   static setTargets (board, color, kingSq) {
     const bbs = board.bitboards
     const them = 6 - color * 6
-    // short steps keep V8's BigInt math unboxed (see KingSafety.isAttacked)
     GEN[CHECKERS] = (KNIGHT_ATTACKS[kingSq] & bbs[them + Piece.KNIGHT]) |
       (PAWN_ATTACKS[color * 64 + kingSq] & bbs[them + Piece.PAWN])
-    GEN[CHECKERS] = GEN[CHECKERS] |
-      (Ray.bishopAttacks(kingSq, bbs[BoardSlot.OCCUPIED]) & (bbs[them + Piece.BISHOP] | bbs[them + Piece.QUEEN]))
-    GEN[CHECKERS] = GEN[CHECKERS] |
-      (Ray.rookAttacks(kingSq, bbs[BoardSlot.OCCUPIED]) & (bbs[them + Piece.ROOK] | bbs[them + Piece.QUEEN]))
+    GEN[PINNED] = 0n
+    GEN[SNIPERS] = ROOK_RAYS[kingSq] & (bbs[them + Piece.ROOK] | bbs[them + Piece.QUEEN])
+    GEN[SNIPERS] = GEN[SNIPERS] | (BISHOP_RAYS[kingSq] & (bbs[them + Piece.BISHOP] | bbs[them + Piece.QUEEN]))
+    for (let half = 0; half < 2; half++) {
+      let snipers = GEN32[2 * SNIPERS + half]
+      while (snipers !== 0) {
+        const sniperSq = (half << 5) | (31 - Math.clz32(snipers & -snipers))
+        snipers &= snipers - 1
+        Pins.checkLine(board, color, kingSq, sniperSq)
+      }
+    }
     const lo = GEN32[2 * CHECKERS]
     const hi = GEN32[2 * CHECKERS + 1]
     if ((lo | hi) === 0) {
@@ -458,28 +479,20 @@ class CheckEvasions {
 }
 
 class Pins {
-  // a lone piece of ours between our king and their slider is pinned
-  static find (board, color, kingSq) {
-    const bbs = board.bitboards
-    const them = 6 - color * 6
-    GEN[PINNED] = 0n
-    GEN[SNIPERS] = ROOK_RAYS[kingSq] & (bbs[them + Piece.ROOK] | bbs[them + Piece.QUEEN])
-    GEN[SNIPERS] = GEN[SNIPERS] | (BISHOP_RAYS[kingSq] & (bbs[them + Piece.BISHOP] | bbs[them + Piece.QUEEN]))
-    for (let half = 0; half < 2; half++) {
-      let snipers = GEN32[2 * SNIPERS + half]
-      while (snipers !== 0) {
-        const sniperSq = (half << 5) | (31 - Math.clz32(snipers & -snipers))
-        snipers &= snipers - 1
-        this.pinLoneBlocker(board, color, kingSq, sniperSq)
-      }
-    }
-  }
-
-  static pinLoneBlocker (board, color, kingSq, sniperSq) {
+  /**
+   * Looks at the squares between our king and a sniper: their slider on one
+   * of the king's empty-board rays. With nothing in between, the sniper
+   * gives check. With a lone piece of ours in between, that piece is pinned.
+   */
+  static checkLine (board, color, kingSq, sniperSq) {
     GEN[BLOCKERS] = BETWEEN[kingSq * 64 + sniperSq] & board.bitboards[BoardSlot.OCCUPIED]
     const lo = GEN32[2 * BLOCKERS]
     const hi = GEN32[2 * BLOCKERS + 1]
-    if ((lo !== 0) === (hi !== 0)) { return } // no blockers, or one in each half
+    if ((lo | hi) === 0) {
+      GEN32[2 * CHECKERS + (sniperSq >> 5)] |= 1 << (sniperSq & 31)
+      return
+    }
+    if (lo !== 0 && hi !== 0) { return } // one blocker in each half
     const bits = lo | hi
     if ((bits & (bits - 1)) !== 0) { return }
     const sq = lo !== 0 ? 31 - Math.clz32(lo) : 63 - Math.clz32(hi)
@@ -508,10 +521,10 @@ class EnPassant {
     GEN[EP_PAWNS] = bbs[them + Piece.PAWN] ^ SQUARE_BB[captureSq]
     GEN[EP_ATTACKERS] = (KNIGHT_ATTACKS[kingSq] & bbs[them + Piece.KNIGHT]) |
       (PAWN_ATTACKS[color * 64 + kingSq] & GEN[EP_PAWNS])
-    GEN[EP_ATTACKERS] = GEN[EP_ATTACKERS] |
-      (Ray.bishopAttacks(kingSq, GEN[EP_OCC]) & (bbs[them + Piece.BISHOP] | bbs[them + Piece.QUEEN]))
-    GEN[EP_ATTACKERS] = GEN[EP_ATTACKERS] |
-      (Ray.rookAttacks(kingSq, GEN[EP_OCC]) & (bbs[them + Piece.ROOK] | bbs[them + Piece.QUEEN]))
+    Ray.setBishopAttacks(GEN, ATTACKS, kingSq, GEN, EP_OCC)
+    GEN[EP_ATTACKERS] = GEN[EP_ATTACKERS] | (GEN[ATTACKS] & (bbs[them + Piece.BISHOP] | bbs[them + Piece.QUEEN]))
+    Ray.setRookAttacks(GEN, ATTACKS, kingSq, GEN, EP_OCC)
+    GEN[EP_ATTACKERS] = GEN[EP_ATTACKERS] | (GEN[ATTACKS] & (bbs[them + Piece.ROOK] | bbs[them + Piece.QUEEN]))
     return (GEN32[2 * EP_ATTACKERS] | GEN32[2 * EP_ATTACKERS + 1]) === 0
   }
 
@@ -537,14 +550,20 @@ class KingSafety {
       (PAWN_ATTACKS[color * 64 + sq] & bbs[them + Piece.PAWN]) |
       (KING_ATTACKS[sq] & bbs[them + Piece.KING])
     if ((GEN32[2 * ATTACKERS] | GEN32[2 * ATTACKERS + 1]) !== 0) { return true }
+    return this.isSliderAttacked(sq)
+  }
+
+  static isSliderAttacked (sq) {
     GEN[ATTACKERS] = BISHOP_RAYS[sq] & GEN[THEIR_BISHOPS]
     if ((GEN32[2 * ATTACKERS] | GEN32[2 * ATTACKERS + 1]) !== 0) {
-      GEN[ATTACKERS] = Ray.bishopAttacks(sq, GEN[KING_OCC]) & GEN[THEIR_BISHOPS]
+      Ray.setBishopAttacks(GEN, ATTACKERS, sq, GEN, KING_OCC)
+      GEN[ATTACKERS] = GEN[ATTACKERS] & GEN[THEIR_BISHOPS]
       if ((GEN32[2 * ATTACKERS] | GEN32[2 * ATTACKERS + 1]) !== 0) { return true }
     }
     GEN[ATTACKERS] = ROOK_RAYS[sq] & GEN[THEIR_ROOKS]
     if ((GEN32[2 * ATTACKERS] | GEN32[2 * ATTACKERS + 1]) === 0) { return false }
-    GEN[ATTACKERS] = Ray.rookAttacks(sq, GEN[KING_OCC]) & GEN[THEIR_ROOKS]
+    Ray.setRookAttacks(GEN, ATTACKERS, sq, GEN, KING_OCC)
+    GEN[ATTACKERS] = GEN[ATTACKERS] & GEN[THEIR_ROOKS]
     return (GEN32[2 * ATTACKERS] | GEN32[2 * ATTACKERS + 1]) !== 0
   }
 }
@@ -579,7 +598,6 @@ class Castling {
     return true
   }
 
-  // reads the DANGER map that setKingMoves built
   static addTarget (sq) {
     GEN32[2 * MOVES + (sq >> 5)] |= 1 << (sq & 31)
   }

@@ -1,4 +1,7 @@
-const Pieces = require('./pieces.js').Pieces
+import { Pieces, type FenChar } from './pieces.ts'
+import type { Board } from './board.ts'
+
+type SquareName = `${'a' | 'b' | 'c' | 'd' | 'e' | 'f' | 'g' | 'h'}${1 | 2 | 3 | 4 | 5 | 6 | 7 | 8}`
 
 /**
  * V8 only keeps BigInt math unboxed (fast) when the result is written into a
@@ -12,77 +15,78 @@ if (new Uint8Array(new Uint32Array([1]).buffer)[0] !== 1) {
 
 // set bits in every 16-bit number; two lookups beat a SWAR popcount in perft
 const POP16 = new Uint8Array(1 << 16)
-for (let i = 1; i < POP16.length; i++) { POP16[i] = (i & 1) + POP16[i >> 1] }
+for (let i = 1; i < POP16.length; i++) { POP16[i] = (i & 1) + POP16[i >> 1]! }
 
 const SCRATCH = new BigUint64Array(1)
 const SCRATCH32 = new Int32Array(SCRATCH.buffer)
 
 // castling rights as bit flags, keyed by their fen symbol
-const CastleRights = { K: 1, Q: 2, k: 4, q: 8 }
+const CastleRights = { K: 1, Q: 2, k: 4, q: 8 } as const
+type CastleSymbol = keyof typeof CastleRights
 
-function U64 (int) {
+function U64 (int: bigint | number): bigint {
   return BigInt.asUintN(64, BigInt(int))
 }
 
 class BitHelper {
-  static getBit (bb, bitPosition) {
+  static getBit (bb: bigint, bitPosition: number): bigint {
     return (bb & (1n << BigInt(bitPosition))) === 0n
       ? 0n
       : 1n
   }
 
-  static setBit (bb, bitPosition) {
+  static setBit (bb: bigint, bitPosition: number): bigint {
     return bb | 1n << BigInt(bitPosition)
   }
 
-  static clearBit (bb, bitPosition) {
+  static clearBit (bb: bigint, bitPosition: number): bigint {
     const mask = ~(1n << BigInt(bitPosition))
     return bb & mask
   }
 
-  static updateBit (bb, bitPosition, bitValue) {
+  static updateBit (bb: bigint, bitPosition: number, bitValue: number | bigint): bigint {
     const bitValueNormalized = BigInt(bitValue) ? 1n : 0n
     const clearMask = ~(1n << BigInt(bitPosition))
     return (bb & clearMask) | (bitValueNormalized << BigInt(bitPosition))
   }
 
-  static bitsFor (indices) {
+  static bitsFor (indices: readonly number[]): bigint {
     return indices
       .map((idx) => BitHelper.setBit(0n, idx))
       .reduce((accBit, currBit) => accBit | currBit, 0n)
   }
 
   // index of the least significant set bit, or -1 for an empty board
-  static bitScanFwd (bb) {
+  static bitScanFwd (bb: bigint): number {
     SCRATCH[0] = bb
-    const lo = SCRATCH32[0]
-    const hi = SCRATCH32[1]
+    const lo = SCRATCH32[0]!
+    const hi = SCRATCH32[1]!
     if (lo !== 0) { return 31 - Math.clz32(lo & -lo) }
     if (hi !== 0) { return 63 - Math.clz32(hi & -hi) }
     return -1
   }
 
   // index of the most significant set bit, or -1 for an empty board
-  static bitScanRev (bb) {
+  static bitScanRev (bb: bigint): number {
     SCRATCH[0] = bb
-    const lo = SCRATCH32[0]
-    const hi = SCRATCH32[1]
+    const lo = SCRATCH32[0]!
+    const hi = SCRATCH32[1]!
     if (hi !== 0) { return 63 - Math.clz32(hi) }
     if (lo !== 0) { return 31 - Math.clz32(lo) }
     return -1
   }
 
-  static popCount (bb) {
+  static popCount (bb: bigint): number {
     SCRATCH[0] = bb
-    return BitHelper.popCount32(SCRATCH32[0]) + BitHelper.popCount32(SCRATCH32[1])
+    return BitHelper.popCount32(SCRATCH32[0]!) + BitHelper.popCount32(SCRATCH32[1]!)
   }
 
-  static popCount32 (bits) {
-    return POP16[bits & 0xFFFF] + POP16[bits >>> 16]
+  static popCount32 (bits: number): number {
+    return POP16[bits & 0xFFFF]! + POP16[bits >>> 16]!
   }
 
   // mirrors the board vertically (a1 <-> a8)
-  static flipVertical (bb) {
+  static flipVertical (bb: bigint): bigint {
     let flipped = 0n
     for (let rank = 0n; rank < 8n; rank++) {
       flipped |= ((bb >> (8n * rank)) & 0xFFn) << (8n * (7n - rank))
@@ -215,9 +219,9 @@ class BoardHelper {
 }
 
 class ViewHelper {
-  static display (bb, message) {
+  static display (bb: bigint, message: string): void {
     const bbToView = bb
-    const userView = []
+    const userView: bigint[] = []
     for (let i = 0; i < 64; i++) {
       userView[i] = BitHelper.getBit(bbToView, i)
     }
@@ -258,8 +262,8 @@ class ViewHelper {
       '=END')
   }
 
-  static inspect (board, viewIdx, message) {
-    const userView = new Array(64).fill('·', 0, 64)
+  static inspect (board: Board, viewIdx: number, message: string): void {
+    const userView = new Array<string>(64).fill('·', 0, 64)
     Pieces.for('all').forEach((piece) => {
       const indices = SquareHelper.indicesFor(board.pieceBoardList[piece].bb)
       indices.forEach((index) => {
@@ -307,10 +311,12 @@ class ViewHelper {
 }
 
 class SquareHelper {
-  static for (rankFile) {
+  static for (rankFile: SquareName): number
+  static for (rankFile: string): number | undefined
+  static for (rankFile: string): number | undefined {
     // Little-Endian Rank-File Mapping
     /* eslint-disable @stylistic/object-property-newline, @stylistic/key-spacing */
-    const indexMap = {
+    const indexMap: Record<SquareName, number> = {
       a8: 56, b8: 57, c8: 58, d8: 59, e8: 60, f8: 61, g8: 62, h8: 63,
       a7: 48, b7: 49, c7: 50, d7: 51, e7: 52, f7: 53, g7: 54, h7: 55,
       a6: 40, b6: 41, c6: 42, d6: 43, e6: 44, f6: 45, g6: 46, h6: 47,
@@ -321,10 +327,10 @@ class SquareHelper {
       a1:  0, b1:  1, c1:  2, d1:  3, e1:  4, f1:  5, g1:  6, h1:  7
     }
     /* eslint-enable @stylistic/object-property-newline, @stylistic/key-spacing */
-    return indexMap[rankFile]
+    return indexMap[rankFile as SquareName]
   }
 
-  static uciFor (move) {
+  static uciFor (move: { from: number, to: number }): string {
     const from = move.from
     const to = move.to
     /* eslint-disable @stylistic/object-property-newline, @stylistic/key-spacing */
@@ -339,14 +345,14 @@ class SquareHelper {
       'a8', 'b8', 'c8', 'd8', 'e8', 'f8', 'g8', 'h8'
     ]
     /* eslint-enable @stylistic/object-property-newline, @stylistic/key-spacing */
-    return indexMap[from] + indexMap[to]
+    return indexMap[from]! + indexMap[to]!
   }
 
-  static indicesFor (board) {
-    const someList = []
+  static indicesFor (board: bigint): number[] {
+    const someList: number[] = []
     SCRATCH[0] = board
     for (let half = 0; half < 2; half++) {
-      let bits = SCRATCH32[half]
+      let bits = SCRATCH32[half]!
       while (bits !== 0) {
         someList.push((half << 5) | (31 - Math.clz32(bits & -bits)))
         bits &= bits - 1
@@ -357,6 +363,19 @@ class SquareHelper {
 }
 
 class PieceList {
+  K: number
+  Q: number
+  R: number
+  B: number
+  N: number
+  P: number
+  k: number
+  q: number
+  r: number
+  b: number
+  n: number
+  p: number
+
   constructor () {
     this.K = 0
     this.Q = 0
@@ -372,16 +391,16 @@ class PieceList {
     this.p = 0
   }
 
-  forEach (callback) {
+  forEach (callback: (count: number) => void): void {
     for (const piece in this) {
-      callback(this[piece])
+      callback(this[piece] as number)
     }
   }
 
-  firstMatch (callback) {
+  firstMatch (callback: (count: number) => boolean): number {
     for (const piece in this) {
-      if (callback(this[piece])) {
-        return this[piece]
+      if (callback(this[piece] as number)) {
+        return this[piece] as number
       }
     }
     return 0
@@ -389,7 +408,7 @@ class PieceList {
 }
 
 class PerftHelper {
-  static countMoves (moveList) {
+  static countMoves (moveList: readonly { fenChar: FenChar }[]): void {
     const pieceList = new PieceList()
     moveList.forEach((move) => {
       pieceList[move.fenChar] += 1
@@ -398,12 +417,13 @@ class PerftHelper {
   }
 }
 
-module.exports = {
-  U64: U64,
-  CastleRights: CastleRights,
-  BitHelper: BitHelper,
-  BoardHelper: BoardHelper,
-  ViewHelper: ViewHelper,
-  SquareHelper: SquareHelper,
-  PerftHelper: PerftHelper
+export {
+  U64,
+  CastleRights,
+  BitHelper,
+  BoardHelper,
+  ViewHelper,
+  SquareHelper,
+  PerftHelper
 }
+export type { SquareName, CastleSymbol }

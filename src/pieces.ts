@@ -1,3 +1,5 @@
+type FenChar = 'K' | 'Q' | 'R' | 'B' | 'N' | 'P' | 'k' | 'q' | 'r' | 'b' | 'n' | 'p'
+
 const FEN_CHARS = 'KQRBNPkqrbnp'
 
 /**
@@ -22,15 +24,15 @@ const BoardSlot = {
 }
 
 class Pieces {
-  static indexFor (fenChar) {
+  static indexFor (fenChar: string): number {
     return FEN_CHARS.indexOf(fenChar)
   }
 
-  static fenCharFor (index) {
-    return FEN_CHARS[index]
+  static fenCharFor (index: number): FenChar | undefined {
+    return FEN_CHARS[index] as FenChar | undefined
   }
 
-  static for (fromPieceOrSide) {
+  static for (fromPieceOrSide: string): FenChar[] {
     switch (fromPieceOrSide) {
       case 'w':
         return ['K', 'Q', 'R', 'B', 'N', 'P']
@@ -48,7 +50,7 @@ class Pieces {
         return ['K', 'Q', 'R', 'B', 'N', 'P', 'k', 'q', 'b', 'r', 'n', 'p']
       default:
         if ('KQRBNPkqrbnp'.includes(fromPieceOrSide)) {
-          return [fromPieceOrSide]
+          return [fromPieceOrSide as FenChar]
         } else {
           throw new Error('Invalid Piece or Side')
         }
@@ -57,18 +59,19 @@ class Pieces {
 }
 
 class PieceStatus {
-  static isPawn (fenPiece) {
+  static isPawn (fenPiece: string): boolean {
     return 'Pp'.includes(fenPiece)
   }
 
-  static isNotPawn (fenPiece) {
+  static isNotPawn (fenPiece: string): boolean {
     return 'KQRBNkqrbn'.includes(fenPiece)
   }
 }
 
-module.exports = {
-  Piece: Piece,
-  BoardSlot: BoardSlot,
-  Pieces: Pieces,
-  PieceStatus: PieceStatus
+export {
+  Piece,
+  BoardSlot,
+  Pieces,
+  PieceStatus
 }
+export type { FenChar }

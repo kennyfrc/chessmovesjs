@@ -1,34 +1,36 @@
-const Board = require('./board.js').Board
-const BitHelper = require('./helpers.js').BitHelper
-const SquareHelper = require('./helpers.js').SquareHelper
+import { Board } from './board.ts'
+import { BitHelper, SquareHelper } from './helpers.ts'
+import type { PieceBoardList } from './pieceboard.ts'
 
 class BoardView extends Board {
-  constructor (pieceBoardList) {
+  userView: bigint[]
+
+  constructor (pieceBoardList: PieceBoardList) {
     super()
     this.pieceBoardList = pieceBoardList
     this.bb = this.parsePlToBb(pieceBoardList, this.bb)
     this.userView = this.parseToUserView()
   }
 
-  parsePlToBb (pieceBoardList, bb) {
+  parsePlToBb (pieceBoardList: PieceBoardList, bb: bigint): bigint {
     if (pieceBoardList) {
-      Object.keys(pieceBoardList).forEach((piece) => {
+      (Object.keys(pieceBoardList) as Array<keyof PieceBoardList>).forEach((piece) => {
         bb |= pieceBoardList[piece].bb
       })
     }
     return bb
   }
 
-  parseToUserView (bb) {
+  parseToUserView (bb?: bigint): bigint[] {
     const bbToView = bb || this.bb
-    const userView = []
+    const userView: bigint[] = []
     for (let i = 0; i < 64; i++) {
       userView[i] = BitHelper.getBit(bbToView, i)
     }
     return userView
   }
 
-  display () {
+  display (): string {
     return '' +
       this.userView[SquareHelper.for('a8')] + this.userView[SquareHelper.for('b8')] +
       this.userView[SquareHelper.for('c8')] + this.userView[SquareHelper.for('d8')] +
@@ -65,6 +67,6 @@ class BoardView extends Board {
   }
 }
 
-module.exports = {
-  BoardView: BoardView
+export {
+  BoardView
 }

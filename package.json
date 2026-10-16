@@ -1,6 +1,7 @@
 {
   "name": "chessmovesjs",
   "version": "0.1.0",
+  "type": "module",
   "main": "dist/index.cjs",
   "module": "dist/index.mjs",
   "exports": {
@@ -16,14 +17,16 @@
     "dev": "vp pack --watch",
     "build": "vp pack",
     "test": "vp test",
-    "perft": "vp test test/perft.js",
-    "bench": "node scripts/bench.js",
-    "bench:search": "node scripts/search-bench.js",
+    "perft": "vp test test/perft.ts",
+    "bench": "vp pack --logLevel error && node scripts/bench.ts",
+    "bench:search": "vp pack --logLevel error && node scripts/search-bench.ts",
     "lint": "vp lint",
+    "typecheck": "vp check --no-lint",
     "check": "vp check"
   },
   "devDependencies": {
     "@stylistic/eslint-plugin": "^5.10.0",
+    "@types/node": "^24",
     "vite-plus": "1.2.0"
   },
   "resolutions": {

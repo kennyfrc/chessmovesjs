@@ -1,5 +1,6 @@
-const assert = require('assert')
-const Engine = require('../src/engine.js').Engine
+import assert from 'node:assert'
+import { Engine } from '../src/engine.ts'
+import { describe, it } from 'vite-plus/test'
 
 Error.stackTraceLimit = 10
 

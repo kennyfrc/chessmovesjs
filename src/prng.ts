@@ -6,18 +6,22 @@
  * https://en.wikipedia.org/wiki/Linear_congruential_generator#m_prime,_c_=_0
  */
 class LCG {
-  constructor (seed) {
+  seed: bigint
+  a: bigint
+  m: bigint
+
+  constructor (seed?: bigint) {
     this.seed = seed || 91289n
     this.a = 257n
     this.m = 2305843009213693952n // (2 ** 61 - 1)
   }
 
-  randomBigInt () {
+  randomBigInt (): bigint {
     this.seed = (this.a * this.seed) % this.m
     return this.seed
   }
 }
 
-module.exports = {
-  LCG: LCG
+export {
+  LCG
 }

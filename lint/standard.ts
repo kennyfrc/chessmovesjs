@@ -6,7 +6,9 @@
  * no-new-object, no-new-symbol, no-octal, no-octal-escape, no-undef-init,
  * node/no-callback-literal, node/no-deprecated-api, node/process-exit-as-throw.
  */
-export const standardRules = {
+import type { DummyRuleMap } from 'vite-plus/lint'
+
+export const standardRules: DummyRuleMap = {
   'no-var': 'warn',
   'accessor-pairs': ['error', { setWithoutGet: true, enforceForClassMembers: true }],
   'array-callback-return': ['error', { allowImplicit: false, checkForEach: false }],
@@ -111,7 +113,7 @@ export const standardRules = {
   'promise/param-names': 'error'
 }
 
-export const standardStyleRules = {
+export const standardStyleRules: DummyRuleMap = {
   '@stylistic/array-bracket-spacing': ['error', 'never'],
   '@stylistic/arrow-spacing': ['error', { before: true, after: true }],
   '@stylistic/block-spacing': ['error', 'always'],

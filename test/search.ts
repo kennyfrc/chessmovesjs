@@ -1,14 +1,10 @@
-const assert = require('assert')
-const Engine = require('../src/engine.js').Engine
-const Search = require('../src/search.js').Search
-const MATE = require('../src/search.js').MATE
-const MoveList = require('../src/move.js').MoveList
-const MoveKind = require('../src/move.js').MoveKind
-const Checks = require('../src/move.js').Checks
-const Exchange = require('../src/exchange.js').Exchange
-const Evaluation = require('../src/eval.js').Evaluation
-const VALUES = require('../src/eval.js').VALUES
-const MAX_QUIET_GAIN = require('../src/eval.js').MAX_QUIET_GAIN
+import assert from 'node:assert'
+import { Engine } from '../src/engine.ts'
+import { Search, MATE } from '../src/search.ts'
+import { MoveList, MoveKind, Checks } from '../src/move.ts'
+import { Exchange } from '../src/exchange.ts'
+import { Evaluation, VALUES, MAX_QUIET_GAIN } from '../src/eval.ts'
+import { describe, it } from 'vite-plus/test'
 
 const FENS = [
   'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
@@ -23,9 +19,10 @@ const FENS = [
  * each move. Castling, en passant and promotions are picked half the time
  * they come up, so every move kind gets covered.
  */
-function playRandomGames (fen, games, plies, visit) {
+function playRandomGames (fen: string, games: number, plies: number,
+  visit: (engine: Engine, code: number, ply: number) => void): void {
   let seed = 12345
-  const random = (n) => {
+  const random = (n: number): number => {
     seed = (Math.imul(seed, 1103515245) + 12345) | 0
     return (seed >>> 8) % n
   }
@@ -35,10 +32,10 @@ function playRandomGames (fen, games, plies, visit) {
     for (let ply = 0; ply < plies; ply++) {
       const n = MoveList.generate(engine.board, moves, 0)
       if (n === 0) { break }
-      let code = moves[random(n)]
+      let code = moves[random(n)]!
       for (let i = 0; i < n; i++) {
-        if ((moves[i] >>> 12) >= MoveKind.CASTLE && random(2) === 0) {
-          code = moves[i]
+        if ((moves[i]! >>> 12) >= MoveKind.CASTLE && random(2) === 0) {
+          code = moves[i]!
           break
         }
       }
@@ -49,7 +46,7 @@ function playRandomGames (fen, games, plies, visit) {
 }
 
 // the search's draw rules, written out again with BigInt keys
-function isDrawn (engine) {
+function isDrawn (engine: Engine): boolean {
   const board = engine.board
   if (board.halfMoveClock >= 100) { return true }
   const m = engine.movesMade
@@ -60,7 +57,7 @@ function isDrawn (engine) {
 }
 
 // plain minimax with the search's rules: check extension, quiescence, draws
-function minimax (engine, depth, ply) {
+function minimax (engine: Engine, depth: number, ply: number): number {
   if (depth <= 0) { return quiesceMinimax(engine, ply) }
   if (ply > 0 && isDrawn(engine)) { return 0 }
   const inCheck = MoveList.isInCheck(engine.board)
@@ -69,7 +66,7 @@ function minimax (engine, depth, ply) {
   if (n === 0) { return inCheck ? ply - MATE : 0 }
   let best = -Infinity
   for (let i = 0; i < n; i++) {
-    engine.makeMove(moves[i])
+    engine.makeMove(moves[i]!)
     best = Math.max(best, -minimax(engine, inCheck ? depth : depth - 1, ply + 1))
     engine.unmakeMove()
   }
@@ -81,11 +78,11 @@ function minimax (engine, depth, ply) {
  * returns the minimax score. Without the cutoffs a busy position like
  * kiwipete takes millions of nodes per leaf.
  */
-function quiesceMinimax (engine, ply, alpha = -Infinity, beta = Infinity) {
+function quiesceMinimax (engine: Engine, ply: number, alpha = -Infinity, beta = Infinity): number {
   const board = engine.board
   const moves = new Int32Array(256)
   let best = -Infinity
-  let n
+  let n: number
   if (MoveList.isInCheck(board)) {
     n = MoveList.generate(board, moves, 0)
     if (n === 0) { return ply - MATE }
@@ -95,7 +92,7 @@ function quiesceMinimax (engine, ply, alpha = -Infinity, beta = Infinity) {
     alpha = Math.max(alpha, best)
     n = MoveList.generateCaptures(board, moves, 0)
   }
-  const victim = (code) => board.squares[(code >> 6) & 63] === -1 ? 0 : VALUES[board.squares[(code >> 6) & 63] % 6]
+  const victim = (code: number): number => board.squares[(code >> 6) & 63] === -1 ? 0 : VALUES[board.squares[(code >> 6) & 63]! % 6]!
   const ordered = Array.from(moves.subarray(0, n)).sort((a, b) => victim(b) - victim(a))
   for (const code of ordered) {
     engine.makeMove(code)
@@ -142,19 +139,19 @@ describe('Evaluation', function () {
         const before = Evaluation.evaluate(board)
         const n = MoveList.generateQuiets(board, moves, 0)
         for (let i = 0; i < n; i++) {
-          engine.makeMove(moves[i])
+          engine.makeMove(moves[i]!)
           most = Math.max(most, -Evaluation.evaluate(engine.board) - before)
           engine.unmakeMove()
         }
       })
     })
-    assert.ok(most <= MAX_QUIET_GAIN, most)
-    assert.ok(most > MAX_QUIET_GAIN / 2, most)
+    assert.ok(most <= MAX_QUIET_GAIN, String(most))
+    assert.ok(most > MAX_QUIET_GAIN / 2, String(most))
   })
 })
 
 describe('MoveList', function () {
-  const sorted = (codes, from, to) => Array.from(codes.subarray(from, to)).sort((a, b) => a - b)
+  const sorted = (codes: Int32Array, from: number, to: number): number[] => Array.from(codes.subarray(from, to)).sort((a, b) => a - b)
 
   it('generates the same captures and promotions as generate()', function () {
     const all = new Int32Array(256)
@@ -236,10 +233,10 @@ describe('MoveList', function () {
 })
 
 describe('Exchange', function () {
-  const capture = (fen, uci) => {
+  const capture = (fen: string, uci: string): boolean => {
     const engine = new Engine(fen)
     const move = engine.board.legalMoves().find((m) => MoveList.uciFor(m.code) === uci)
-    return Exchange.isLosing(engine.board, move.code)
+    return Exchange.isLosing(engine.board, move!.code)
   }
 
   it('knows a queen that takes a defended pawn loses material', function () {
@@ -262,6 +259,32 @@ describe('Exchange', function () {
   it('lets the king take back only on a safe square', function () {
     assert.equal(capture('8/8/4k3/3p4/8/1B6/8/3QK3 w - - 0 1', 'd1d5'), false)
     assert.equal(capture('8/8/4k3/3p4/8/8/8/3QK3 w - - 0 1', 'd1d5'), true)
+  })
+})
+
+describe('Engine', function () {
+  // what unmake must restore: the bitboards with the position key, and the state kept on the stacks
+  const state = (engine: Engine): [bigint[], number, number, number] => [
+    Array.from(engine.board.bitboards), engine.board.epSq, engine.board.castleRights, engine.board.halfMoveClock
+  ]
+
+  // the stacks start at 256 moves, so a longer game has to grow them without losing a move
+  it('unmakes every move of a game longer than its stacks', function () {
+    const engine = new Engine(FENS[2])
+    const moves = new Int32Array(256)
+    const before: Array<[bigint[], number, number, number]> = []
+    for (let ply = 0; ply < 600; ply++) {
+      const n = MoveList.generate(engine.board, moves, 0)
+      if (n === 0) { break }
+      before.push(state(engine))
+      engine.makeMove(moves[(ply * 7 + 3) % n]!)
+    }
+    assert.ok(engine.movesMade > 512, String(engine.movesMade)) // the stacks grew twice
+    assert.equal(engine.keyHistory32.buffer, engine.keyHistory.buffer)
+    while (engine.movesMade > 0) {
+      engine.unmakeMove()
+      assert.deepEqual(state(engine), before[engine.movesMade])
+    }
   })
 })
 
@@ -298,7 +321,7 @@ describe('Search', function () {
   it('treats a repeated position as a draw', function () {
     const engine = new Engine(FENS[0])
     const search = new Search(engine)
-    const play = (uci) => engine.make(engine.board.legalMoves().find((move) => MoveList.uciFor(move.code) === uci))
+    const play = (uci: string): void => engine.make(engine.board.legalMoves().find((move) => MoveList.uciFor(move.code) === uci)!)
     play('g1f3')
     play('g8f6')
     assert.equal(search.isDraw(), false)
@@ -308,7 +331,7 @@ describe('Search', function () {
   })
 
   it('scores the same as plain minimax when the hash table is off', function () {
-    const cases = [[FENS[0], 3], [FENS[2], 4], [FENS[4], 2]]
+    const cases: Array<[string, number]> = [[FENS[0]!, 3], [FENS[2]!, 4], [FENS[4]!, 2]]
     cases.forEach(([fen, depth]) => {
       const engine = new Engine(fen)
       const search = new Search(engine, 1)

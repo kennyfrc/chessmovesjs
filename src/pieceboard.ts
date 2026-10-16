@@ -1,5 +1,6 @@
-const BitHelper = require('./helpers.js').BitHelper
-const Pieces = require('./pieces.js').Pieces
+import { BitHelper } from './helpers.ts'
+import { Pieces, type FenChar } from './pieces.ts'
+import type { Board } from './board.ts'
 
 /**
  * A PieceBoard is a live view of one piece's bitboard inside a Board.
@@ -7,7 +8,11 @@ const Pieces = require('./pieces.js').Pieces
  * itself (check, capture, threat).
  */
 class PieceBoard {
-  static for (fenChar, board) {
+  board: Board
+  fenChar: FenChar
+  piece: number
+
+  static for (fenChar: FenChar, board: Board): AnyPieceBoard {
     let PieceClass
     switch (fenChar) {
       case 'k':
@@ -50,23 +55,33 @@ class PieceBoard {
     return new PieceClass(board, fenChar)
   }
 
-  constructor (board, fenChar) {
+  constructor (board: Board, fenChar: FenChar) {
     this.board = board
     this.fenChar = fenChar
     this.piece = Pieces.indexFor(fenChar)
   }
 
-  get bb () {
-    return this.board.bitboards[this.piece]
+  get bb (): bigint {
+    return this.board.bitboards[this.piece]!
   }
 
-  set bb (bb) {
+  set bb (bb: bigint) {
     this.board.setPieceBb(this.piece, bb)
   }
 }
 
 class WhitePawnBoard extends PieceBoard {
-  setContext (board) {
+  blackBb!: bigint
+  emptySq!: bigint
+  blackKingBb!: bigint
+  blackMinorBb!: bigint
+  blackMajorBb!: bigint
+  epSqIdx!: number | undefined
+  epSqBb!: bigint
+  occupied!: bigint
+  occupiable!: bigint
+
+  setContext (board: Board): void {
     this.blackBb = board.blackBb
     this.emptySq = ~board.bb
     this.blackKingBb = board.blackKingBb
@@ -80,7 +95,17 @@ class WhitePawnBoard extends PieceBoard {
 }
 
 class BlackPawnBoard extends PieceBoard {
-  setContext (board) {
+  whiteBb!: bigint
+  emptySq!: bigint
+  whiteKingBb!: bigint
+  whiteMinorBb!: bigint
+  whiteMajorBb!: bigint
+  epSqIdx!: number | undefined
+  epSqBb!: bigint
+  occupied!: bigint
+  occupiable!: bigint
+
+  setContext (board: Board): void {
     this.whiteBb = board.whiteBb
     this.emptySq = ~board.bb
     this.whiteKingBb = board.whiteKingBb
@@ -94,7 +119,11 @@ class BlackPawnBoard extends PieceBoard {
 }
 
 class WhiteKnightBoard extends PieceBoard {
-  setContext (board) {
+  blackKingBb!: bigint
+  blackMajorBb!: bigint
+  blackBb!: bigint
+
+  setContext (board: Board): void {
     this.blackKingBb = board.blackKingBb
     this.blackMajorBb = board.blackMajorBb
     this.blackBb = board.blackBb
@@ -102,7 +131,11 @@ class WhiteKnightBoard extends PieceBoard {
 }
 
 class BlackKnightBoard extends PieceBoard {
-  setContext (board) {
+  whiteKingBb!: bigint
+  whiteMajorBb!: bigint
+  whiteBb!: bigint
+
+  setContext (board: Board): void {
     this.whiteKingBb = board.whiteKingBb
     this.whiteMajorBb = board.whiteMajorBb
     this.whiteBb = board.whiteBb
@@ -110,7 +143,13 @@ class BlackKnightBoard extends PieceBoard {
 }
 
 class WhiteBishopBoard extends PieceBoard {
-  setContext (board) {
+  blackKingBb!: bigint
+  blackMajorBb!: bigint
+  blackBb!: bigint
+  occupied!: bigint
+  occupiable!: bigint
+
+  setContext (board: Board): void {
     this.blackKingBb = board.blackKingBb
     this.blackMajorBb = board.blackMajorBb
     this.blackBb = board.blackBb
@@ -120,7 +159,13 @@ class WhiteBishopBoard extends PieceBoard {
 }
 
 class BlackBishopBoard extends PieceBoard {
-  setContext (board) {
+  whiteKingBb!: bigint
+  whiteMajorBb!: bigint
+  whiteBb!: bigint
+  occupied!: bigint
+  occupiable!: bigint
+
+  setContext (board: Board): void {
     this.whiteKingBb = board.whiteKingBb
     this.whiteMajorBb = board.whiteMajorBb
     this.whiteBb = board.whiteBb
@@ -130,7 +175,13 @@ class BlackBishopBoard extends PieceBoard {
 }
 
 class WhiteRookBoard extends PieceBoard {
-  setContext (board) {
+  blackKingBb!: bigint
+  blackQueenBb!: bigint
+  blackBb!: bigint
+  occupied!: bigint
+  occupiable!: bigint
+
+  setContext (board: Board): void {
     this.blackKingBb = board.blackKingBb
     this.blackQueenBb = board.blackQueenBb
     this.blackBb = board.blackBb
@@ -140,7 +191,13 @@ class WhiteRookBoard extends PieceBoard {
 }
 
 class BlackRookBoard extends PieceBoard {
-  setContext (board) {
+  whiteKingBb!: bigint
+  whiteQueenBb!: bigint
+  whiteBb!: bigint
+  occupied!: bigint
+  occupiable!: bigint
+
+  setContext (board: Board): void {
     this.whiteKingBb = board.whiteKingBb
     this.whiteQueenBb = board.whiteQueenBb
     this.whiteBb = board.whiteBb
@@ -150,7 +207,12 @@ class BlackRookBoard extends PieceBoard {
 }
 
 class WhiteQueenBoard extends PieceBoard {
-  setContext (board) {
+  occupied!: bigint
+  occupiable!: bigint
+  blackKingBb!: bigint
+  blackBb!: bigint
+
+  setContext (board: Board): void {
     this.occupied = board.bb
     this.occupiable = ~board.whiteBb
     this.blackKingBb = board.blackKingBb
@@ -159,7 +221,12 @@ class WhiteQueenBoard extends PieceBoard {
 }
 
 class BlackQueenBoard extends PieceBoard {
-  setContext (board) {
+  occupied!: bigint
+  occupiable!: bigint
+  whiteKingBb!: bigint
+  whiteBb!: bigint
+
+  setContext (board: Board): void {
     this.occupied = board.bb
     this.occupiable = ~board.blackBb
     this.whiteKingBb = board.whiteKingBb
@@ -168,19 +235,36 @@ class BlackQueenBoard extends PieceBoard {
 }
 
 class WhiteKingBoard extends PieceBoard {
-  setContext (board) {
+  blackBb!: bigint
+
+  setContext (board: Board): void {
     this.blackBb = board.blackBb
   }
 }
 
 class BlackKingBoard extends PieceBoard {
-  setContext (board) {
+  whiteBb!: bigint
+
+  setContext (board: Board): void {
     this.whiteBb = board.whiteBb
   }
 }
 
 class PieceBoardList {
-  constructor (board) {
+  K: AnyPieceBoard
+  Q: AnyPieceBoard
+  R: AnyPieceBoard
+  B: AnyPieceBoard
+  N: AnyPieceBoard
+  P: AnyPieceBoard
+  k: AnyPieceBoard
+  q: AnyPieceBoard
+  r: AnyPieceBoard
+  b: AnyPieceBoard
+  n: AnyPieceBoard
+  p: AnyPieceBoard
+
+  constructor (board: Board) {
     this.K = PieceBoard.for('K', board)
     this.Q = PieceBoard.for('Q', board)
     this.R = PieceBoard.for('R', board)
@@ -196,7 +280,26 @@ class PieceBoardList {
   }
 }
 
-module.exports = {
-  PieceBoard: PieceBoard,
-  PieceBoardList: PieceBoardList
+type AnyPieceBoard = WhitePawnBoard | BlackPawnBoard | WhiteKnightBoard | BlackKnightBoard |
+  WhiteBishopBoard | BlackBishopBoard | WhiteRookBoard | BlackRookBoard |
+  WhiteQueenBoard | BlackQueenBoard | WhiteKingBoard | BlackKingBoard
+
+export {
+  PieceBoard,
+  PieceBoardList
+}
+export type {
+  AnyPieceBoard,
+  WhitePawnBoard,
+  BlackPawnBoard,
+  WhiteKnightBoard,
+  BlackKnightBoard,
+  WhiteBishopBoard,
+  BlackBishopBoard,
+  WhiteRookBoard,
+  BlackRookBoard,
+  WhiteQueenBoard,
+  BlackQueenBoard,
+  WhiteKingBoard,
+  BlackKingBoard
 }

@@ -1,13 +1,10 @@
-const MoveList = require('./move.js').MoveList
-const MoveKind = require('./move.js').MoveKind
-const Checks = require('./move.js').Checks
-const Exchange = require('./exchange.js').Exchange
-const Evaluation = require('./eval.js').Evaluation
-const VALUES = require('./eval.js').VALUES
-const PST = require('./eval.js').PST
-const MAX_QUIET_GAIN = require('./eval.js').MAX_QUIET_GAIN
-const KNIGHT_ATTACKS = require('./attack.js').KNIGHT_ATTACKS
-const Piece = require('./pieces.js').Piece
+import { MoveList, MoveKind, Checks } from './move.ts'
+import { Exchange } from './exchange.ts'
+import { Evaluation, VALUES, PST, MAX_QUIET_GAIN } from './eval.ts'
+import { KNIGHT_ATTACKS } from './attack.ts'
+import { Piece, BoardSlot } from './pieces.ts'
+import type { Board } from './board.ts'
+import type { Engine } from './engine.ts'
 
 // addAttackBonus: where a pawn or a knight of ours would attack a bigger piece
 const HITS = new BigUint64Array(3)
@@ -16,7 +13,6 @@ const PAWN_HITS = 0
 const KNIGHT_HITS = 1
 const TARGETS = 2
 const ATTACK_BONUS = 1 << 22 // below the killers, above any history score
-const BoardSlot = require('./pieces.js').BoardSlot
 
 const EMPTY = -1
 const MAX_PLY = 128
@@ -35,7 +31,10 @@ const KILLER = 1 << 27
 const HISTORY_LIMIT = 1 << 20
 
 class TranspositionTable {
-  constructor (bits) {
+  shift: number
+  entries: Int32Array
+
+  constructor (bits: number) {
     this.shift = 32 - bits
     // 4 ints per entry: check, move, score, depth * 4 + bound
     this.entries = new Int32Array(4 << bits)
@@ -43,20 +42,20 @@ class TranspositionTable {
 
   /**
    * The index comes from the key's high half. The board's keys come from an
-   * LCG with a power-of-two modulus (see prng.js), which leaves their low
+   * LCG with a power-of-two modulus (see prng.ts), which leaves their low
    * bits nearly constant, so the low half only serves as the check.
    */
-  indexFor (hi) {
+  indexFor (hi: number): number {
     return (Math.imul(hi, 0x9E3779B1) >>> this.shift) << 2
   }
 
   // the entry's offset for this key, or -1
-  probe (lo, hi) {
+  probe (lo: number, hi: number): number {
     const e = this.indexFor(hi)
-    return this.entries[e] === lo && (this.entries[e + 3] & 3) !== Bound.NONE ? e : -1
+    return this.entries[e] === lo && (this.entries[e + 3]! & 3) !== Bound.NONE ? e : -1
   }
 
-  store (lo, hi, move, score, depth, bound) {
+  store (lo: number, hi: number, move: number, score: number, depth: number, bound: number): void {
     const e = this.indexFor(hi)
     const entries = this.entries
     entries[e] = lo
@@ -65,23 +64,23 @@ class TranspositionTable {
     entries[e + 3] = depth * 4 + bound
   }
 
-  move (e) { return this.entries[e + 1] }
-  score (e) { return this.entries[e + 2] }
-  depth (e) { return this.entries[e + 3] >> 2 }
-  bound (e) { return this.entries[e + 3] & 3 }
+  move (e: number): number { return this.entries[e + 1]! }
+  score (e: number): number { return this.entries[e + 2]! }
+  depth (e: number): number { return this.entries[e + 3]! >> 2 }
+  bound (e: number): number { return this.entries[e + 3]! & 3 }
 
-  clear () {
+  clear (): void {
     this.entries.fill(0)
   }
 }
 
 class MoveScores {
   // most valuable victim first, then least valuable attacker
-  static captures () {
+  static captures (): Int32Array {
     const scores = new Int32Array(12 * 12)
     for (let victim = 0; victim < 12; victim++) {
       for (let attacker = 0; attacker < 12; attacker++) {
-        scores[victim * 12 + attacker] = CAPTURE + VALUES[victim % 6] * 16 - VALUES[attacker % 6] / 10
+        scores[victim * 12 + attacker] = CAPTURE + VALUES[victim % 6]! * 16 - VALUES[attacker % 6]! / 10
       }
     }
     return scores
@@ -97,8 +96,34 @@ const CAPTURE_SCORES = MoveScores.captures()
  * score after each move comes from Evaluation.update, so a search
  * allocates nothing.
  */
+interface SearchResult {
+  move: string | null
+  score: number
+  mate: number | null
+  depth: number
+  nodes: number
+  pv: string[]
+}
+
 class Search {
-  constructor (engine, hashBits = 20) {
+  engine: Engine
+  board: Board
+  table: TranspositionTable
+  keys32: Int32Array
+  sideKeys32: Int32Array
+  epKeys32: Int32Array
+  key: Int32Array
+  moves: Int32Array
+  moveScores: Int32Array
+  evalStack: Int32Array
+  checkSquares: Int32Array
+  killers: Int32Array
+  history: Int32Array
+  pvTable: Int32Array
+  pvLengths: Int32Array
+  nodes: number
+
+  constructor (engine: Engine, hashBits = 20) {
     const board = engine.board
     this.engine = engine
     this.board = board
@@ -119,7 +144,7 @@ class Search {
     this.nodes = 0
   }
 
-  run (depth) {
+  run (depth: number): SearchResult {
     const board = this.board
     this.nodes = 0
     this.evalStack[0] = Evaluation.packedScore(board)
@@ -132,7 +157,7 @@ class Search {
     }
     const pv = Array.from(this.pvTable.subarray(0, this.pvLengths[0]), (code) => MoveList.uciFor(code))
     return {
-      move: pv.length > 0 ? pv[0] : null,
+      move: pv.length > 0 ? pv[0]! : null,
       score: score,
       mate: this.mateIn(score),
       depth: depth,
@@ -142,7 +167,7 @@ class Search {
   }
 
   // moves to mate, negative when the side to move gets mated; null without a mate
-  mateIn (score) {
+  mateIn (score: number): number | null {
     if (score > MATE_BOUND) { return Math.ceil((MATE - score) / 2) }
     if (score < -MATE_BOUND) { return 0 - Math.ceil((MATE + score) / 2) }
     return null
@@ -153,7 +178,7 @@ class Search {
    * plies deep. Fail-soft: a score <= alpha or >= beta is a bound. This
    * node's moves go into moves[start...].
    */
-  alphaBeta (depth, ply, alpha, beta, start) {
+  alphaBeta (depth: number, ply: number, alpha: number, beta: number, start: number): number {
     if (depth <= 0) { return this.quiesce(ply, alpha, beta, start) }
     const board = this.board
     this.nodes++
@@ -164,8 +189,8 @@ class Search {
     if (inCheck) { depth++ } // look one ply further at every check
 
     this.setKey()
-    const lo = this.key[0]
-    const hi = this.key[1]
+    const lo = this.key[0]!
+    const hi = this.key[1]!
     const table = this.table
     const entry = table.probe(lo, hi)
     let hashMove = 0
@@ -226,7 +251,7 @@ class Search {
         last = losingEnd
       }
       for (let i = first; i < last; i++) {
-        const code = stage === 2 ? moves[i] : this.pickMove(i, last)
+        const code = stage === 2 ? moves[i]! : this.pickMove(i, last)
         // slots before i are used up, so the move can wait in one of them
         if (stage === 0 && code !== hashMove && this.isLosing(code, i)) {
           moves[losingEnd++] = code
@@ -248,7 +273,7 @@ class Search {
           }
         }
         this.engine.makeMove(code)
-        let score
+        let score: number
         if (searched++ === 0) {
           score = -this.alphaBeta(depth - 1, ply + 1, -beta, -alpha, end)
         } else {
@@ -291,14 +316,14 @@ class Search {
    * halfway through an exchange. The side to move may stand pat on the
    * static score, except in check, where every evasion is searched.
    */
-  quiesce (ply, alpha, beta, start) {
+  quiesce (ply: number, alpha: number, beta: number, start: number): number {
     const board = this.board
     this.nodes++
     this.pvLengths[ply] = 0
     if (ply >= MAX_PLY - 1) { return this.evaluate(ply) }
     const moves = this.moves
-    let bestScore
-    let end
+    let bestScore: number
+    let end: number
     if (MoveList.isInCheck(board)) {
       end = MoveList.generate(board, moves, start)
       if (end === start) { return ply - MATE }
@@ -345,13 +370,13 @@ class Search {
     return bestScore
   }
 
-  evaluate (ply) {
-    const score = Evaluation.taper(this.evalStack[2 * ply], this.evalStack[2 * ply + 1])
+  evaluate (ply: number): number {
+    const score = Evaluation.taper(this.evalStack[2 * ply]!, this.evalStack[2 * ply + 1]!)
     return this.board.whiteToMove ? score : -score
   }
 
   // fifty moves without a capture or pawn move, or a position seen before
-  isDraw () {
+  isDraw (): boolean {
     const board = this.board
     if (board.halfMoveClock >= 100) { return true }
     const keys = this.engine.keyHistory32
@@ -364,62 +389,62 @@ class Search {
   }
 
   // makeMove leaves the side to move and en passant out of the position key
-  setKey () {
+  setKey (): void {
     const board = this.board
-    let lo = this.keys32[2 * BoardSlot.POS_KEY]
-    let hi = this.keys32[2 * BoardSlot.POS_KEY + 1]
+    let lo = this.keys32[2 * BoardSlot.POS_KEY]!
+    let hi = this.keys32[2 * BoardSlot.POS_KEY + 1]!
     if (!board.whiteToMove) {
-      lo ^= this.sideKeys32[2]
-      hi ^= this.sideKeys32[3]
+      lo ^= this.sideKeys32[2]!
+      hi ^= this.sideKeys32[3]!
     }
     if (board.epSq !== EMPTY) {
-      lo ^= this.epKeys32[2 * board.epSq]
-      hi ^= this.epKeys32[2 * board.epSq + 1]
+      lo ^= this.epKeys32[2 * board.epSq]!
+      hi ^= this.epKeys32[2 * board.epSq + 1]!
     }
     this.key[0] = lo
     this.key[1] = hi
   }
 
   // the table keeps mate scores as plies from the stored node, not the root
-  scoreToTable (score, ply) {
+  scoreToTable (score: number, ply: number): number {
     if (score > MATE_BOUND) { return score + ply }
     if (score < -MATE_BOUND) { return score - ply }
     return score
   }
 
-  scoreFromTable (score, ply) {
+  scoreFromTable (score: number, ply: number): number {
     if (score > MATE_BOUND) { return score - ply }
     if (score < -MATE_BOUND) { return score + ply }
     return score
   }
 
-  scoreMoves (start, end, hashMove, ply) {
+  scoreMoves (start: number, end: number, hashMove: number, ply: number): void {
     const squares = this.board.squares
     const moves = this.moves
     const scores = this.moveScores
     const killer1 = this.killers[2 * ply]
     const killer2 = this.killers[2 * ply + 1]
     for (let i = start; i < end; i++) {
-      const code = moves[i]
+      const code = moves[i]!
       const to = (code >> 6) & 63
       const kind = code >>> 12
-      const captured = squares[to]
-      let score
+      const captured = squares[to]!
+      let score: number
       if (code === hashMove) {
         score = HASH_MOVE
       } else if (kind >= MoveKind.PROMOTE_QUEEN) {
         // a queen promotion goes with the best captures; the rest last
-        score = kind === MoveKind.PROMOTE_QUEEN ? CAPTURE_SCORES[1 * 12 + 5] + (captured === EMPTY ? 0 : 1) : -1
+        score = kind === MoveKind.PROMOTE_QUEEN ? CAPTURE_SCORES[1 * 12 + 5]! + (captured === EMPTY ? 0 : 1) : -1
       } else if (captured !== EMPTY) {
-        score = CAPTURE_SCORES[captured * 12 + squares[code & 63]]
+        score = CAPTURE_SCORES[captured * 12 + squares[code & 63]!]!
       } else if (kind === MoveKind.EN_PASSANT) {
-        score = CAPTURE_SCORES[5 * 12 + 5]
+        score = CAPTURE_SCORES[5 * 12 + 5]!
       } else if (code === killer1) {
         score = KILLER + 1
       } else if (code === killer2) {
         score = KILLER
       } else {
-        score = this.history[squares[code & 63] * 64 + to] + this.activityGain(squares[code & 63], code & 63, to)
+        score = this.history[squares[code & 63]! * 64 + to]! + this.activityGain(squares[code & 63]!, code & 63, to)
       }
       scores[i] = score
     }
@@ -430,8 +455,8 @@ class Search {
    * own side's view: Smirnov's "maximum activity" as a tiebreak for quiet
    * moves that history knows nothing about yet.
    */
-  activityGain (piece, from, to) {
-    const gain = ((PST[piece * 64 + to] - PST[piece * 64 + from]) << 16) >> 16
+  activityGain (piece: number, from: number, to: number): number {
+    const gain = ((PST[piece * 64 + to]! - PST[piece * 64 + from]!) << 16) >> 16
     return piece < 6 ? gain : -gain
   }
 
@@ -440,23 +465,23 @@ class Search {
    * attacks one of their pieces, or a knight move that attacks a rook or
    * queen, forces an answer, so it goes before the other quiet moves.
    */
-  addAttackBonus (start, end) {
+  addAttackBonus (start: number, end: number): void {
     const board = this.board
     const bbs = board.bitboards
     const them = board.whiteToMove ? 6 : 0
-    HITS[TARGETS] = bbs[them + Piece.QUEEN] | bbs[them + Piece.ROOK] | bbs[them + Piece.BISHOP] | bbs[them + Piece.KNIGHT]
+    HITS[TARGETS] = bbs[them + Piece.QUEEN]! | bbs[them + Piece.ROOK]! | bbs[them + Piece.BISHOP]! | bbs[them + Piece.KNIGHT]!
     // our pawns attack from one rank behind, on the files next door
     if (them === 6) {
       HITS[PAWN_HITS] = ((HITS[TARGETS] >> 9n) & 0x7F7F7F7F7F7F7F7Fn) | ((HITS[TARGETS] >> 7n) & 0xFEFEFEFEFEFEFEFEn)
     } else {
       HITS[PAWN_HITS] = ((HITS[TARGETS] << 7n) & 0x7F7F7F7F7F7F7F7Fn) | ((HITS[TARGETS] << 9n) & 0xFEFEFEFEFEFEFEFEn)
     }
-    HITS[TARGETS] = bbs[them + Piece.QUEEN] | bbs[them + Piece.ROOK]
+    HITS[TARGETS] = bbs[them + Piece.QUEEN]! | bbs[them + Piece.ROOK]!
     HITS[KNIGHT_HITS] = 0n
     for (let half = 0; half < 2; half++) {
-      let targets = HITS32[2 * TARGETS + half]
+      let targets = HITS32[2 * TARGETS + half]!
       while (targets !== 0) {
-        HITS[KNIGHT_HITS] = HITS[KNIGHT_HITS] | KNIGHT_ATTACKS[(half << 5) | (31 - Math.clz32(targets & -targets))]
+        HITS[KNIGHT_HITS] = HITS[KNIGHT_HITS] | KNIGHT_ATTACKS[(half << 5) | (31 - Math.clz32(targets & -targets))]!
         targets &= targets - 1
       }
     }
@@ -464,69 +489,70 @@ class Search {
     const moves = this.moves
     const scores = this.moveScores
     for (let i = start; i < end; i++) {
-      if (scores[i] >= KILLER) { continue }
-      const code = moves[i]
+      if (scores[i]! >= KILLER) { continue }
+      const code = moves[i]!
       const to = (code >> 6) & 63
-      const type = squares[code & 63] % 6
+      const type = squares[code & 63]! % 6
       const hits = type === Piece.PAWN ? PAWN_HITS : (type === Piece.KNIGHT ? KNIGHT_HITS : -1)
-      if (hits >= 0 && ((HITS32[2 * hits + (to >> 5)] >>> (to & 31)) & 1) !== 0) { scores[i] += ATTACK_BONUS }
+      if (hits >= 0 && ((HITS32[2 * hits + (to >> 5)]! >>> (to & 31)) & 1) !== 0) { scores[i]! += ATTACK_BONUS }
     }
   }
 
   // swaps the best-scored move left in moves[i...end] into slot i
-  pickMove (i, end) {
+  pickMove (i: number, end: number): number {
     const moves = this.moves
     const scores = this.moveScores
     let best = i
     for (let j = i + 1; j < end; j++) {
-      if (scores[j] > scores[best]) { best = j }
+      if (scores[j]! > scores[best]!) { best = j }
     }
-    const code = moves[best]
-    moves[best] = moves[i]
+    const code = moves[best]!
+    moves[best] = moves[i]!
     moves[i] = code
-    const score = scores[best]
-    scores[best] = scores[i]
+    const score = scores[best]!
+    scores[best] = scores[i]!
     scores[i] = score
     return code
   }
 
   // after generateCaptures: does the move at moves[i] belong after the quiet moves?
-  isLosing (code, i) {
-    if ((code >>> 12) !== MoveKind.QUIET) { return this.moveScores[i] < 0 }
+  isLosing (code: number, i: number): boolean {
+    if ((code >>> 12) !== MoveKind.QUIET) { return this.moveScores[i]! < 0 }
     return Exchange.isLosing(this.board, code)
   }
 
-  isQuiet (code) {
+  isQuiet (code: number): boolean {
     return this.board.squares[(code >> 6) & 63] === EMPTY && (code >>> 12) < MoveKind.EN_PASSANT
   }
 
   // a quiet move that refuted this node is likely to refute its siblings too
-  rememberCutoff (code, depth, ply) {
+  rememberCutoff (code: number, depth: number, ply: number): void {
     const killers = this.killers
     if (killers[2 * ply] !== code) {
-      killers[2 * ply + 1] = killers[2 * ply]
+      killers[2 * ply + 1] = killers[2 * ply]!
       killers[2 * ply] = code
     }
     const history = this.history
-    const slot = this.board.squares[code & 63] * 64 + ((code >> 6) & 63)
-    history[slot] += depth * depth
-    if (history[slot] > HISTORY_LIMIT) {
-      for (let i = 0; i < history.length; i++) { history[i] >>= 1 }
+    const slot = this.board.squares[code & 63]! * 64 + ((code >> 6) & 63)
+    history[slot]! += depth * depth
+    if (history[slot]! > HISTORY_LIMIT) {
+      for (let i = 0; i < history.length; i++) { history[i]! >>= 1 }
     }
   }
 
-  updatePv (ply, code) {
+  updatePv (ply: number, code: number): void {
     const pv = this.pvTable
     const row = ply * MAX_PLY
     const childRow = row + MAX_PLY
-    const childLength = this.pvLengths[ply + 1]
+    const childLength = this.pvLengths[ply + 1]!
     pv[row] = code
-    for (let i = 0; i < childLength; i++) { pv[row + 1 + i] = pv[childRow + i] }
+    for (let i = 0; i < childLength; i++) { pv[row + 1 + i] = pv[childRow + i]! }
     this.pvLengths[ply] = childLength + 1
   }
 }
 
-module.exports = {
-  Search: Search,
-  MATE: MATE
+export {
+  Search,
+  MATE
 }
+export type { SearchResult }

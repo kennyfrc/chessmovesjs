@@ -1,20 +1,34 @@
-const SquareHelper = require('./helpers.js').SquareHelper
-const BitHelper = require('./helpers.js').BitHelper
-const CastleRights = require('./helpers.js').CastleRights
-const Ray = require('./attack.js').Ray
-const Direction = require('./attack.js').Direction
-const SQUARE_BB = require('./attack.js').SQUARE_BB
-const KNIGHT_ATTACKS = require('./attack.js').KNIGHT_ATTACKS
-const KING_ATTACKS = require('./attack.js').KING_ATTACKS
-const PAWN_ATTACKS = require('./attack.js').PAWN_ATTACKS
-const ROOK_RAYS = require('./attack.js').ROOK_RAYS
-const BISHOP_RAYS = require('./attack.js').BISHOP_RAYS
-const BETWEEN = require('./attack.js').BETWEEN
-const LINE = require('./attack.js').LINE
-const Mask = require('./mask.js').Mask
-const Pieces = require('./pieces.js').Pieces
-const Piece = require('./pieces.js').Piece
-const BoardSlot = require('./pieces.js').BoardSlot
+import { SquareHelper, BitHelper, CastleRights } from './helpers.ts'
+import {
+  Ray,
+  Direction,
+  SQUARE_BB,
+  KNIGHT_ATTACKS,
+  KING_ATTACKS,
+  PAWN_ATTACKS,
+  ROOK_RAYS,
+  BISHOP_RAYS,
+  BETWEEN,
+  LINE
+} from './attack.ts'
+import { Mask } from './mask.ts'
+import { Pieces, Piece, BoardSlot, type FenChar } from './pieces.ts'
+import type { Board } from './board.ts'
+import type {
+  AnyPieceBoard,
+  WhitePawnBoard,
+  BlackPawnBoard,
+  WhiteKnightBoard,
+  BlackKnightBoard,
+  WhiteBishopBoard,
+  BlackBishopBoard,
+  WhiteRookBoard,
+  BlackRookBoard,
+  WhiteQueenBoard,
+  BlackQueenBoard,
+  WhiteKingBoard,
+  BlackKingBoard
+} from './pieceboard.ts'
 
 const ALL_SQUARES = 0xFFFFFFFFFFFFFFFFn
 const EMPTY = -1
@@ -74,7 +88,7 @@ const RANK_1_AND_8 = 0xFF000000000000FFn
 const RANK_2_TO_7 = 0x00FFFFFFFFFFFF00n
 
 class MoveList {
-  static for (fenPiece, board) {
+  static for (fenPiece: FenChar | 'all', board: Board): AnyMove[] {
     if (fenPiece === 'all') { return this.legalMoves(board) }
     if ('KQRBNP'.includes(fenPiece) === board.whiteToMove) {
       return this.legalMoves(board).filter((move) => move.fenChar === fenPiece)
@@ -89,36 +103,36 @@ class MoveList {
     return moves
   }
 
-  static legalMoves (board) {
+  static legalMoves (board: Board): AnyMove[] {
     const codes = new Int32Array(256)
     const count = this.generate(board, codes, 0)
     return this.createMoves(board, codes, count)
   }
 
-  static createMoves (board, codes, count) {
-    const moveList = []
+  static createMoves (board: Board, codes: Int32Array, count: number): AnyMove[] {
+    const moveList: AnyMove[] = []
     for (let i = 0; i < count; i++) {
-      const code = codes[i]
+      const code = codes[i]!
       const from = code & 63
-      const fenChar = Pieces.fenCharFor(board.squares[from])
+      const fenChar = Pieces.fenCharFor(board.squares[from]!)!
       const pieceBoard = board.pieceBoardList[fenChar]
       const promoteTo = this.promoteToFor(code, board.whiteToMove)
       pieceBoard.setContext(board)
-      const move = Move.for(fenChar, SQUARE_BB[from], from, (code >> 6) & 63, pieceBoard, promoteTo !== null, promoteTo)
+      const move = Move.for(fenChar, SQUARE_BB[from]!, from, (code >> 6) & 63, pieceBoard, promoteTo !== null, promoteTo)
       move.code = code
       moveList.push(move)
     }
     return moveList
   }
 
-  static promoteToFor (code, whiteToMove) {
+  static promoteToFor (code: number, whiteToMove: boolean): FenChar | null {
     const kind = code >>> 12
     if (kind < MoveKind.PROMOTE_QUEEN) { return null }
-    const fenChar = 'QRBN'[kind - MoveKind.PROMOTE_QUEEN]
-    return whiteToMove ? fenChar : fenChar.toLowerCase()
+    const fenChar = 'QRBN'[kind - MoveKind.PROMOTE_QUEEN]!
+    return (whiteToMove ? fenChar : fenChar.toLowerCase()) as FenChar
   }
 
-  static uciFor (code) {
+  static uciFor (code: number): string {
     const promoteTo = this.promoteToFor(code, false) || ''
     return SquareHelper.uciFor({ from: code & 63, to: (code >> 6) & 63 }) + promoteTo
   }
@@ -128,9 +142,9 @@ class MoveList {
    * codes and returns the new end. Moves come out by piece (K, Q, R, B, N,
    * P), then by from-square, then by to-square.
    */
-  static generate (board, moves, n) {
+  static generate (board: Board, moves: Int32Array, n: number): number {
     const color = board.whiteToMove ? 0 : 1
-    const kingSq = board.kingSqs[color]
+    const kingSq = board.kingSqs[color]!
     const checkerCount = CheckEvasions.setTargets(board, color, kingSq)
     n = this.addKingMoves(board, moves, n, color, kingSq, checkerCount)
     if (checkerCount > 1) { return n }
@@ -146,16 +160,16 @@ class MoveList {
    * quiescence search looks at. They are the moves of generate() that take
    * a piece or promote, with the pawn moves in another order.
    */
-  static generateCaptures (board, moves, n) {
+  static generateCaptures (board: Board, moves: Int32Array, n: number): number {
     const bbs = board.bitboards
     const color = board.whiteToMove ? 0 : 1
-    const kingSq = board.kingSqs[color]
+    const kingSq = board.kingSqs[color]!
     const checkerCount = CheckEvasions.setTargets(board, color, kingSq)
     n = this.addKingCaptures(board, moves, n, color, kingSq)
     if (checkerCount > 1) { return n }
     // a pawn may also push onto an empty promotion square
-    GEN[PAWN_TARGETS] = GEN[TARGETS] & (bbs[BoardSlot.BLACK - color] | RANK_1_AND_8)
-    GEN[TARGETS] = GEN[TARGETS] & bbs[BoardSlot.BLACK - color]
+    GEN[PAWN_TARGETS] = GEN[TARGETS]! & (bbs[BoardSlot.BLACK - color]! | RANK_1_AND_8)
+    GEN[TARGETS] = GEN[TARGETS]! & bbs[BoardSlot.BLACK - color]!
     n = this.addPieceMoves(board, moves, n, color, kingSq, Piece.QUEEN)
     n = this.addPieceMoves(board, moves, n, color, kingSq, Piece.ROOK)
     n = this.addPieceMoves(board, moves, n, color, kingSq, Piece.BISHOP)
@@ -169,15 +183,15 @@ class MoveList {
    * king, piece and pawn moves onto empty squares that do not promote. The
    * two lists together hold exactly the moves generate() writes.
    */
-  static generateQuiets (board, moves, n) {
+  static generateQuiets (board: Board, moves: Int32Array, n: number): number {
     const bbs = board.bitboards
     const color = board.whiteToMove ? 0 : 1
-    const kingSq = board.kingSqs[color]
+    const kingSq = board.kingSqs[color]!
     const checkerCount = CheckEvasions.setTargets(board, color, kingSq)
     n = this.addKingQuiets(board, moves, n, color, kingSq, checkerCount)
     if (checkerCount > 1) { return n }
-    GEN[EMPTY_SQS] = bbs[BoardSlot.OCCUPIED] ^ ALL_SQUARES
-    GEN[TARGETS] = GEN[TARGETS] & GEN[EMPTY_SQS]
+    GEN[EMPTY_SQS] = bbs[BoardSlot.OCCUPIED]! ^ ALL_SQUARES
+    GEN[TARGETS] = GEN[TARGETS]! & GEN[EMPTY_SQS]
     n = this.addPieceMoves(board, moves, n, color, kingSq, Piece.QUEEN)
     n = this.addPieceMoves(board, moves, n, color, kingSq, Piece.ROOK)
     n = this.addPieceMoves(board, moves, n, color, kingSq, Piece.BISHOP)
@@ -193,36 +207,36 @@ class MoveList {
    * quiet moves the search needs. Fills out[at...] as Checks.setSquares
    * does, so givesCheck can tell which ones really check.
    */
-  static generateQuietChecks (board, moves, n, out, at) {
+  static generateQuietChecks (board: Board, moves: Int32Array, n: number, out: Int32Array, at: number): number {
     const bbs = board.bitboards
     const color = board.whiteToMove ? 0 : 1
-    const kingSq = board.kingSqs[color]
+    const kingSq = board.kingSqs[color]!
     const checkerCount = CheckEvasions.setTargets(board, color, kingSq)
     Checks.setSquares(board, out, at)
     n = this.addKingChecks(board, moves, n, color, kingSq, checkerCount)
     if (checkerCount > 1) { return n }
-    GEN[EMPTY_SQS] = bbs[BoardSlot.OCCUPIED] ^ ALL_SQUARES
-    GEN[TARGETS] = GEN[TARGETS] & GEN[EMPTY_SQS]
-    GEN[CHECKING] = GEN[CHECK_SQUARES + 2] | GEN[CHECK_SQUARES + 3]
+    GEN[EMPTY_SQS] = bbs[BoardSlot.OCCUPIED]! ^ ALL_SQUARES
+    GEN[TARGETS] = GEN[TARGETS]! & GEN[EMPTY_SQS]
+    GEN[CHECKING] = GEN[CHECK_SQUARES + 2]! | GEN[CHECK_SQUARES + 3]!
     n = this.addPieceChecks(board, moves, n, color, kingSq, Piece.QUEEN)
-    GEN[CHECKING] = GEN[CHECK_SQUARES + 3]
+    GEN[CHECKING] = GEN[CHECK_SQUARES + 3]!
     n = this.addPieceChecks(board, moves, n, color, kingSq, Piece.ROOK)
-    GEN[CHECKING] = GEN[CHECK_SQUARES + 2]
+    GEN[CHECKING] = GEN[CHECK_SQUARES + 2]!
     n = this.addPieceChecks(board, moves, n, color, kingSq, Piece.BISHOP)
-    GEN[CHECKING] = GEN[CHECK_SQUARES]
+    GEN[CHECKING] = GEN[CHECK_SQUARES]!
     n = this.addPieceChecks(board, moves, n, color, kingSq, Piece.KNIGHT)
     GEN[TARGETS] = GEN[TARGETS] & RANK_2_TO_7
     return this.addPawnChecks(board, moves, n, color, kingSq)
   }
 
-  static isInCheck (board) {
+  static isInCheck (board: Board): boolean {
     const bbs = board.bitboards
     const color = board.whiteToMove ? 0 : 1
     const them = 6 - color * 6
-    GEN[KING_OCC] = bbs[BoardSlot.OCCUPIED]
-    GEN[THEIR_ROOKS] = bbs[them + Piece.ROOK] | bbs[them + Piece.QUEEN]
-    GEN[THEIR_BISHOPS] = bbs[them + Piece.BISHOP] | bbs[them + Piece.QUEEN]
-    return KingSafety.isAttacked(board, board.kingSqs[color], color)
+    GEN[KING_OCC] = bbs[BoardSlot.OCCUPIED]!
+    GEN[THEIR_ROOKS] = bbs[them + Piece.ROOK]! | bbs[them + Piece.QUEEN]!
+    GEN[THEIR_BISHOPS] = bbs[them + Piece.BISHOP]! | bbs[them + Piece.QUEEN]!
+    return KingSafety.isAttacked(board, board.kingSqs[color]!, color)
   }
 
   /**
@@ -230,9 +244,9 @@ class MoveList {
    * calls it at the last ply, where only the count matters, so each
    * piece's destinations are counted instead of written out.
    */
-  static count (board) {
+  static count (board: Board): number {
     const color = board.whiteToMove ? 0 : 1
-    const kingSq = board.kingSqs[color]
+    const kingSq = board.kingSqs[color]!
     const checkerCount = CheckEvasions.setTargets(board, color, kingSq)
     this.setKingMoves(board, color, kingSq, checkerCount)
     let count = this.countMoves()
@@ -244,36 +258,36 @@ class MoveList {
   }
 
   // a queen moves like a rook plus a bishop, so both counts include it
-  static countRookMoves (board, color, kingSq) {
+  static countRookMoves (board: Board, color: number, kingSq: number): number {
     const bbs = board.bitboards
     let count = 0
-    GEN[PIECES] = bbs[color * 6 + Piece.ROOK] | bbs[color * 6 + Piece.QUEEN]
+    GEN[PIECES] = bbs[color * 6 + Piece.ROOK]! | bbs[color * 6 + Piece.QUEEN]!
     for (let half = 0; half < 2; half++) {
-      let pieces = GEN32[2 * PIECES + half]
+      let pieces = GEN32[2 * PIECES + half]!
       while (pieces !== 0) {
         const from = (half << 5) | (31 - Math.clz32(pieces & -pieces))
         pieces &= pieces - 1
         Ray.setRookAttacks(GEN, MOVES, from, bbs, BoardSlot.OCCUPIED)
-        GEN[MOVES] = GEN[MOVES] & GEN[TARGETS]
-        if (Pins.isPinned(from)) { GEN[MOVES] = GEN[MOVES] & LINE[kingSq * 64 + from] }
+        GEN[MOVES] = GEN[MOVES]! & GEN[TARGETS]!
+        if (Pins.isPinned(from)) { GEN[MOVES] = GEN[MOVES] & LINE[kingSq * 64 + from]! }
         count += this.countMoves()
       }
     }
     return count
   }
 
-  static countBishopMoves (board, color, kingSq) {
+  static countBishopMoves (board: Board, color: number, kingSq: number): number {
     const bbs = board.bitboards
     let count = 0
-    GEN[PIECES] = bbs[color * 6 + Piece.BISHOP] | bbs[color * 6 + Piece.QUEEN]
+    GEN[PIECES] = bbs[color * 6 + Piece.BISHOP]! | bbs[color * 6 + Piece.QUEEN]!
     for (let half = 0; half < 2; half++) {
-      let pieces = GEN32[2 * PIECES + half]
+      let pieces = GEN32[2 * PIECES + half]!
       while (pieces !== 0) {
         const from = (half << 5) | (31 - Math.clz32(pieces & -pieces))
         pieces &= pieces - 1
         Ray.setBishopAttacks(GEN, MOVES, from, bbs, BoardSlot.OCCUPIED)
-        GEN[MOVES] = GEN[MOVES] & GEN[TARGETS]
-        if (Pins.isPinned(from)) { GEN[MOVES] = GEN[MOVES] & LINE[kingSq * 64 + from] }
+        GEN[MOVES] = GEN[MOVES]! & GEN[TARGETS]!
+        if (Pins.isPinned(from)) { GEN[MOVES] = GEN[MOVES] & LINE[kingSq * 64 + from]! }
         count += this.countMoves()
       }
     }
@@ -281,16 +295,16 @@ class MoveList {
   }
 
   // a pinned knight can never move
-  static countKnightMoves (board, color) {
+  static countKnightMoves (board: Board, color: number): number {
     let count = 0
-    GEN[PIECES] = board.bitboards[color * 6 + Piece.KNIGHT]
-    GEN[PIECES] = GEN[PIECES] ^ (GEN[PIECES] & GEN[PINNED])
+    GEN[PIECES] = board.bitboards[color * 6 + Piece.KNIGHT]!
+    GEN[PIECES] = GEN[PIECES]! ^ (GEN[PIECES]! & GEN[PINNED]!)
     for (let half = 0; half < 2; half++) {
-      let pieces = GEN32[2 * PIECES + half]
+      let pieces = GEN32[2 * PIECES + half]!
       while (pieces !== 0) {
         const from = (half << 5) | (31 - Math.clz32(pieces & -pieces))
         pieces &= pieces - 1
-        GEN[MOVES] = KNIGHT_ATTACKS[from] & GEN[TARGETS]
+        GEN[MOVES] = KNIGHT_ATTACKS[from]! & GEN[TARGETS]!
         count += this.countMoves()
       }
     }
@@ -301,32 +315,32 @@ class MoveList {
    * Counts all unpinned pawns at once by shifting the pawn board.
    * Pinned pawns and en passant are rare and go one pawn at a time.
    */
-  static countPawnMoves (board, color, kingSq) {
+  static countPawnMoves (board: Board, color: number, kingSq: number): number {
     const bbs = board.bitboards
-    GEN[PAWNS] = bbs[color * 6 + Piece.PAWN]
+    GEN[PAWNS] = bbs[color * 6 + Piece.PAWN]!
     let count = this.countEnPassant(board, color, kingSq)
-    if ((GEN32[2 * PINNED] | GEN32[2 * PINNED + 1]) !== 0) {
+    if ((GEN32[2 * PINNED]! | GEN32[2 * PINNED + 1]!) !== 0) {
       count += this.countPinnedPawnMoves(board, color, kingSq)
-      GEN[PAWNS] = GEN[PAWNS] ^ (GEN[PAWNS] & GEN[PINNED])
+      GEN[PAWNS] = GEN[PAWNS]! ^ (GEN[PAWNS]! & GEN[PINNED]!)
     }
-    GEN[EMPTY_SQS] = bbs[BoardSlot.OCCUPIED] ^ ALL_SQUARES
+    GEN[EMPTY_SQS] = bbs[BoardSlot.OCCUPIED]! ^ ALL_SQUARES
     // shift first, then mask the landing squares: V8 only turns a BigInt >>
     // into a machine shift when the value comes straight from a BigUint64Array
     if (color === 0) {
-      GEN[PUSHES] = (GEN[PAWNS] << 8n) & GEN[EMPTY_SQS]
+      GEN[PUSHES] = (GEN[PAWNS]! << 8n) & GEN[EMPTY_SQS]
       GEN[DOUBLE_PUSHES] = (GEN[PUSHES] << 8n) & GEN[EMPTY_SQS] & RANK_4
-      GEN[WEST_CAPTURES] = (GEN[PAWNS] << 7n) & NOT_FILE_H & bbs[BoardSlot.BLACK]
-      GEN[EAST_CAPTURES] = (GEN[PAWNS] << 9n) & NOT_FILE_A & bbs[BoardSlot.BLACK]
+      GEN[WEST_CAPTURES] = (GEN[PAWNS]! << 7n) & NOT_FILE_H & bbs[BoardSlot.BLACK]!
+      GEN[EAST_CAPTURES] = (GEN[PAWNS]! << 9n) & NOT_FILE_A & bbs[BoardSlot.BLACK]!
     } else {
-      GEN[PUSHES] = (GEN[PAWNS] >> 8n) & GEN[EMPTY_SQS]
+      GEN[PUSHES] = (GEN[PAWNS]! >> 8n) & GEN[EMPTY_SQS]
       GEN[DOUBLE_PUSHES] = (GEN[PUSHES] >> 8n) & GEN[EMPTY_SQS] & RANK_5
-      GEN[WEST_CAPTURES] = (GEN[PAWNS] >> 9n) & NOT_FILE_H & bbs[BoardSlot.WHITE]
-      GEN[EAST_CAPTURES] = (GEN[PAWNS] >> 7n) & NOT_FILE_A & bbs[BoardSlot.WHITE]
+      GEN[WEST_CAPTURES] = (GEN[PAWNS]! >> 9n) & NOT_FILE_H & bbs[BoardSlot.WHITE]!
+      GEN[EAST_CAPTURES] = (GEN[PAWNS]! >> 7n) & NOT_FILE_A & bbs[BoardSlot.WHITE]!
     }
-    GEN[PUSHES] = GEN[PUSHES] & GEN[TARGETS]
-    GEN[DOUBLE_PUSHES] = GEN[DOUBLE_PUSHES] & GEN[TARGETS]
-    GEN[WEST_CAPTURES] = GEN[WEST_CAPTURES] & GEN[TARGETS]
-    GEN[EAST_CAPTURES] = GEN[EAST_CAPTURES] & GEN[TARGETS]
+    GEN[PUSHES] = GEN[PUSHES] & GEN[TARGETS]!
+    GEN[DOUBLE_PUSHES] = GEN[DOUBLE_PUSHES] & GEN[TARGETS]!
+    GEN[WEST_CAPTURES] = GEN[WEST_CAPTURES] & GEN[TARGETS]!
+    GEN[EAST_CAPTURES] = GEN[EAST_CAPTURES] & GEN[TARGETS]!
     // a promotion is four moves: queen, rook, bishop, knight
     GEN[PROMOTIONS] = (GEN[PUSHES] | GEN[WEST_CAPTURES] | GEN[EAST_CAPTURES]) & RANK_1_AND_8
     // no square takes both a single and a double push
@@ -335,17 +349,17 @@ class MoveList {
       3 * this.countSlot(PROMOTIONS)
   }
 
-  static countPinnedPawnMoves (board, color, kingSq) {
+  static countPinnedPawnMoves (board: Board, color: number, kingSq: number): number {
     const promotionRank = color === 0 ? 6 : 1
     let count = 0
-    GEN[PIECES] = GEN[PAWNS] & GEN[PINNED]
+    GEN[PIECES] = GEN[PAWNS]! & GEN[PINNED]!
     for (let half = 0; half < 2; half++) {
-      let pawns = GEN32[2 * PIECES + half]
+      let pawns = GEN32[2 * PIECES + half]!
       while (pawns !== 0) {
         const from = (half << 5) | (31 - Math.clz32(pawns & -pawns))
         pawns &= pawns - 1
         this.setPawnMoves(board, color, from)
-        GEN[MOVES] = GEN[MOVES] & LINE[kingSq * 64 + from]
+        GEN[MOVES] = GEN[MOVES]! & LINE[kingSq * 64 + from]!
         count += (from >> 3) === promotionRank ? 4 * this.countMoves() : this.countMoves()
       }
     }
@@ -353,13 +367,13 @@ class MoveList {
   }
 
   // our pawns that could take en passant sit where their pawn on epSq would attack
-  static countEnPassant (board, color, kingSq) {
+  static countEnPassant (board: Board, color: number, kingSq: number): number {
     const epSq = board.epSq
     if (epSq === EMPTY) { return 0 }
     let count = 0
-    GEN[PIECES] = PAWN_ATTACKS[(1 - color) * 64 + epSq] & GEN[PAWNS]
+    GEN[PIECES] = PAWN_ATTACKS[(1 - color) * 64 + epSq]! & GEN[PAWNS]!
     for (let half = 0; half < 2; half++) {
-      let pawns = GEN32[2 * PIECES + half]
+      let pawns = GEN32[2 * PIECES + half]!
       while (pawns !== 0) {
         const from = (half << 5) | (31 - Math.clz32(pawns & -pawns))
         pawns &= pawns - 1
@@ -369,34 +383,34 @@ class MoveList {
     return count
   }
 
-  static countSlot (slot) {
-    return BitHelper.popCount32(GEN32[2 * slot]) + BitHelper.popCount32(GEN32[2 * slot + 1])
+  static countSlot (slot: number): number {
+    return BitHelper.popCount32(GEN32[2 * slot]!) + BitHelper.popCount32(GEN32[2 * slot + 1]!)
   }
 
-  static countMoves () {
+  static countMoves (): number {
     return this.countSlot(MOVES)
   }
 
-  static addKingMoves (board, moves, n, color, kingSq, checkerCount) {
+  static addKingMoves (board: Board, moves: Int32Array, n: number, color: number, kingSq: number, checkerCount: number): number {
     this.setKingMoves(board, color, kingSq, checkerCount)
     return this.addKingTargets(moves, n, kingSq)
   }
 
   // castling and the king's steps onto empty squares; addKingCaptures has the rest
-  static addKingQuiets (board, moves, n, color, kingSq, checkerCount) {
+  static addKingQuiets (board: Board, moves: Int32Array, n: number, color: number, kingSq: number, checkerCount: number): number {
     this.setKingMoves(board, color, kingSq, checkerCount)
-    GEN[MOVES] = GEN[MOVES] & (board.bitboards[BoardSlot.OCCUPIED] ^ ALL_SQUARES)
+    GEN[MOVES] = GEN[MOVES]! & (board.bitboards[BoardSlot.OCCUPIED]! ^ ALL_SQUARES)
     return this.addKingTargets(moves, n, kingSq)
   }
 
   // castling, and the king's steps when the king itself blocks a check
-  static addKingChecks (board, moves, n, color, kingSq, checkerCount) {
+  static addKingChecks (board: Board, moves: Int32Array, n: number, color: number, kingSq: number, checkerCount: number): number {
     const uncovers = Checks.isDiscoverer(kingSq)
     if (!uncovers && (checkerCount !== 0 || ((board.castleRights >> (color * 2)) & 3) === 0)) { return n }
     this.setKingMoves(board, color, kingSq, checkerCount)
-    GEN[MOVES] = GEN[MOVES] & (board.bitboards[BoardSlot.OCCUPIED] ^ ALL_SQUARES)
+    GEN[MOVES] = GEN[MOVES]! & (board.bitboards[BoardSlot.OCCUPIED]! ^ ALL_SQUARES)
     for (let half = 0; half < 2; half++) {
-      let targets = GEN32[2 * MOVES + half]
+      let targets = GEN32[2 * MOVES + half]!
       while (targets !== 0) {
         const to = (half << 5) | (31 - Math.clz32(targets & -targets))
         targets &= targets - 1
@@ -410,9 +424,9 @@ class MoveList {
     return n
   }
 
-  static addKingTargets (moves, n, kingSq) {
+  static addKingTargets (moves: Int32Array, n: number, kingSq: number): number {
     for (let half = 0; half < 2; half++) {
-      let targets = GEN32[2 * MOVES + half]
+      let targets = GEN32[2 * MOVES + half]!
       while (targets !== 0) {
         const to = (half << 5) | (31 - Math.clz32(targets & -targets))
         targets &= targets - 1
@@ -424,16 +438,16 @@ class MoveList {
   }
 
   // castling never captures, so only the safety test from setKingMoves remains
-  static addKingCaptures (board, moves, n, color, kingSq) {
+  static addKingCaptures (board: Board, moves: Int32Array, n: number, color: number, kingSq: number): number {
     const bbs = board.bitboards
     const them = 6 - color * 6
-    GEN[MOVES] = KING_ATTACKS[kingSq] & bbs[BoardSlot.BLACK - color]
-    if ((GEN32[2 * MOVES] | GEN32[2 * MOVES + 1]) === 0) { return n }
-    GEN[KING_OCC] = bbs[BoardSlot.OCCUPIED] ^ SQUARE_BB[kingSq]
-    GEN[THEIR_ROOKS] = bbs[them + Piece.ROOK] | bbs[them + Piece.QUEEN]
-    GEN[THEIR_BISHOPS] = bbs[them + Piece.BISHOP] | bbs[them + Piece.QUEEN]
+    GEN[MOVES] = KING_ATTACKS[kingSq]! & bbs[BoardSlot.BLACK - color]!
+    if ((GEN32[2 * MOVES]! | GEN32[2 * MOVES + 1]!) === 0) { return n }
+    GEN[KING_OCC] = bbs[BoardSlot.OCCUPIED]! ^ SQUARE_BB[kingSq]!
+    GEN[THEIR_ROOKS] = bbs[them + Piece.ROOK]! | bbs[them + Piece.QUEEN]!
+    GEN[THEIR_BISHOPS] = bbs[them + Piece.BISHOP]! | bbs[them + Piece.QUEEN]!
     for (let half = 0; half < 2; half++) {
-      let targets = GEN32[2 * MOVES + half]
+      let targets = GEN32[2 * MOVES + half]!
       while (targets !== 0) {
         const to = (half << 5) | (31 - Math.clz32(targets & -targets))
         targets &= targets - 1
@@ -444,23 +458,23 @@ class MoveList {
   }
 
   // the king's safe squares, plus castling squares, go into MOVES
-  static setKingMoves (board, color, kingSq, checkerCount) {
+  static setKingMoves (board: Board, color: number, kingSq: number, checkerCount: number): void {
     const bbs = board.bitboards
     const them = 6 - color * 6
-    GEN[MOVES] = KING_ATTACKS[kingSq] & (bbs[BoardSlot.WHITE + color] ^ ALL_SQUARES)
+    GEN[MOVES] = KING_ATTACKS[kingSq]! & (bbs[BoardSlot.WHITE + color]! ^ ALL_SQUARES)
     // castling crosses a square next to the king, so it needs one of these too
-    if ((GEN32[2 * MOVES] | GEN32[2 * MOVES + 1]) === 0) { return }
+    if ((GEN32[2 * MOVES]! | GEN32[2 * MOVES + 1]!) === 0) { return }
     // sliders see through the king's old square
-    GEN[KING_OCC] = bbs[BoardSlot.OCCUPIED] ^ SQUARE_BB[kingSq]
-    GEN[THEIR_ROOKS] = bbs[them + Piece.ROOK] | bbs[them + Piece.QUEEN]
-    GEN[THEIR_BISHOPS] = bbs[them + Piece.BISHOP] | bbs[them + Piece.QUEEN]
+    GEN[KING_OCC] = bbs[BoardSlot.OCCUPIED]! ^ SQUARE_BB[kingSq]!
+    GEN[THEIR_ROOKS] = bbs[them + Piece.ROOK]! | bbs[them + Piece.QUEEN]!
+    GEN[THEIR_BISHOPS] = bbs[them + Piece.BISHOP]! | bbs[them + Piece.QUEEN]!
     for (let half = 0; half < 2; half++) {
-      let targets = GEN32[2 * MOVES + half]
+      let targets = GEN32[2 * MOVES + half]!
       while (targets !== 0) {
         const bit = targets & -targets
         targets ^= bit
         if (KingSafety.isAttacked(board, (half << 5) | (31 - Math.clz32(bit)), color)) {
-          GEN32[2 * MOVES + half] ^= bit
+          GEN32[2 * MOVES + half]! ^= bit
         }
       }
     }
@@ -469,15 +483,15 @@ class MoveList {
     }
   }
 
-  static addPieceMoves (board, moves, n, color, kingSq, type) {
-    GEN[PIECES] = board.bitboards[color * 6 + type]
+  static addPieceMoves (board: Board, moves: Int32Array, n: number, color: number, kingSq: number, type: number): number {
+    GEN[PIECES] = board.bitboards[color * 6 + type]!
     for (let half = 0; half < 2; half++) {
-      let pieces = GEN32[2 * PIECES + half]
+      let pieces = GEN32[2 * PIECES + half]!
       while (pieces !== 0) {
         const from = (half << 5) | (31 - Math.clz32(pieces & -pieces))
         pieces &= pieces - 1
         this.setPieceMoves(board.bitboards, type, from)
-        if (Pins.isPinned(from)) { GEN[MOVES] = GEN[MOVES] & LINE[kingSq * 64 + from] }
+        if (Pins.isPinned(from)) { GEN[MOVES] = GEN[MOVES]! & LINE[kingSq * 64 + from]! }
         n = this.addMoves(moves, n, from)
       }
     }
@@ -485,45 +499,45 @@ class MoveList {
   }
 
   // as addPieceMoves, onto the squares in CHECKING unless the piece uncovers a check
-  static addPieceChecks (board, moves, n, color, kingSq, type) {
-    GEN[PIECES] = board.bitboards[color * 6 + type]
+  static addPieceChecks (board: Board, moves: Int32Array, n: number, color: number, kingSq: number, type: number): number {
+    GEN[PIECES] = board.bitboards[color * 6 + type]!
     for (let half = 0; half < 2; half++) {
-      let pieces = GEN32[2 * PIECES + half]
+      let pieces = GEN32[2 * PIECES + half]!
       while (pieces !== 0) {
         const from = (half << 5) | (31 - Math.clz32(pieces & -pieces))
         pieces &= pieces - 1
         this.setPieceMoves(board.bitboards, type, from)
-        if (Pins.isPinned(from)) { GEN[MOVES] = GEN[MOVES] & LINE[kingSq * 64 + from] }
-        if (!Checks.isDiscoverer(from)) { GEN[MOVES] = GEN[MOVES] & GEN[CHECKING] }
+        if (Pins.isPinned(from)) { GEN[MOVES] = GEN[MOVES]! & LINE[kingSq * 64 + from]! }
+        if (!Checks.isDiscoverer(from)) { GEN[MOVES] = GEN[MOVES]! & GEN[CHECKING]! }
         n = this.addMoves(moves, n, from)
       }
     }
     return n
   }
 
-  static setPieceMoves (bbs, type, from) {
+  static setPieceMoves (bbs: BigUint64Array, type: number, from: number): void {
     switch (type) {
       case Piece.QUEEN:
         Ray.setRookAttacks(GEN, MOVES, from, bbs, BoardSlot.OCCUPIED)
         Ray.setBishopAttacks(GEN, ATTACKS, from, bbs, BoardSlot.OCCUPIED)
-        GEN[MOVES] = (GEN[MOVES] | GEN[ATTACKS]) & GEN[TARGETS]
+        GEN[MOVES] = (GEN[MOVES]! | GEN[ATTACKS]!) & GEN[TARGETS]!
         break
       case Piece.ROOK:
         Ray.setRookAttacks(GEN, MOVES, from, bbs, BoardSlot.OCCUPIED)
-        GEN[MOVES] = GEN[MOVES] & GEN[TARGETS]
+        GEN[MOVES] = GEN[MOVES]! & GEN[TARGETS]!
         break
       case Piece.BISHOP:
         Ray.setBishopAttacks(GEN, MOVES, from, bbs, BoardSlot.OCCUPIED)
-        GEN[MOVES] = GEN[MOVES] & GEN[TARGETS]
+        GEN[MOVES] = GEN[MOVES]! & GEN[TARGETS]!
         break
       default:
-        GEN[MOVES] = KNIGHT_ATTACKS[from] & GEN[TARGETS]
+        GEN[MOVES] = KNIGHT_ATTACKS[from]! & GEN[TARGETS]!
     }
   }
 
-  static addMoves (moves, n, from) {
+  static addMoves (moves: Int32Array, n: number, from: number): number {
     for (let half = 0; half < 2; half++) {
-      let targets = GEN32[2 * MOVES + half]
+      let targets = GEN32[2 * MOVES + half]!
       while (targets !== 0) {
         moves[n++] = from | (((half << 5) | (31 - Math.clz32(targets & -targets))) << 6)
         targets &= targets - 1
@@ -532,19 +546,19 @@ class MoveList {
     return n
   }
 
-  static addPawnMoves (board, moves, n, color, kingSq) {
+  static addPawnMoves (board: Board, moves: Int32Array, n: number, color: number, kingSq: number): number {
     const promotionRank = color === 0 ? 6 : 1
     const epSq = board.epSq
-    GEN[PIECES] = board.bitboards[color * 6 + Piece.PAWN]
+    GEN[PIECES] = board.bitboards[color * 6 + Piece.PAWN]!
     for (let half = 0; half < 2; half++) {
-      let pawns = GEN32[2 * PIECES + half]
+      let pawns = GEN32[2 * PIECES + half]!
       while (pawns !== 0) {
         const from = (half << 5) | (31 - Math.clz32(pawns & -pawns))
         pawns &= pawns - 1
         this.setPawnMoves(board, color, from)
-        if (Pins.isPinned(from)) { GEN[MOVES] = GEN[MOVES] & LINE[kingSq * 64 + from] }
+        if (Pins.isPinned(from)) { GEN[MOVES] = GEN[MOVES]! & LINE[kingSq * 64 + from]! }
         if (epSq !== EMPTY && EnPassant.isLegal(board, color, kingSq, from, epSq)) {
-          GEN[MOVES] = GEN[MOVES] | SQUARE_BB[epSq]
+          GEN[MOVES] = GEN[MOVES]! | SQUARE_BB[epSq]!
         }
         n = (from >> 3) === promotionRank
           ? this.addPromotions(moves, n, from)
@@ -559,28 +573,28 @@ class MoveList {
    * once as in countPawnMoves. TARGETS holds their pieces and the empty
    * squares on the last ranks.
    */
-  static addPawnCaptures (board, moves, n, color, kingSq) {
+  static addPawnCaptures (board: Board, moves: Int32Array, n: number, color: number, kingSq: number): number {
     const bbs = board.bitboards
-    GEN[PAWNS] = bbs[color * 6 + Piece.PAWN]
-    if ((GEN32[2 * PINNED] | GEN32[2 * PINNED + 1]) !== 0) {
+    GEN[PAWNS] = bbs[color * 6 + Piece.PAWN]!
+    if ((GEN32[2 * PINNED]! | GEN32[2 * PINNED + 1]!) !== 0) {
       n = this.addPinnedPawnMoves(board, moves, n, color, kingSq)
-      GEN[PAWNS] = GEN[PAWNS] ^ (GEN[PAWNS] & GEN[PINNED])
+      GEN[PAWNS] = GEN[PAWNS]! ^ (GEN[PAWNS]! & GEN[PINNED]!)
     }
     if (board.epSq !== EMPTY) { n = this.addEnPassant(board, moves, n, color, kingSq) }
-    GEN[EMPTY_SQS] = bbs[BoardSlot.OCCUPIED] ^ ALL_SQUARES
+    GEN[EMPTY_SQS] = bbs[BoardSlot.OCCUPIED]! ^ ALL_SQUARES
     // shift first, then mask (see countPawnMoves)
     if (color === 0) {
-      GEN[PUSHES] = (GEN[PAWNS] << 8n) & GEN[EMPTY_SQS]
-      GEN[WEST_CAPTURES] = (GEN[PAWNS] << 7n) & NOT_FILE_H & bbs[BoardSlot.BLACK]
-      GEN[EAST_CAPTURES] = (GEN[PAWNS] << 9n) & NOT_FILE_A & bbs[BoardSlot.BLACK]
+      GEN[PUSHES] = (GEN[PAWNS]! << 8n) & GEN[EMPTY_SQS]
+      GEN[WEST_CAPTURES] = (GEN[PAWNS]! << 7n) & NOT_FILE_H & bbs[BoardSlot.BLACK]!
+      GEN[EAST_CAPTURES] = (GEN[PAWNS]! << 9n) & NOT_FILE_A & bbs[BoardSlot.BLACK]!
     } else {
-      GEN[PUSHES] = (GEN[PAWNS] >> 8n) & GEN[EMPTY_SQS]
-      GEN[WEST_CAPTURES] = (GEN[PAWNS] >> 9n) & NOT_FILE_H & bbs[BoardSlot.WHITE]
-      GEN[EAST_CAPTURES] = (GEN[PAWNS] >> 7n) & NOT_FILE_A & bbs[BoardSlot.WHITE]
+      GEN[PUSHES] = (GEN[PAWNS]! >> 8n) & GEN[EMPTY_SQS]
+      GEN[WEST_CAPTURES] = (GEN[PAWNS]! >> 9n) & NOT_FILE_H & bbs[BoardSlot.WHITE]!
+      GEN[EAST_CAPTURES] = (GEN[PAWNS]! >> 7n) & NOT_FILE_A & bbs[BoardSlot.WHITE]!
     }
-    GEN[PUSHES] = GEN[PUSHES] & GEN[TARGETS]
-    GEN[WEST_CAPTURES] = GEN[WEST_CAPTURES] & GEN[TARGETS]
-    GEN[EAST_CAPTURES] = GEN[EAST_CAPTURES] & GEN[TARGETS]
+    GEN[PUSHES] = GEN[PUSHES] & GEN[TARGETS]!
+    GEN[WEST_CAPTURES] = GEN[WEST_CAPTURES] & GEN[TARGETS]!
+    GEN[EAST_CAPTURES] = GEN[EAST_CAPTURES] & GEN[TARGETS]!
     const forward = color === 0 ? 8 : -8
     n = this.addPawnTargets(moves, n, WEST_CAPTURES, forward - 1)
     n = this.addPawnTargets(moves, n, EAST_CAPTURES, forward + 1)
@@ -588,9 +602,9 @@ class MoveList {
   }
 
   // a move to each square in slot from the square delta behind it, four on the last ranks
-  static addPawnTargets (moves, n, slot, delta) {
+  static addPawnTargets (moves: Int32Array, n: number, slot: number, delta: number): number {
     for (let half = 0; half < 2; half++) {
-      let targets = GEN32[2 * slot + half]
+      let targets = GEN32[2 * slot + half]!
       while (targets !== 0) {
         const to = (half << 5) | (31 - Math.clz32(targets & -targets))
         targets &= targets - 1
@@ -609,18 +623,18 @@ class MoveList {
   }
 
   // a pinned pawn may only move along its pin line
-  static addPinnedPawnMoves (board, moves, n, color, kingSq) {
+  static addPinnedPawnMoves (board: Board, moves: Int32Array, n: number, color: number, kingSq: number): number {
     const promotionRank = color === 0 ? 6 : 1
-    GEN[PIECES] = GEN[PAWNS] & GEN[PINNED]
+    GEN[PIECES] = GEN[PAWNS]! & GEN[PINNED]!
     for (let half = 0; half < 2; half++) {
-      let pawns = GEN32[2 * PIECES + half]
+      let pawns = GEN32[2 * PIECES + half]!
       while (pawns !== 0) {
         const from = (half << 5) | (31 - Math.clz32(pawns & -pawns))
         pawns &= pawns - 1
         this.setPawnMoves(board, color, from)
-        GEN[MOVES] = GEN[MOVES] & LINE[kingSq * 64 + from]
+        GEN[MOVES] = GEN[MOVES]! & LINE[kingSq * 64 + from]!
         if (board.epSq !== EMPTY && EnPassant.isLegal(board, color, kingSq, from, board.epSq)) {
-          GEN[MOVES] = GEN[MOVES] | SQUARE_BB[board.epSq]
+          GEN[MOVES] = GEN[MOVES] | SQUARE_BB[board.epSq]!
         }
         n = (from >> 3) === promotionRank
           ? this.addPromotions(moves, n, from)
@@ -631,11 +645,11 @@ class MoveList {
   }
 
   // our unpinned pawns that could take en passant, as in countEnPassant
-  static addEnPassant (board, moves, n, color, kingSq) {
+  static addEnPassant (board: Board, moves: Int32Array, n: number, color: number, kingSq: number): number {
     const epSq = board.epSq
-    GEN[PIECES] = PAWN_ATTACKS[(1 - color) * 64 + epSq] & GEN[PAWNS]
+    GEN[PIECES] = PAWN_ATTACKS[(1 - color) * 64 + epSq]! & GEN[PAWNS]!
     for (let half = 0; half < 2; half++) {
-      let pawns = GEN32[2 * PIECES + half]
+      let pawns = GEN32[2 * PIECES + half]!
       while (pawns !== 0) {
         const from = (half << 5) | (31 - Math.clz32(pawns & -pawns))
         pawns &= pawns - 1
@@ -651,22 +665,22 @@ class MoveList {
    * Pushes for generateQuiets, all unpinned pawns at once as in
    * countPawnMoves. TARGETS holds only empty squares off the last ranks.
    */
-  static addPawnPushes (board, moves, n, color, kingSq) {
-    GEN[PAWNS] = board.bitboards[color * 6 + Piece.PAWN]
-    if ((GEN32[2 * PINNED] | GEN32[2 * PINNED + 1]) !== 0) {
+  static addPawnPushes (board: Board, moves: Int32Array, n: number, color: number, kingSq: number): number {
+    GEN[PAWNS] = board.bitboards[color * 6 + Piece.PAWN]!
+    if ((GEN32[2 * PINNED]! | GEN32[2 * PINNED + 1]!) !== 0) {
       n = this.addPinnedPawnPushes(board, moves, n, color, kingSq)
-      GEN[PAWNS] = GEN[PAWNS] ^ (GEN[PAWNS] & GEN[PINNED])
+      GEN[PAWNS] = GEN[PAWNS]! ^ (GEN[PAWNS]! & GEN[PINNED]!)
     }
     // shift first, then mask (see countPawnMoves)
     if (color === 0) {
-      GEN[PUSHES] = (GEN[PAWNS] << 8n) & GEN[EMPTY_SQS]
-      GEN[DOUBLE_PUSHES] = (GEN[PUSHES] << 8n) & GEN[EMPTY_SQS] & RANK_4
+      GEN[PUSHES] = (GEN[PAWNS]! << 8n) & GEN[EMPTY_SQS]!
+      GEN[DOUBLE_PUSHES] = (GEN[PUSHES] << 8n) & GEN[EMPTY_SQS]! & RANK_4
     } else {
-      GEN[PUSHES] = (GEN[PAWNS] >> 8n) & GEN[EMPTY_SQS]
-      GEN[DOUBLE_PUSHES] = (GEN[PUSHES] >> 8n) & GEN[EMPTY_SQS] & RANK_5
+      GEN[PUSHES] = (GEN[PAWNS]! >> 8n) & GEN[EMPTY_SQS]!
+      GEN[DOUBLE_PUSHES] = (GEN[PUSHES] >> 8n) & GEN[EMPTY_SQS]! & RANK_5
     }
-    GEN[PUSHES] = GEN[PUSHES] & GEN[TARGETS]
-    GEN[DOUBLE_PUSHES] = GEN[DOUBLE_PUSHES] & GEN[TARGETS]
+    GEN[PUSHES] = GEN[PUSHES] & GEN[TARGETS]!
+    GEN[DOUBLE_PUSHES] = GEN[DOUBLE_PUSHES] & GEN[TARGETS]!
     const forward = color === 0 ? 8 : -8
     n = this.addPushes(moves, n, PUSHES, forward, MoveKind.QUIET)
     return this.addPushes(moves, n, DOUBLE_PUSHES, 2 * forward, MoveKind.DOUBLE_PUSH)
@@ -676,34 +690,34 @@ class MoveList {
    * Pushes onto a square where a pawn attacks their king, or by a pawn
    * that uncovers a check. A pinned pawn's pushes all go in; they are rare.
    */
-  static addPawnChecks (board, moves, n, color, kingSq) {
-    GEN[PAWNS] = board.bitboards[color * 6 + Piece.PAWN]
-    if ((GEN32[2 * PINNED] | GEN32[2 * PINNED + 1]) !== 0) {
+  static addPawnChecks (board: Board, moves: Int32Array, n: number, color: number, kingSq: number): number {
+    GEN[PAWNS] = board.bitboards[color * 6 + Piece.PAWN]!
+    if ((GEN32[2 * PINNED]! | GEN32[2 * PINNED + 1]!) !== 0) {
       n = this.addPinnedPawnPushes(board, moves, n, color, kingSq)
-      GEN[PAWNS] = GEN[PAWNS] ^ (GEN[PAWNS] & GEN[PINNED])
+      GEN[PAWNS] = GEN[PAWNS]! ^ (GEN[PAWNS]! & GEN[PINNED]!)
     }
-    GEN[PIECES] = GEN[PAWNS] & GEN[DISCOVERERS]
+    GEN[PIECES] = GEN[PAWNS]! & GEN[DISCOVERERS]!
     // shift first, then mask (see countPawnMoves)
     if (color === 0) {
-      GEN[PUSHES] = (GEN[PAWNS] << 8n) & GEN[EMPTY_SQS]
-      GEN[DOUBLE_PUSHES] = (GEN[PUSHES] << 8n) & GEN[EMPTY_SQS] & RANK_4
-      GEN[CHECKING] = GEN[CHECK_SQUARES + 1] | (GEN[PIECES] << 8n) | (GEN[PIECES] << 16n)
+      GEN[PUSHES] = (GEN[PAWNS]! << 8n) & GEN[EMPTY_SQS]!
+      GEN[DOUBLE_PUSHES] = (GEN[PUSHES] << 8n) & GEN[EMPTY_SQS]! & RANK_4
+      GEN[CHECKING] = GEN[CHECK_SQUARES + 1]! | (GEN[PIECES] << 8n) | (GEN[PIECES] << 16n)
     } else {
-      GEN[PUSHES] = (GEN[PAWNS] >> 8n) & GEN[EMPTY_SQS]
-      GEN[DOUBLE_PUSHES] = (GEN[PUSHES] >> 8n) & GEN[EMPTY_SQS] & RANK_5
-      GEN[CHECKING] = GEN[CHECK_SQUARES + 1] | (GEN[PIECES] >> 8n) | (GEN[PIECES] >> 16n)
+      GEN[PUSHES] = (GEN[PAWNS]! >> 8n) & GEN[EMPTY_SQS]!
+      GEN[DOUBLE_PUSHES] = (GEN[PUSHES] >> 8n) & GEN[EMPTY_SQS]! & RANK_5
+      GEN[CHECKING] = GEN[CHECK_SQUARES + 1]! | (GEN[PIECES] >> 8n) | (GEN[PIECES] >> 16n)
     }
-    GEN[PUSHES] = GEN[PUSHES] & GEN[TARGETS] & GEN[CHECKING]
-    GEN[DOUBLE_PUSHES] = GEN[DOUBLE_PUSHES] & GEN[TARGETS] & GEN[CHECKING]
+    GEN[PUSHES] = GEN[PUSHES] & GEN[TARGETS]! & GEN[CHECKING]
+    GEN[DOUBLE_PUSHES] = GEN[DOUBLE_PUSHES] & GEN[TARGETS]! & GEN[CHECKING]
     const forward = color === 0 ? 8 : -8
     n = this.addPushes(moves, n, PUSHES, forward, MoveKind.QUIET)
     return this.addPushes(moves, n, DOUBLE_PUSHES, 2 * forward, MoveKind.DOUBLE_PUSH)
   }
 
   // a move to each square in slot, from the square delta behind it
-  static addPushes (moves, n, slot, delta, kind) {
+  static addPushes (moves: Int32Array, n: number, slot: number, delta: number, kind: number): number {
     for (let half = 0; half < 2; half++) {
-      let targets = GEN32[2 * slot + half]
+      let targets = GEN32[2 * slot + half]!
       while (targets !== 0) {
         const to = (half << 5) | (31 - Math.clz32(targets & -targets))
         targets &= targets - 1
@@ -714,38 +728,38 @@ class MoveList {
   }
 
   // a pinned pawn may only push along its pin line
-  static addPinnedPawnPushes (board, moves, n, color, kingSq) {
-    GEN[PIECES] = GEN[PAWNS] & GEN[PINNED]
+  static addPinnedPawnPushes (board: Board, moves: Int32Array, n: number, color: number, kingSq: number): number {
+    GEN[PIECES] = GEN[PAWNS]! & GEN[PINNED]!
     for (let half = 0; half < 2; half++) {
-      let pawns = GEN32[2 * PIECES + half]
+      let pawns = GEN32[2 * PIECES + half]!
       while (pawns !== 0) {
         const from = (half << 5) | (31 - Math.clz32(pawns & -pawns))
         pawns &= pawns - 1
         this.setPawnMoves(board, color, from)
-        GEN[MOVES] = GEN[MOVES] & LINE[kingSq * 64 + from]
+        GEN[MOVES] = GEN[MOVES]! & LINE[kingSq * 64 + from]!
         n = this.addPawnMovesFrom(moves, n, from, EMPTY)
       }
     }
     return n
   }
 
-  static setPawnMoves (board, color, from) {
+  static setPawnMoves (board: Board, color: number, from: number): void {
     const bbs = board.bitboards
     const forward = color === 0 ? 8 : -8
     const push = from + forward
-    GEN[MOVES] = PAWN_ATTACKS[color * 64 + from] & bbs[BoardSlot.BLACK - color]
+    GEN[MOVES] = PAWN_ATTACKS[color * 64 + from]! & bbs[BoardSlot.BLACK - color]!
     if (board.squares[push] === EMPTY) {
-      GEN[MOVES] = GEN[MOVES] | SQUARE_BB[push]
+      GEN[MOVES] = GEN[MOVES] | SQUARE_BB[push]!
       if ((from >> 3) === (color === 0 ? 1 : 6) && board.squares[push + forward] === EMPTY) {
-        GEN[MOVES] = GEN[MOVES] | SQUARE_BB[push + forward]
+        GEN[MOVES] = GEN[MOVES] | SQUARE_BB[push + forward]!
       }
     }
-    GEN[MOVES] = GEN[MOVES] & GEN[TARGETS]
+    GEN[MOVES] = GEN[MOVES] & GEN[TARGETS]!
   }
 
-  static addPawnMovesFrom (moves, n, from, epSq) {
+  static addPawnMovesFrom (moves: Int32Array, n: number, from: number, epSq: number): number {
     for (let half = 0; half < 2; half++) {
-      let targets = GEN32[2 * MOVES + half]
+      let targets = GEN32[2 * MOVES + half]!
       while (targets !== 0) {
         const to = (half << 5) | (31 - Math.clz32(targets & -targets))
         targets &= targets - 1
@@ -761,9 +775,9 @@ class MoveList {
     return n
   }
 
-  static addPromotions (moves, n, from) {
+  static addPromotions (moves: Int32Array, n: number, from: number): number {
     for (let half = 0; half < 2; half++) {
-      let targets = GEN32[2 * MOVES + half]
+      let targets = GEN32[2 * MOVES + half]!
       while (targets !== 0) {
         const to = (half << 5) | (31 - Math.clz32(targets & -targets))
         targets &= targets - 1
@@ -782,32 +796,32 @@ class CheckEvasions {
    * and returns the checker count (2 means 2+). Checks and pins by sliders
    * both come from one pass over the snipers (see Pins.checkLine).
    */
-  static setTargets (board, color, kingSq) {
+  static setTargets (board: Board, color: number, kingSq: number): number {
     const bbs = board.bitboards
     const them = 6 - color * 6
-    GEN[CHECKERS] = (KNIGHT_ATTACKS[kingSq] & bbs[them + Piece.KNIGHT]) |
-      (PAWN_ATTACKS[color * 64 + kingSq] & bbs[them + Piece.PAWN])
+    GEN[CHECKERS] = (KNIGHT_ATTACKS[kingSq]! & bbs[them + Piece.KNIGHT]!) |
+      (PAWN_ATTACKS[color * 64 + kingSq]! & bbs[them + Piece.PAWN]!)
     GEN[PINNED] = 0n
-    GEN[SNIPERS] = ROOK_RAYS[kingSq] & (bbs[them + Piece.ROOK] | bbs[them + Piece.QUEEN])
-    GEN[SNIPERS] = GEN[SNIPERS] | (BISHOP_RAYS[kingSq] & (bbs[them + Piece.BISHOP] | bbs[them + Piece.QUEEN]))
+    GEN[SNIPERS] = ROOK_RAYS[kingSq]! & (bbs[them + Piece.ROOK]! | bbs[them + Piece.QUEEN]!)
+    GEN[SNIPERS] = GEN[SNIPERS] | (BISHOP_RAYS[kingSq]! & (bbs[them + Piece.BISHOP]! | bbs[them + Piece.QUEEN]!))
     for (let half = 0; half < 2; half++) {
-      let snipers = GEN32[2 * SNIPERS + half]
+      let snipers = GEN32[2 * SNIPERS + half]!
       while (snipers !== 0) {
         const sniperSq = (half << 5) | (31 - Math.clz32(snipers & -snipers))
         snipers &= snipers - 1
         Pins.checkLine(board, color, kingSq, sniperSq)
       }
     }
-    const lo = GEN32[2 * CHECKERS]
-    const hi = GEN32[2 * CHECKERS + 1]
+    const lo = GEN32[2 * CHECKERS]!
+    const hi = GEN32[2 * CHECKERS + 1]!
     if ((lo | hi) === 0) {
-      GEN[TARGETS] = bbs[BoardSlot.WHITE + color] ^ ALL_SQUARES
+      GEN[TARGETS] = bbs[BoardSlot.WHITE + color]! ^ ALL_SQUARES
       return 0
     }
     if ((lo !== 0 && hi !== 0) || (lo & (lo - 1)) !== 0 || (hi & (hi - 1)) !== 0) { return 2 }
     // single check: capture the checker or block its ray
     const checkerSq = lo !== 0 ? 31 - Math.clz32(lo) : 63 - Math.clz32(hi)
-    GEN[TARGETS] = GEN[CHECKERS] | BETWEEN[kingSq * 64 + checkerSq]
+    GEN[TARGETS] = GEN[CHECKERS] | BETWEEN[kingSq * 64 + checkerSq]!
     return 1
   }
 }
@@ -818,26 +832,26 @@ class Pins {
    * of the king's empty-board rays. With nothing in between, the sniper
    * gives check. With a lone piece of ours in between, that piece is pinned.
    */
-  static checkLine (board, color, kingSq, sniperSq) {
-    GEN[BLOCKERS] = BETWEEN[kingSq * 64 + sniperSq] & board.bitboards[BoardSlot.OCCUPIED]
-    const lo = GEN32[2 * BLOCKERS]
-    const hi = GEN32[2 * BLOCKERS + 1]
+  static checkLine (board: Board, color: number, kingSq: number, sniperSq: number): void {
+    GEN[BLOCKERS] = BETWEEN[kingSq * 64 + sniperSq]! & board.bitboards[BoardSlot.OCCUPIED]!
+    const lo = GEN32[2 * BLOCKERS]!
+    const hi = GEN32[2 * BLOCKERS + 1]!
     if ((lo | hi) === 0) {
-      GEN32[2 * CHECKERS + (sniperSq >> 5)] |= 1 << (sniperSq & 31)
+      GEN32[2 * CHECKERS + (sniperSq >> 5)]! |= 1 << (sniperSq & 31)
       return
     }
     if (lo !== 0 && hi !== 0) { return } // one blocker in each half
     const bits = lo | hi
     if ((bits & (bits - 1)) !== 0) { return }
     const sq = lo !== 0 ? 31 - Math.clz32(lo) : 63 - Math.clz32(hi)
-    const piece = board.squares[sq]
+    const piece = board.squares[sq]!
     if (piece >= color * 6 && piece < color * 6 + 6) {
-      GEN32[2 * PINNED + (sq >> 5)] |= 1 << (sq & 31)
+      GEN32[2 * PINNED + (sq >> 5)]! |= 1 << (sq & 31)
     }
   }
 
-  static isPinned (sq) {
-    return ((GEN32[2 * PINNED + (sq >> 5)] >>> (sq & 31)) & 1) !== 0
+  static isPinned (sq: number): boolean {
+    return ((GEN32[2 * PINNED + (sq >> 5)]! >>> (sq & 31)) & 1) !== 0
   }
 }
 
@@ -846,24 +860,24 @@ class EnPassant {
    * En passant removes two pieces from one line, so pins and checks are
    * checked directly: take the move back off the board and look at the king.
    */
-  static isLegal (board, color, kingSq, from, epSq) {
+  static isLegal (board: Board, color: number, kingSq: number, from: number, epSq: number): boolean {
     if (!this.canCapture(color, from, epSq)) { return false }
     const bbs = board.bitboards
     const them = 6 - color * 6
     const captureSq = color === 0 ? epSq - 8 : epSq + 8
-    GEN[EP_OCC] = (bbs[BoardSlot.OCCUPIED] ^ SQUARE_BB[from] ^ SQUARE_BB[captureSq]) | SQUARE_BB[epSq]
-    GEN[EP_PAWNS] = bbs[them + Piece.PAWN] ^ SQUARE_BB[captureSq]
-    GEN[EP_ATTACKERS] = (KNIGHT_ATTACKS[kingSq] & bbs[them + Piece.KNIGHT]) |
-      (PAWN_ATTACKS[color * 64 + kingSq] & GEN[EP_PAWNS])
+    GEN[EP_OCC] = (bbs[BoardSlot.OCCUPIED]! ^ SQUARE_BB[from]! ^ SQUARE_BB[captureSq]!) | SQUARE_BB[epSq]!
+    GEN[EP_PAWNS] = bbs[them + Piece.PAWN]! ^ SQUARE_BB[captureSq]!
+    GEN[EP_ATTACKERS] = (KNIGHT_ATTACKS[kingSq]! & bbs[them + Piece.KNIGHT]!) |
+      (PAWN_ATTACKS[color * 64 + kingSq]! & GEN[EP_PAWNS])
     Ray.setBishopAttacks(GEN, ATTACKS, kingSq, GEN, EP_OCC)
-    GEN[EP_ATTACKERS] = GEN[EP_ATTACKERS] | (GEN[ATTACKS] & (bbs[them + Piece.BISHOP] | bbs[them + Piece.QUEEN]))
+    GEN[EP_ATTACKERS] = GEN[EP_ATTACKERS] | (GEN[ATTACKS]! & (bbs[them + Piece.BISHOP]! | bbs[them + Piece.QUEEN]!))
     Ray.setRookAttacks(GEN, ATTACKS, kingSq, GEN, EP_OCC)
-    GEN[EP_ATTACKERS] = GEN[EP_ATTACKERS] | (GEN[ATTACKS] & (bbs[them + Piece.ROOK] | bbs[them + Piece.QUEEN]))
-    return (GEN32[2 * EP_ATTACKERS] | GEN32[2 * EP_ATTACKERS + 1]) === 0
+    GEN[EP_ATTACKERS] = GEN[EP_ATTACKERS] | (GEN[ATTACKS]! & (bbs[them + Piece.ROOK]! | bbs[them + Piece.QUEEN]!))
+    return (GEN32[2 * EP_ATTACKERS]! | GEN32[2 * EP_ATTACKERS + 1]!) === 0
   }
 
   // only a pawn diagonally behind the en passant square can take
-  static canCapture (color, from, epSq) {
+  static canCapture (color: number, from: number, epSq: number): boolean {
     const step = color === 0 ? epSq - from : from - epSq
     const fileGap = (epSq & 7) - (from & 7)
     return (step === 7 || step === 9) && (fileGap === 1 || fileGap === -1)
@@ -877,28 +891,28 @@ class KingSafety {
    * A slider lookup only runs when one of their sliders is on an open
    * board ray from sq.
    */
-  static isAttacked (board, sq, color) {
+  static isAttacked (board: Board, sq: number, color: number): boolean {
     const bbs = board.bitboards
     const them = 6 - color * 6
-    GEN[ATTACKERS] = (KNIGHT_ATTACKS[sq] & bbs[them + Piece.KNIGHT]) |
-      (PAWN_ATTACKS[color * 64 + sq] & bbs[them + Piece.PAWN]) |
-      (KING_ATTACKS[sq] & bbs[them + Piece.KING])
-    if ((GEN32[2 * ATTACKERS] | GEN32[2 * ATTACKERS + 1]) !== 0) { return true }
+    GEN[ATTACKERS] = (KNIGHT_ATTACKS[sq]! & bbs[them + Piece.KNIGHT]!) |
+      (PAWN_ATTACKS[color * 64 + sq]! & bbs[them + Piece.PAWN]!) |
+      (KING_ATTACKS[sq]! & bbs[them + Piece.KING]!)
+    if ((GEN32[2 * ATTACKERS]! | GEN32[2 * ATTACKERS + 1]!) !== 0) { return true }
     return this.isSliderAttacked(sq)
   }
 
-  static isSliderAttacked (sq) {
-    GEN[ATTACKERS] = BISHOP_RAYS[sq] & GEN[THEIR_BISHOPS]
-    if ((GEN32[2 * ATTACKERS] | GEN32[2 * ATTACKERS + 1]) !== 0) {
+  static isSliderAttacked (sq: number): boolean {
+    GEN[ATTACKERS] = BISHOP_RAYS[sq]! & GEN[THEIR_BISHOPS]!
+    if ((GEN32[2 * ATTACKERS]! | GEN32[2 * ATTACKERS + 1]!) !== 0) {
       Ray.setBishopAttacks(GEN, ATTACKERS, sq, GEN, KING_OCC)
-      GEN[ATTACKERS] = GEN[ATTACKERS] & GEN[THEIR_BISHOPS]
-      if ((GEN32[2 * ATTACKERS] | GEN32[2 * ATTACKERS + 1]) !== 0) { return true }
+      GEN[ATTACKERS] = GEN[ATTACKERS] & GEN[THEIR_BISHOPS]!
+      if ((GEN32[2 * ATTACKERS]! | GEN32[2 * ATTACKERS + 1]!) !== 0) { return true }
     }
-    GEN[ATTACKERS] = ROOK_RAYS[sq] & GEN[THEIR_ROOKS]
-    if ((GEN32[2 * ATTACKERS] | GEN32[2 * ATTACKERS + 1]) === 0) { return false }
+    GEN[ATTACKERS] = ROOK_RAYS[sq]! & GEN[THEIR_ROOKS]!
+    if ((GEN32[2 * ATTACKERS]! | GEN32[2 * ATTACKERS + 1]!) === 0) { return false }
     Ray.setRookAttacks(GEN, ATTACKERS, sq, GEN, KING_OCC)
-    GEN[ATTACKERS] = GEN[ATTACKERS] & GEN[THEIR_ROOKS]
-    return (GEN32[2 * ATTACKERS] | GEN32[2 * ATTACKERS + 1]) !== 0
+    GEN[ATTACKERS] = GEN[ATTACKERS] & GEN[THEIR_ROOKS]!
+    return (GEN32[2 * ATTACKERS]! | GEN32[2 * ATTACKERS + 1]!) !== 0
   }
 }
 
@@ -908,7 +922,7 @@ class Castling {
    * crosses (f1 or d1) is next to it, so MOVES already says if it is safe.
    * Looking through the king changes nothing here, since we are not in check.
    */
-  static addTargets (board, color) {
+  static addTargets (board: Board, color: number): void {
     const rights = board.castleRights >> (color * 2) // black's k, q line up with K, Q
     const home = color * 56
     if ((rights & CastleRights.K) !== 0 && this.isPathClear(board, home + 5, home + 6) &&
@@ -921,19 +935,19 @@ class Castling {
     }
   }
 
-  static isTarget (sq) {
-    return ((GEN32[2 * MOVES + (sq >> 5)] >>> (sq & 31)) & 1) !== 0
+  static isTarget (sq: number): boolean {
+    return ((GEN32[2 * MOVES + (sq >> 5)]! >>> (sq & 31)) & 1) !== 0
   }
 
-  static isPathClear (board, fromSq, toSq) {
+  static isPathClear (board: Board, fromSq: number, toSq: number): boolean {
     for (let sq = fromSq; sq <= toSq; sq++) {
       if (board.squares[sq] !== EMPTY) { return false }
     }
     return true
   }
 
-  static addTarget (sq) {
-    GEN32[2 * MOVES + (sq >> 5)] |= 1 << (sq & 31)
+  static addTarget (sq: number): void {
+    GEN32[2 * MOVES + (sq >> 5)]! |= 1 << (sq & 31)
   }
 }
 
@@ -945,43 +959,43 @@ class Castling {
  * them per ply, since the generator's slots change below this node.
  */
 class Checks {
-  static setSquares (board, out, at) {
+  static setSquares (board: Board, out: Int32Array, at: number): void {
     const bbs = board.bitboards
     const color = board.whiteToMove ? 0 : 1
     const us = color * 6
-    const kingSq = board.kingSqs[1 - color]
-    GEN[CHECK_SQUARES] = KNIGHT_ATTACKS[kingSq]
-    GEN[CHECK_SQUARES + 1] = PAWN_ATTACKS[(1 - color) * 64 + kingSq] // where our pawns would attack it
+    const kingSq = board.kingSqs[1 - color]!
+    GEN[CHECK_SQUARES] = KNIGHT_ATTACKS[kingSq]!
+    GEN[CHECK_SQUARES + 1] = PAWN_ATTACKS[(1 - color) * 64 + kingSq]! // where our pawns would attack it
     Ray.setBishopAttacks(GEN, CHECK_SQUARES + 2, kingSq, bbs, BoardSlot.OCCUPIED)
     Ray.setRookAttacks(GEN, CHECK_SQUARES + 3, kingSq, bbs, BoardSlot.OCCUPIED)
     GEN[DISCOVERERS] = 0n
-    GEN[SNIPERS] = ROOK_RAYS[kingSq] & (bbs[us + Piece.ROOK] | bbs[us + Piece.QUEEN])
-    GEN[SNIPERS] = GEN[SNIPERS] | (BISHOP_RAYS[kingSq] & (bbs[us + Piece.BISHOP] | bbs[us + Piece.QUEEN]))
+    GEN[SNIPERS] = ROOK_RAYS[kingSq]! & (bbs[us + Piece.ROOK]! | bbs[us + Piece.QUEEN]!)
+    GEN[SNIPERS] = GEN[SNIPERS] | (BISHOP_RAYS[kingSq]! & (bbs[us + Piece.BISHOP]! | bbs[us + Piece.QUEEN]!))
     for (let half = 0; half < 2; half++) {
-      let snipers = GEN32[2 * SNIPERS + half]
+      let snipers = GEN32[2 * SNIPERS + half]!
       while (snipers !== 0) {
         const sniperSq = (half << 5) | (31 - Math.clz32(snipers & -snipers))
         snipers &= snipers - 1
         this.addDiscoverer(board, us, kingSq, sniperSq)
       }
     }
-    for (let i = 0; i < 10; i++) { out[at + i] = GEN32[2 * CHECK_SQUARES + i] }
+    for (let i = 0; i < 10; i++) { out[at + i] = GEN32[2 * CHECK_SQUARES + i]! }
   }
 
   // after setSquares: does our piece on sq block our own slider's line to their king?
-  static isDiscoverer (sq) {
-    return ((GEN32[2 * DISCOVERERS + (sq >> 5)] >>> (sq & 31)) & 1) !== 0
+  static isDiscoverer (sq: number): boolean {
+    return ((GEN32[2 * DISCOVERERS + (sq >> 5)]! >>> (sq & 31)) & 1) !== 0
   }
 
   // a lone piece of ours between our sniper and their king
-  static addDiscoverer (board, us, kingSq, sniperSq) {
-    GEN[BLOCKERS] = BETWEEN[kingSq * 64 + sniperSq] & board.bitboards[BoardSlot.OCCUPIED]
-    const lo = GEN32[2 * BLOCKERS]
-    const hi = GEN32[2 * BLOCKERS + 1]
+  static addDiscoverer (board: Board, us: number, kingSq: number, sniperSq: number): void {
+    GEN[BLOCKERS] = BETWEEN[kingSq * 64 + sniperSq]! & board.bitboards[BoardSlot.OCCUPIED]!
+    const lo = GEN32[2 * BLOCKERS]!
+    const hi = GEN32[2 * BLOCKERS + 1]!
     if ((lo !== 0 && hi !== 0) || ((lo | hi) & ((lo | hi) - 1)) !== 0) { return }
     const sq = lo !== 0 ? 31 - Math.clz32(lo) : 63 - Math.clz32(hi)
-    const piece = board.squares[sq]
-    if (piece >= us && piece < us + 6) { GEN32[2 * DISCOVERERS + (sq >> 5)] |= 1 << (sq & 31) }
+    const piece = board.squares[sq]!
+    if (piece >= us && piece < us + 6) { GEN32[2 * DISCOVERERS + (sq >> 5)]! |= 1 << (sq & 31) }
   }
 
   /**
@@ -989,87 +1003,89 @@ class Checks {
    * en passant and promotions always answer yes: they are rare, and they
    * move a second piece or open lines through another square.
    */
-  static givesCheck (board, out, at, code) {
+  static givesCheck (board: Board, out: Int32Array, at: number, code: number): boolean {
     const from = code & 63
     const to = (code >> 6) & 63
     if ((code >>> 12) >= MoveKind.CASTLE) { return true }
-    const piece = board.squares[from]
+    const piece = board.squares[from]!
     const type = piece < 6 ? piece : piece - 6
     const toBit = 1 << (to & 31)
     const half = to >> 5
     switch (type) {
       case Piece.QUEEN:
-        if (((out[at + 4 + half] | out[at + 6 + half]) & toBit) !== 0) { return true }
+        if (((out[at + 4 + half]! | out[at + 6 + half]!) & toBit) !== 0) { return true }
         break
       case Piece.ROOK:
-        if ((out[at + 6 + half] & toBit) !== 0) { return true }
+        if ((out[at + 6 + half]! & toBit) !== 0) { return true }
         break
       case Piece.BISHOP:
-        if ((out[at + 4 + half] & toBit) !== 0) { return true }
+        if ((out[at + 4 + half]! & toBit) !== 0) { return true }
         break
       case Piece.KNIGHT:
-        if ((out[at + half] & toBit) !== 0) { return true }
+        if ((out[at + half]! & toBit) !== 0) { return true }
         break
       case Piece.PAWN:
-        if ((out[at + 2 + half] & toBit) !== 0) { return true }
+        if ((out[at + 2 + half]! & toBit) !== 0) { return true }
         break
     }
-    if (((out[at + 8 + (from >> 5)] >>> (from & 31)) & 1) === 0) { return false }
+    if (((out[at + 8 + (from >> 5)]! >>> (from & 31)) & 1) === 0) { return false }
     // a discoverer only uncovers the check when it leaves the line
-    const line = 2 * ((board.kingSqs[board.whiteToMove ? 1 : 0] << 6) + from) + half
-    return ((LINE32[line] >>> (to & 31)) & 1) === 0
+    const line = 2 * ((board.kingSqs[board.whiteToMove ? 1 : 0]! << 6) + from) + half
+    return ((LINE32[line]! >>> (to & 31)) & 1) === 0
   }
 }
 
 class Move {
-  static for (fenChar, fromBit, fromIdx, toIdx, pieceBoard, promotion, promoteTo) {
-    let MoveClass
+  static for (fenChar: FenChar, fromBit: bigint, fromIdx: number, toIdx: number, pieceBoard: AnyPieceBoard,
+    promotion: boolean, promoteTo: FenChar | null): AnyMove {
+    // pieceBoard is always the board of fenChar's own piece, which the compiler cannot see
     switch (fenChar) {
       case 'P':
-        MoveClass = WhitePawnMove
-        break
+        return new WhitePawnMove(fromBit, fromIdx, toIdx, pieceBoard as WhitePawnBoard, promotion, promoteTo)
       case 'p':
-        MoveClass = BlackPawnMove
-        break
+        return new BlackPawnMove(fromBit, fromIdx, toIdx, pieceBoard as BlackPawnBoard, promotion, promoteTo)
       case 'N':
-        MoveClass = WhiteKnightMove
-        break
+        return new WhiteKnightMove(fromBit, fromIdx, toIdx, pieceBoard as WhiteKnightBoard)
       case 'n':
-        MoveClass = BlackKnightMove
-        break
+        return new BlackKnightMove(fromBit, fromIdx, toIdx, pieceBoard as BlackKnightBoard)
       case 'B':
-        MoveClass = WhiteBishopMove
-        break
+        return new WhiteBishopMove(fromBit, fromIdx, toIdx, pieceBoard as WhiteBishopBoard)
       case 'b':
-        MoveClass = BlackBishopMove
-        break
+        return new BlackBishopMove(fromBit, fromIdx, toIdx, pieceBoard as BlackBishopBoard)
       case 'R':
-        MoveClass = WhiteRookMove
-        break
+        return new WhiteRookMove(fromBit, fromIdx, toIdx, pieceBoard as WhiteRookBoard)
       case 'r':
-        MoveClass = BlackRookMove
-        break
+        return new BlackRookMove(fromBit, fromIdx, toIdx, pieceBoard as BlackRookBoard)
       case 'Q':
-        MoveClass = WhiteQueenMove
-        break
+        return new WhiteQueenMove(fromBit, fromIdx, toIdx, pieceBoard as WhiteQueenBoard)
       case 'q':
-        MoveClass = BlackQueenMove
-        break
+        return new BlackQueenMove(fromBit, fromIdx, toIdx, pieceBoard as BlackQueenBoard)
       case 'K':
-        MoveClass = WhiteKingMove
-        break
+        return new WhiteKingMove(fromBit, fromIdx, toIdx, pieceBoard as WhiteKingBoard)
       case 'k':
-        MoveClass = BlackKingMove
-        break
+        return new BlackKingMove(fromBit, fromIdx, toIdx, pieceBoard as BlackKingBoard)
+      default:
+        throw new TypeError('no move class for ' + String(fenChar))
     }
-    return 'Pp'.includes(fenChar)
-      ? new MoveClass(fromBit, fromIdx, toIdx, pieceBoard, promotion, promoteTo)
-      : new MoveClass(fromBit, fromIdx, toIdx, pieceBoard)
   }
 }
 
 class WhitePawnMove {
-  constructor (fromBit, fromIdx, toIdx, pieceBoard, promotion, promoteTo) {
+  from: number
+  to: number
+  fromBit: bigint
+  toBit: bigint
+  ep: boolean
+  promotion: boolean
+  promoteTo: FenChar | null
+  check: boolean
+  capture: boolean
+  threat: boolean
+  fenChar: 'P'
+  epRisk: bigint
+  code!: number
+
+  constructor (fromBit: bigint, fromIdx: number, toIdx: number, pieceBoard: WhitePawnBoard, promotion: boolean, promoteTo: FenChar | null) {
     this.from = fromIdx
     this.to = toIdx
     this.fromBit = fromBit || 0n
@@ -1084,28 +1100,28 @@ class WhitePawnMove {
     this.epRisk = this.isDoublePush(pieceBoard.emptySq) ? Mask.southOne(this.toBit) : 0n
   }
 
-  isCheck (pieceBoard) {
+  isCheck (pieceBoard: WhitePawnBoard): boolean {
     return ((this.parsePawnAttacks(pieceBoard, this.toBit) & pieceBoard.blackKingBb) !==
       0n)
   }
 
-  isCapture (pieceBoard) {
+  isCapture (pieceBoard: WhitePawnBoard): boolean {
     const capOrEp = this.toBit & (pieceBoard.blackBb | pieceBoard.epSqBb)
     const enPassant = this.toBit & pieceBoard.epSqBb
     this.ep = enPassant !== 0n
     return (capOrEp !== 0n)
   }
 
-  isThreat (pieceBoard) {
+  isThreat (pieceBoard: WhitePawnBoard): boolean {
     return (this.parsePawnAttacks(pieceBoard, this.toBit) & (pieceBoard.blackMinorBb |
       pieceBoard.blackMajorBb)) !== 0n
   }
 
-  isDoublePush (emptySq) {
+  isDoublePush (emptySq: bigint): boolean {
     return Direction.wDoublePush(this.fromBit, emptySq) === this.toBit
   }
 
-  parsePawnAttacks (pieceBoard, toBit) {
+  parsePawnAttacks (pieceBoard: WhitePawnBoard, toBit: bigint): bigint {
     switch (this.promoteTo) {
       case 'Q':
         return Direction.queenRays(toBit, pieceBoard.occupied, pieceBoard.occupiable)
@@ -1122,7 +1138,21 @@ class WhitePawnMove {
 }
 
 class BlackPawnMove {
-  constructor (fromBit, fromIdx, toIdx, pieceBoard, promotion, promoteTo) {
+  from: number
+  to: number
+  fromBit: bigint
+  toBit: bigint
+  ep: boolean
+  promotion: boolean
+  promoteTo: FenChar | null
+  check: boolean
+  capture: boolean
+  threat: boolean
+  fenChar: 'p'
+  epRisk: bigint
+  code!: number
+
+  constructor (fromBit: bigint, fromIdx: number, toIdx: number, pieceBoard: BlackPawnBoard, promotion: boolean, promoteTo: FenChar | null) {
     this.from = fromIdx
     this.to = toIdx
     this.fromBit = fromBit || 0n
@@ -1137,28 +1167,28 @@ class BlackPawnMove {
     this.epRisk = this.isDoublePush(pieceBoard.emptySq) ? Mask.northOne(this.toBit) : 0n
   }
 
-  isCheck (pieceBoard) {
+  isCheck (pieceBoard: BlackPawnBoard): boolean {
     return ((this.parsePawnAttacks(pieceBoard, this.toBit) & pieceBoard.whiteKingBb) !==
       0n)
   }
 
-  isCapture (pieceBoard) {
+  isCapture (pieceBoard: BlackPawnBoard): boolean {
     const capOrEp = this.toBit & (pieceBoard.whiteBb | pieceBoard.epSqBb)
     const enPassant = this.toBit & pieceBoard.epSqBb
     this.ep = enPassant !== 0n
     return (capOrEp !== 0n)
   }
 
-  isThreat (pieceBoard) {
+  isThreat (pieceBoard: BlackPawnBoard): boolean {
     return (this.parsePawnAttacks(pieceBoard, this.toBit) & (pieceBoard.whiteMinorBb |
       pieceBoard.whiteMajorBb)) !== 0n
   }
 
-  isDoublePush (emptySq) {
+  isDoublePush (emptySq: bigint): boolean {
     return Direction.bDoublePush(this.fromBit, emptySq) === this.toBit
   }
 
-  parsePawnAttacks (pieceBoard, toBit) {
+  parsePawnAttacks (pieceBoard: BlackPawnBoard, toBit: bigint): bigint {
     switch (this.promoteTo) {
       case 'q':
         return Direction.queenRays(toBit, pieceBoard.occupied, pieceBoard.occupiable)
@@ -1175,7 +1205,17 @@ class BlackPawnMove {
 }
 
 class WhiteKnightMove {
-  constructor (fromBit, fromIdx, toIdx, pieceBoard) {
+  from: number
+  to: number
+  fromBit: bigint
+  toBit: bigint
+  check: boolean
+  capture: boolean
+  threat: boolean
+  fenChar: 'N'
+  code!: number
+
+  constructor (fromBit: bigint, fromIdx: number, toIdx: number, pieceBoard: WhiteKnightBoard) {
     this.from = fromIdx
     this.to = toIdx
     this.fromBit = fromBit || 0n
@@ -1186,23 +1226,33 @@ class WhiteKnightMove {
     this.fenChar = 'N'
   }
 
-  isCheck (pieceBoard) {
+  isCheck (pieceBoard: WhiteKnightBoard): boolean {
     return ((Direction.knightAttacks(this.toBit) & pieceBoard.blackKingBb) !==
       0n)
   }
 
-  isCapture (pieceBoard) {
+  isCapture (pieceBoard: WhiteKnightBoard): boolean {
     return ((this.toBit & pieceBoard.blackBb) !== 0n)
   }
 
-  isThreat (pieceBoard) {
+  isThreat (pieceBoard: WhiteKnightBoard): boolean {
     return (Direction.knightAttacks(this.toBit) & pieceBoard.blackMajorBb) !==
       0n
   }
 }
 
 class BlackKnightMove {
-  constructor (fromBit, fromIdx, toIdx, pieceBoard) {
+  from: number
+  to: number
+  fromBit: bigint
+  toBit: bigint
+  check: boolean
+  capture: boolean
+  threat: boolean
+  fenChar: 'n'
+  code!: number
+
+  constructor (fromBit: bigint, fromIdx: number, toIdx: number, pieceBoard: BlackKnightBoard) {
     this.from = fromIdx
     this.to = toIdx
     this.fromBit = fromBit || 0n
@@ -1213,23 +1263,33 @@ class BlackKnightMove {
     this.fenChar = 'n'
   }
 
-  isCheck (pieceBoard) {
+  isCheck (pieceBoard: BlackKnightBoard): boolean {
     return ((Direction.knightAttacks(this.toBit) & pieceBoard.whiteKingBb) !==
       0n)
   }
 
-  isCapture (pieceBoard) {
+  isCapture (pieceBoard: BlackKnightBoard): boolean {
     return ((this.toBit & pieceBoard.whiteBb) !== 0n)
   }
 
-  isThreat (pieceBoard) {
+  isThreat (pieceBoard: BlackKnightBoard): boolean {
     return (Direction.knightAttacks(this.toBit) & pieceBoard.whiteMajorBb) !==
       0n
   }
 }
 
 class WhiteBishopMove {
-  constructor (fromBit, fromIdx, toIdx, pieceBoard) {
+  from: number
+  to: number
+  fromBit: bigint
+  toBit: bigint
+  check: boolean
+  capture: boolean
+  threat: boolean
+  fenChar: 'B'
+  code!: number
+
+  constructor (fromBit: bigint, fromIdx: number, toIdx: number, pieceBoard: WhiteBishopBoard) {
     this.from = fromIdx
     this.to = toIdx
     this.fromBit = fromBit || 0n
@@ -1240,23 +1300,33 @@ class WhiteBishopMove {
     this.fenChar = 'B'
   }
 
-  isCheck (pieceBoard) {
+  isCheck (pieceBoard: WhiteBishopBoard): boolean {
     return ((Direction.bishopRays(this.toBit, pieceBoard.occupied, pieceBoard.occupiable) &
         pieceBoard.blackKingBb) !== 0n)
   }
 
-  isCapture (pieceBoard) {
+  isCapture (pieceBoard: WhiteBishopBoard): boolean {
     return ((this.toBit & pieceBoard.blackBb) !== 0n)
   }
 
-  isThreat (pieceBoard) {
+  isThreat (pieceBoard: WhiteBishopBoard): boolean {
     return (Direction.bishopRays(this.toBit, pieceBoard.occupied, pieceBoard.occupiable) &
         pieceBoard.blackMajorBb) !== 0n
   }
 }
 
 class BlackBishopMove {
-  constructor (fromBit, fromIdx, toIdx, pieceBoard) {
+  from: number
+  to: number
+  fromBit: bigint
+  toBit: bigint
+  check: boolean
+  capture: boolean
+  threat: boolean
+  fenChar: 'b'
+  code!: number
+
+  constructor (fromBit: bigint, fromIdx: number, toIdx: number, pieceBoard: BlackBishopBoard) {
     this.from = fromIdx
     this.to = toIdx
     this.fromBit = fromBit || 0n
@@ -1267,23 +1337,33 @@ class BlackBishopMove {
     this.fenChar = 'b'
   }
 
-  isCheck (pieceBoard) {
+  isCheck (pieceBoard: BlackBishopBoard): boolean {
     return ((Direction.bishopRays(this.toBit, pieceBoard.occupied, pieceBoard.occupiable) &
       pieceBoard.whiteKingBb) !== 0n)
   }
 
-  isCapture (pieceBoard) {
+  isCapture (pieceBoard: BlackBishopBoard): boolean {
     return ((this.toBit & pieceBoard.whiteBb) !== 0n)
   }
 
-  isThreat (pieceBoard) {
+  isThreat (pieceBoard: BlackBishopBoard): boolean {
     return (Direction.bishopRays(this.toBit, pieceBoard.occupied, pieceBoard.occupiable) &
       pieceBoard.whiteMajorBb) !== 0n
   }
 }
 
 class WhiteRookMove {
-  constructor (fromBit, fromIdx, toIdx, pieceBoard) {
+  from: number
+  to: number
+  fromBit: bigint
+  toBit: bigint
+  check: boolean
+  capture: boolean
+  threat: boolean
+  fenChar: 'R'
+  code!: number
+
+  constructor (fromBit: bigint, fromIdx: number, toIdx: number, pieceBoard: WhiteRookBoard) {
     this.from = fromIdx
     this.to = toIdx
     this.fromBit = fromBit || 0n
@@ -1294,23 +1374,33 @@ class WhiteRookMove {
     this.fenChar = 'R'
   }
 
-  isCheck (pieceBoard) {
+  isCheck (pieceBoard: WhiteRookBoard): boolean {
     return ((Direction.rookRays(this.toBit, pieceBoard.occupied, pieceBoard.occupiable) &
           pieceBoard.blackKingBb) !== 0n)
   }
 
-  isCapture (pieceBoard) {
+  isCapture (pieceBoard: WhiteRookBoard): boolean {
     return ((this.toBit & pieceBoard.blackBb) !== 0n)
   }
 
-  isThreat (pieceBoard) {
+  isThreat (pieceBoard: WhiteRookBoard): boolean {
     return (Direction.rookRays(this.toBit, pieceBoard.occupied, pieceBoard.occupiable) &
       pieceBoard.blackQueenBb) !== 0n
   }
 }
 
 class BlackRookMove {
-  constructor (fromBit, fromIdx, toIdx, pieceBoard) {
+  from: number
+  to: number
+  fromBit: bigint
+  toBit: bigint
+  check: boolean
+  capture: boolean
+  threat: boolean
+  fenChar: 'r'
+  code!: number
+
+  constructor (fromBit: bigint, fromIdx: number, toIdx: number, pieceBoard: BlackRookBoard) {
     this.from = fromIdx
     this.to = toIdx
     this.fromBit = fromBit || 0n
@@ -1321,23 +1411,33 @@ class BlackRookMove {
     this.fenChar = 'r'
   }
 
-  isCheck (pieceBoard) {
+  isCheck (pieceBoard: BlackRookBoard): boolean {
     return ((Direction.rookRays(this.toBit, pieceBoard.occupied, pieceBoard.occupiable) &
           pieceBoard.whiteKingBb) !== 0n)
   }
 
-  isCapture (pieceBoard) {
+  isCapture (pieceBoard: BlackRookBoard): boolean {
     return ((this.toBit & pieceBoard.whiteBb) !== 0n)
   }
 
-  isThreat (pieceBoard) {
+  isThreat (pieceBoard: BlackRookBoard): boolean {
     return (Direction.rookRays(this.toBit, pieceBoard.occupied, pieceBoard.occupiable) &
       pieceBoard.whiteQueenBb) !== 0n
   }
 }
 
 class WhiteQueenMove {
-  constructor (fromBit, fromIdx, toIdx, pieceBoard) {
+  from: number
+  to: number
+  fromBit: bigint
+  toBit: bigint
+  check: boolean
+  capture: boolean
+  threat: boolean
+  fenChar: 'Q'
+  code!: number
+
+  constructor (fromBit: bigint, fromIdx: number, toIdx: number, pieceBoard: WhiteQueenBoard) {
     this.from = fromIdx
     this.to = toIdx
     this.fromBit = fromBit || 0n
@@ -1348,18 +1448,28 @@ class WhiteQueenMove {
     this.fenChar = 'Q'
   }
 
-  isCheck (pieceBoard) {
+  isCheck (pieceBoard: WhiteQueenBoard): boolean {
     return ((Direction.queenRays(this.toBit, pieceBoard.occupied, pieceBoard.occupiable) &
           pieceBoard.blackKingBb) !== 0n)
   }
 
-  isCapture (pieceBoard) {
+  isCapture (pieceBoard: WhiteQueenBoard): boolean {
     return ((this.toBit & pieceBoard.blackBb) !== 0n)
   }
 }
 
 class BlackQueenMove {
-  constructor (fromBit, fromIdx, toIdx, pieceBoard) {
+  to: number
+  from: number
+  fromBit: bigint
+  toBit: bigint
+  check: boolean
+  capture: boolean
+  threat: boolean
+  fenChar: 'q'
+  code!: number
+
+  constructor (fromBit: bigint, fromIdx: number, toIdx: number, pieceBoard: BlackQueenBoard) {
     this.to = toIdx
     this.from = fromIdx
     this.fromBit = fromBit || 0n
@@ -1370,18 +1480,29 @@ class BlackQueenMove {
     this.fenChar = 'q'
   }
 
-  isCheck (pieceBoard) {
+  isCheck (pieceBoard: BlackQueenBoard): boolean {
     return ((Direction.queenRays(this.toBit, pieceBoard.occupied, pieceBoard.occupiable) &
           pieceBoard.whiteKingBb) !== 0n)
   }
 
-  isCapture (pieceBoard) {
+  isCapture (pieceBoard: BlackQueenBoard): boolean {
     return ((this.toBit & pieceBoard.whiteBb) !== 0n)
   }
 }
 
 class WhiteKingMove {
-  constructor (fromBit, fromIdx, toIdx, pieceBoard) {
+  from: number
+  to: number
+  fromBit: bigint
+  toBit: bigint
+  castle: boolean
+  check: boolean
+  capture: boolean
+  threat: boolean
+  fenChar: 'K'
+  code!: number
+
+  constructor (fromBit: bigint, fromIdx: number, toIdx: number, pieceBoard: WhiteKingBoard) {
     this.from = fromIdx
     this.to = toIdx
     this.fromBit = fromBit || 0n
@@ -1396,18 +1517,29 @@ class WhiteKingMove {
   // TODO: isCheck for castling with rook
   // TODO: isThreat for threats against other pawns / pieces
 
-  isCapture (pieceBoard) {
+  isCapture (pieceBoard: WhiteKingBoard): boolean {
     return ((this.toBit & pieceBoard.blackBb) !== 0n)
   }
 
-  isCastle (fromIdx, toIdx) {
+  isCastle (fromIdx: number, toIdx: number): boolean {
     const difference = toIdx - fromIdx
     return (difference === 2 || difference === -2)
   }
 }
 
 class BlackKingMove {
-  constructor (fromBit, fromIdx, toIdx, pieceBoard) {
+  from: number
+  to: number
+  fromBit: bigint
+  toBit: bigint
+  castle: boolean
+  check: boolean
+  capture: boolean
+  threat: boolean
+  fenChar: 'k'
+  code!: number
+
+  constructor (fromBit: bigint, fromIdx: number, toIdx: number, pieceBoard: BlackKingBoard) {
     this.from = fromIdx
     this.to = toIdx
     this.fromBit = fromBit || 0n
@@ -1419,21 +1551,40 @@ class BlackKingMove {
     this.fenChar = 'k'
   }
 
-  isCapture (pieceBoard) {
+  isCapture (pieceBoard: BlackKingBoard): boolean {
     return ((this.toBit & pieceBoard.whiteBb) !== 0n)
   }
 
-  isCastle (fromIdx, toIdx) {
+  isCastle (fromIdx: number, toIdx: number): boolean {
     const difference = toIdx - fromIdx
     return (difference === 2 || difference === -2)
   }
 }
 
-module.exports = {
-  Checks: Checks,
-  WhitePawnMove: WhitePawnMove,
-  BlackPawnMove: BlackPawnMove,
-  Move: Move,
-  MoveKind: MoveKind,
-  MoveList: MoveList
+type AnyMove = WhitePawnMove | BlackPawnMove | WhiteKnightMove | BlackKnightMove | WhiteBishopMove | BlackBishopMove | WhiteRookMove | BlackRookMove | WhiteQueenMove | BlackQueenMove | WhiteKingMove | BlackKingMove
+
+// the move class of each fen char, so board.moves('P') is typed as pawn moves
+interface MoveByFenChar {
+  P: WhitePawnMove
+  p: BlackPawnMove
+  N: WhiteKnightMove
+  n: BlackKnightMove
+  B: WhiteBishopMove
+  b: BlackBishopMove
+  R: WhiteRookMove
+  r: BlackRookMove
+  Q: WhiteQueenMove
+  q: BlackQueenMove
+  K: WhiteKingMove
+  k: BlackKingMove
 }
+
+export {
+  Checks,
+  WhitePawnMove,
+  BlackPawnMove,
+  Move,
+  MoveKind,
+  MoveList
+}
+export type { AnyMove, MoveByFenChar }

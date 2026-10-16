@@ -1,7 +1,11 @@
 // Times the search on the perft positions and the Bratko-Kopec test.
 // Run with: npm run bench:search -- [depth]
-const Engine = require('../src/engine.js').Engine
-const positions = [
+// It times the built bundle, like scripts/bench.ts.
+import type { Engine as EngineClass } from '../src/engine.ts'
+
+const bundle = new URL('../dist/index.mjs', import.meta.url).href
+const { Engine } = await import(bundle) as { Engine: typeof EngineClass }
+const positions: Array<[string, string]> = [
   ['startpos', 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1'],
   ['kiwipete', 'r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1'],
   ['pos3', '8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1'],

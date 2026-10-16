@@ -1,10 +1,12 @@
-const assert = require('assert')
-const Board = require('../src/board.js').Board
-const BoardView = require('../src/boardview.js').BoardView
-const SquareHelper = require('../src/helpers.js').SquareHelper
-// const PieceBoard = require('../src/board.js').PieceBoard
-const Engine = require('../src/engine.js').Engine
-// const PieceBoardList = require('../src/pieceboard.js').PieceBoardList
+import assert from 'node:assert'
+import { Board } from '../src/board.ts'
+import { BoardView } from '../src/boardview.ts'
+import { SquareHelper } from '../src/helpers.ts'
+import { Engine } from '../src/engine.ts'
+import type { WhitePawnMove } from '../src/move.ts'
+import { describe, it } from 'vite-plus/test'
+// import { PieceBoard } from '../src/board.ts'
+// import { PieceBoardList } from '../src/pieceboard.ts'
 
 Error.stackTraceLimit = 10
 
@@ -101,50 +103,50 @@ describe('Board', function () {
       const board = new Board()
       board.parseFenToBoard('3K4/8/8/8/8/2b5/1N6/3k4 b - - 0 1')
 
-      assert.equal(board.legalMoves()[0].from, 3)
-      assert.equal(board.legalMoves()[0].to, 2)
-      assert.equal(board.legalMoves()[1].from, 3)
-      assert.equal(board.legalMoves()[1].to, 4)
-      assert.equal(board.legalMoves()[2].from, 3)
-      assert.equal(board.legalMoves()[2].to, 10)
-      assert.equal(board.legalMoves()[3].from, 3)
-      assert.equal(board.legalMoves()[3].to, 11)
-      assert.equal(board.legalMoves()[4].from, 3)
-      assert.equal(board.legalMoves()[4].to, 12)
-      assert.equal(board.legalMoves()[5].from, 18)
-      assert.equal(board.legalMoves()[5].to, 9)
+      assert.equal(board.legalMoves()[0]!.from, 3)
+      assert.equal(board.legalMoves()[0]!.to, 2)
+      assert.equal(board.legalMoves()[1]!.from, 3)
+      assert.equal(board.legalMoves()[1]!.to, 4)
+      assert.equal(board.legalMoves()[2]!.from, 3)
+      assert.equal(board.legalMoves()[2]!.to, 10)
+      assert.equal(board.legalMoves()[3]!.from, 3)
+      assert.equal(board.legalMoves()[3]!.to, 11)
+      assert.equal(board.legalMoves()[4]!.from, 3)
+      assert.equal(board.legalMoves()[4]!.to, 12)
+      assert.equal(board.legalMoves()[5]!.from, 18)
+      assert.equal(board.legalMoves()[5]!.to, 9)
     })
 
     it('should show moves that can block the checker', function () {
       const board = new Board()
       board.parseFenToBoard('3K4/8/8/3Q4/8/2b5/8/3k4 b - - 0 1')
 
-      assert.equal(board.legalMoves()[0].from, 3)
-      assert.equal(board.legalMoves()[0].to, 2)
-      assert.equal(board.legalMoves()[1].from, 3)
-      assert.equal(board.legalMoves()[1].to, 4)
-      assert.equal(board.legalMoves()[2].from, 3)
-      assert.equal(board.legalMoves()[2].to, 10)
-      assert.equal(board.legalMoves()[3].from, 3)
-      assert.equal(board.legalMoves()[3].to, 12)
-      assert.equal(board.legalMoves()[4].from, 18)
-      assert.equal(board.legalMoves()[4].to, 11)
-      assert.equal(board.legalMoves()[5].from, 18)
-      assert.equal(board.legalMoves()[5].to, 27)
+      assert.equal(board.legalMoves()[0]!.from, 3)
+      assert.equal(board.legalMoves()[0]!.to, 2)
+      assert.equal(board.legalMoves()[1]!.from, 3)
+      assert.equal(board.legalMoves()[1]!.to, 4)
+      assert.equal(board.legalMoves()[2]!.from, 3)
+      assert.equal(board.legalMoves()[2]!.to, 10)
+      assert.equal(board.legalMoves()[3]!.from, 3)
+      assert.equal(board.legalMoves()[3]!.to, 12)
+      assert.equal(board.legalMoves()[4]!.from, 18)
+      assert.equal(board.legalMoves()[4]!.to, 11)
+      assert.equal(board.legalMoves()[5]!.from, 18)
+      assert.equal(board.legalMoves()[5]!.to, 27)
     })
 
     it('when in double check, can only do king moves', function () {
       const board = new Board()
       board.parseFenToBoard('4k3/6N1/5b2/4R3/8/8/8/4K3 b - - 0 1')
 
-      assert.equal(board.legalMoves()[0].from, 60)
-      assert.equal(board.legalMoves()[0].to, 51)
-      assert.equal(board.legalMoves()[1].from, 60)
-      assert.equal(board.legalMoves()[1].to, 53)
-      assert.equal(board.legalMoves()[2].from, 60)
-      assert.equal(board.legalMoves()[2].to, 59)
-      assert.equal(board.legalMoves()[3].from, 60)
-      assert.equal(board.legalMoves()[3].to, 61)
+      assert.equal(board.legalMoves()[0]!.from, 60)
+      assert.equal(board.legalMoves()[0]!.to, 51)
+      assert.equal(board.legalMoves()[1]!.from, 60)
+      assert.equal(board.legalMoves()[1]!.to, 53)
+      assert.equal(board.legalMoves()[2]!.from, 60)
+      assert.equal(board.legalMoves()[2]!.to, 59)
+      assert.equal(board.legalMoves()[3]!.from, 60)
+      assert.equal(board.legalMoves()[3]!.to, 61)
     })
 
     it('knows how to handle en passant check evasions', function () {
@@ -205,67 +207,67 @@ describe('Board', function () {
 
       // console.log(diagPinMoves)
 
-      assert.equal(filePinMoves[0].from, 60)
-      assert.equal(filePinMoves[0].to, 51)
-      assert.equal(filePinMoves[1].from, 60)
-      assert.equal(filePinMoves[1].to, 52)
-      assert.equal(filePinMoves[2].from, 60)
-      assert.equal(filePinMoves[2].to, 53)
-      assert.equal(filePinMoves[3].from, 60)
-      assert.equal(filePinMoves[3].to, 59)
-      assert.equal(filePinMoves[4].from, 60)
-      assert.equal(filePinMoves[4].to, 61)
-      assert.equal(filePinMoves[5].from, 44)
-      assert.equal(filePinMoves[5].to, 20)
-      assert.equal(filePinMoves[6].from, 44)
-      assert.equal(filePinMoves[6].to, 28)
-      assert.equal(filePinMoves[7].from, 44)
-      assert.equal(filePinMoves[7].to, 36)
-      assert.equal(filePinMoves[8].from, 44)
-      assert.equal(filePinMoves[8].to, 52)
+      assert.equal(filePinMoves[0]!.from, 60)
+      assert.equal(filePinMoves[0]!.to, 51)
+      assert.equal(filePinMoves[1]!.from, 60)
+      assert.equal(filePinMoves[1]!.to, 52)
+      assert.equal(filePinMoves[2]!.from, 60)
+      assert.equal(filePinMoves[2]!.to, 53)
+      assert.equal(filePinMoves[3]!.from, 60)
+      assert.equal(filePinMoves[3]!.to, 59)
+      assert.equal(filePinMoves[4]!.from, 60)
+      assert.equal(filePinMoves[4]!.to, 61)
+      assert.equal(filePinMoves[5]!.from, 44)
+      assert.equal(filePinMoves[5]!.to, 20)
+      assert.equal(filePinMoves[6]!.from, 44)
+      assert.equal(filePinMoves[6]!.to, 28)
+      assert.equal(filePinMoves[7]!.from, 44)
+      assert.equal(filePinMoves[7]!.to, 36)
+      assert.equal(filePinMoves[8]!.from, 44)
+      assert.equal(filePinMoves[8]!.to, 52)
 
-      assert.equal(filePinPawnMoves[0].from, 60)
-      assert.equal(filePinPawnMoves[0].to, 51)
-      assert.equal(filePinPawnMoves[1].from, 60)
-      assert.equal(filePinPawnMoves[1].to, 53)
-      assert.equal(filePinPawnMoves[2].from, 60)
-      assert.equal(filePinPawnMoves[2].to, 59)
-      assert.equal(filePinPawnMoves[3].from, 60)
-      assert.equal(filePinPawnMoves[3].to, 61)
-      assert.equal(filePinPawnMoves[4].from, 52)
-      assert.equal(filePinPawnMoves[4].to, 36)
-      assert.equal(filePinPawnMoves[5].from, 52)
-      assert.equal(filePinPawnMoves[5].to, 44)
+      assert.equal(filePinPawnMoves[0]!.from, 60)
+      assert.equal(filePinPawnMoves[0]!.to, 51)
+      assert.equal(filePinPawnMoves[1]!.from, 60)
+      assert.equal(filePinPawnMoves[1]!.to, 53)
+      assert.equal(filePinPawnMoves[2]!.from, 60)
+      assert.equal(filePinPawnMoves[2]!.to, 59)
+      assert.equal(filePinPawnMoves[3]!.from, 60)
+      assert.equal(filePinPawnMoves[3]!.to, 61)
+      assert.equal(filePinPawnMoves[4]!.from, 52)
+      assert.equal(filePinPawnMoves[4]!.to, 36)
+      assert.equal(filePinPawnMoves[5]!.from, 52)
+      assert.equal(filePinPawnMoves[5]!.to, 44)
 
-      assert.equal(rankPinMoves[0].from, 60)
-      assert.equal(rankPinMoves[0].to, 51)
-      assert.equal(rankPinMoves[1].from, 60)
-      assert.equal(rankPinMoves[1].to, 52)
-      assert.equal(rankPinMoves[2].from, 60)
-      assert.equal(rankPinMoves[2].to, 53)
-      assert.equal(rankPinMoves[3].from, 60)
-      assert.equal(rankPinMoves[3].to, 61)
-      assert.equal(rankPinMoves[4].from, 59)
-      assert.equal(rankPinMoves[4].to, 56)
-      assert.equal(rankPinMoves[5].from, 59)
-      assert.equal(rankPinMoves[5].to, 57)
-      assert.equal(rankPinMoves[6].from, 59)
-      assert.equal(rankPinMoves[6].to, 58)
+      assert.equal(rankPinMoves[0]!.from, 60)
+      assert.equal(rankPinMoves[0]!.to, 51)
+      assert.equal(rankPinMoves[1]!.from, 60)
+      assert.equal(rankPinMoves[1]!.to, 52)
+      assert.equal(rankPinMoves[2]!.from, 60)
+      assert.equal(rankPinMoves[2]!.to, 53)
+      assert.equal(rankPinMoves[3]!.from, 60)
+      assert.equal(rankPinMoves[3]!.to, 61)
+      assert.equal(rankPinMoves[4]!.from, 59)
+      assert.equal(rankPinMoves[4]!.to, 56)
+      assert.equal(rankPinMoves[5]!.from, 59)
+      assert.equal(rankPinMoves[5]!.to, 57)
+      assert.equal(rankPinMoves[6]!.from, 59)
+      assert.equal(rankPinMoves[6]!.to, 58)
 
-      assert.equal(rankPinPawnMoves[0].from, 53)
-      assert.equal(rankPinPawnMoves[0].to, 44)
-      assert.equal(rankPinPawnMoves[1].from, 53)
-      assert.equal(rankPinPawnMoves[1].to, 45)
-      assert.equal(rankPinPawnMoves[2].from, 53)
-      assert.equal(rankPinPawnMoves[2].to, 46)
-      assert.equal(rankPinPawnMoves[3].from, 53)
-      assert.equal(rankPinPawnMoves[3].to, 54)
-      assert.equal(rankPinPawnMoves[4].from, 53)
-      assert.equal(rankPinPawnMoves[4].to, 60)
-      assert.equal(rankPinPawnMoves[5].from, 53)
-      assert.equal(rankPinPawnMoves[5].to, 61)
-      assert.equal(rankPinPawnMoves[6].from, 53)
-      assert.equal(rankPinPawnMoves[6].to, 62)
+      assert.equal(rankPinPawnMoves[0]!.from, 53)
+      assert.equal(rankPinPawnMoves[0]!.to, 44)
+      assert.equal(rankPinPawnMoves[1]!.from, 53)
+      assert.equal(rankPinPawnMoves[1]!.to, 45)
+      assert.equal(rankPinPawnMoves[2]!.from, 53)
+      assert.equal(rankPinPawnMoves[2]!.to, 46)
+      assert.equal(rankPinPawnMoves[3]!.from, 53)
+      assert.equal(rankPinPawnMoves[3]!.to, 54)
+      assert.equal(rankPinPawnMoves[4]!.from, 53)
+      assert.equal(rankPinPawnMoves[4]!.to, 60)
+      assert.equal(rankPinPawnMoves[5]!.from, 53)
+      assert.equal(rankPinPawnMoves[5]!.to, 61)
+      assert.equal(rankPinPawnMoves[6]!.from, 53)
+      assert.equal(rankPinPawnMoves[6]!.to, 62)
     })
   })
 })
@@ -293,26 +295,26 @@ describe('PawnBoard', function () {
       const whitePawnMoves = boardWManyPawnAttacks.moves('P')
       const blackPawnMoves = boardWManyPawnAttacks.moves('p')
 
-      assert.equal(whitePawnMoves[0].from, 8)
-      assert.equal(whitePawnMoves[0].to, 16)
-      assert.equal(whitePawnMoves[1].from, 8)
-      assert.equal(whitePawnMoves[1].to, 24)
-      assert.equal(whitePawnMoves[2].from, 10)
-      assert.equal(whitePawnMoves[2].to, 18)
-      assert.equal(whitePawnMoves[3].from, 10)
-      assert.equal(whitePawnMoves[3].to, 26)
-      assert.equal(whitePawnMoves[4].from, 11)
-      assert.equal(whitePawnMoves[4].to, 19)
-      assert.equal(blackPawnMoves[0].from, 32)
-      assert.equal(blackPawnMoves[0].to, 24)
-      assert.equal(blackPawnMoves[1].from, 32)
-      assert.equal(blackPawnMoves[1].to, 25)
-      assert.equal(blackPawnMoves[2].from, 34)
-      assert.equal(blackPawnMoves[2].to, 25)
-      assert.equal(blackPawnMoves[3].from, 34)
-      assert.equal(blackPawnMoves[3].to, 26)
-      assert.equal(blackPawnMoves[4].from, 35)
-      assert.equal(blackPawnMoves[4].to, 27)
+      assert.equal(whitePawnMoves[0]!.from, 8)
+      assert.equal(whitePawnMoves[0]!.to, 16)
+      assert.equal(whitePawnMoves[1]!.from, 8)
+      assert.equal(whitePawnMoves[1]!.to, 24)
+      assert.equal(whitePawnMoves[2]!.from, 10)
+      assert.equal(whitePawnMoves[2]!.to, 18)
+      assert.equal(whitePawnMoves[3]!.from, 10)
+      assert.equal(whitePawnMoves[3]!.to, 26)
+      assert.equal(whitePawnMoves[4]!.from, 11)
+      assert.equal(whitePawnMoves[4]!.to, 19)
+      assert.equal(blackPawnMoves[0]!.from, 32)
+      assert.equal(blackPawnMoves[0]!.to, 24)
+      assert.equal(blackPawnMoves[1]!.from, 32)
+      assert.equal(blackPawnMoves[1]!.to, 25)
+      assert.equal(blackPawnMoves[2]!.from, 34)
+      assert.equal(blackPawnMoves[2]!.to, 25)
+      assert.equal(blackPawnMoves[3]!.from, 34)
+      assert.equal(blackPawnMoves[3]!.to, 26)
+      assert.equal(blackPawnMoves[4]!.from, 35)
+      assert.equal(blackPawnMoves[4]!.to, 27)
     })
 
     it('shows threats', function () {
@@ -324,8 +326,8 @@ describe('PawnBoard', function () {
       bBoardWAttacks.parseFenToBoard('r1bqkb1r/pppp1ppp/5n2/4P3/3Q4/8/PPP2PPP/RNB1KB1R b KQkq - 0 6')
       const blackPawnMoves = bBoardWAttacks.moves('p')
 
-      assert.equal(whitePawnMoves[3].threat, true)
-      assert.equal(blackPawnMoves[4].threat, true)
+      assert.equal(whitePawnMoves[3]!.threat, true)
+      assert.equal(blackPawnMoves[4]!.threat, true)
     })
 
     it('shows checks', function () {
@@ -334,8 +336,8 @@ describe('PawnBoard', function () {
 
       const blackPawnMoves = bBoardWChecks.moves('p')
 
-      assert.equal(blackPawnMoves[1].capture, true)
-      assert.equal(blackPawnMoves[1].check, true)
+      assert.equal(blackPawnMoves[1]!.capture, true)
+      assert.equal(blackPawnMoves[1]!.check, true)
     })
 
     it('knows en passant', function () {
@@ -347,25 +349,25 @@ describe('PawnBoard', function () {
       boardBlkWep.parseFenToBoard('rnbq1bnr/p1p1kppp/8/2Ppp3/Pp2P3/3P4/1P2KPPP/RNBQ1BNR b - a3 0 6')
       const blackPawnMoves = boardBlkWep.moves('p')
 
-      assert.equal(whitePawnMoves[13].capture, true)
-      assert.equal(whitePawnMoves[13].ep, true)
-      assert.equal(blackPawnMoves[0].capture, true)
-      assert.equal(blackPawnMoves[0].ep, true)
+      assert.equal(whitePawnMoves[13]!.capture, true)
+      assert.equal(whitePawnMoves[13]!.ep, true)
+      assert.equal(blackPawnMoves[0]!.capture, true)
+      assert.equal(blackPawnMoves[0]!.ep, true)
     })
 
     it('knows promotions', function () {
       const board = new Board()
       board.parseFenToBoard('r2qkb1r/pP1b1ppp/2n2n2/4p3/8/2N2N2/PPPP1PPP/R1BQKB1R w KQkq - 3 7')
-      const whitePawnMoves = board.legalMoves()
+      const whitePawnMoves = board.legalMoves() as WhitePawnMove[]
 
-      assert.equal(whitePawnMoves[30].promoteTo, 'Q')
-      assert.equal(whitePawnMoves[31].promoteTo, 'R')
-      assert.equal(whitePawnMoves[32].promoteTo, 'B')
-      assert.equal(whitePawnMoves[33].promoteTo, 'N')
-      assert.equal(whitePawnMoves[34].promoteTo, 'Q')
-      assert.equal(whitePawnMoves[35].promoteTo, 'R')
-      assert.equal(whitePawnMoves[36].promoteTo, 'B')
-      assert.equal(whitePawnMoves[37].promoteTo, 'N')
+      assert.equal(whitePawnMoves[30]!.promoteTo, 'Q')
+      assert.equal(whitePawnMoves[31]!.promoteTo, 'R')
+      assert.equal(whitePawnMoves[32]!.promoteTo, 'B')
+      assert.equal(whitePawnMoves[33]!.promoteTo, 'N')
+      assert.equal(whitePawnMoves[34]!.promoteTo, 'Q')
+      assert.equal(whitePawnMoves[35]!.promoteTo, 'R')
+      assert.equal(whitePawnMoves[36]!.promoteTo, 'B')
+      assert.equal(whitePawnMoves[37]!.promoteTo, 'N')
     })
   })
 })
@@ -378,12 +380,12 @@ describe('KnightBoard', function () {
 
       const blackKnightMoves = boardWManyKnightMoves.moves('n')
 
-      assert.equal(blackKnightMoves[0].from, 40)
-      assert.equal(blackKnightMoves[0].to, 25)
-      assert.equal(blackKnightMoves[1].from, 40)
-      assert.equal(blackKnightMoves[1].to, 34)
-      assert.equal(blackKnightMoves[2].from, 57)
-      assert.equal(blackKnightMoves[2].to, 42)
+      assert.equal(blackKnightMoves[0]!.from, 40)
+      assert.equal(blackKnightMoves[0]!.to, 25)
+      assert.equal(blackKnightMoves[1]!.from, 40)
+      assert.equal(blackKnightMoves[1]!.to, 34)
+      assert.equal(blackKnightMoves[2]!.from, 57)
+      assert.equal(blackKnightMoves[2]!.to, 42)
     })
 
     it('shows threats', function () {
@@ -392,7 +394,7 @@ describe('KnightBoard', function () {
 
       const whiteKnightMoves = boardWManyKnightAttacks.moves('N')
 
-      assert.equal(whiteKnightMoves[8].threat, true)
+      assert.equal(whiteKnightMoves[8]!.threat, true)
     })
 
     it('shows checks', function () {
@@ -401,8 +403,8 @@ describe('KnightBoard', function () {
 
       const whiteKnightMoves = boardWKnightChecks.moves('N')
 
-      assert.equal(whiteKnightMoves[10].check, true)
-      assert.equal(whiteKnightMoves[11].check, true)
+      assert.equal(whiteKnightMoves[10]!.check, true)
+      assert.equal(whiteKnightMoves[11]!.check, true)
     })
   })
 })
@@ -415,24 +417,24 @@ describe('BishopBoard', function () {
 
       const whiteBishopMoves = boardWManyBishopAttacks.moves('B')
 
-      assert.equal(whiteBishopMoves[0].from, 16)
-      assert.equal(whiteBishopMoves[0].to, 2)
-      assert.equal(whiteBishopMoves[1].from, 16)
-      assert.equal(whiteBishopMoves[1].to, 9)
-      assert.equal(whiteBishopMoves[2].from, 16)
-      assert.equal(whiteBishopMoves[2].to, 25)
-      assert.equal(whiteBishopMoves[3].from, 16)
-      assert.equal(whiteBishopMoves[3].to, 34)
-      assert.equal(whiteBishopMoves[4].from, 26)
-      assert.equal(whiteBishopMoves[4].to, 33)
-      assert.equal(whiteBishopMoves[5].from, 26)
-      assert.equal(whiteBishopMoves[5].to, 35)
-      assert.equal(whiteBishopMoves[6].from, 26)
-      assert.equal(whiteBishopMoves[6].to, 40)
-      assert.equal(whiteBishopMoves[7].from, 26)
-      assert.equal(whiteBishopMoves[7].to, 44)
-      assert.equal(whiteBishopMoves[8].from, 26)
-      assert.equal(whiteBishopMoves[8].to, 53)
+      assert.equal(whiteBishopMoves[0]!.from, 16)
+      assert.equal(whiteBishopMoves[0]!.to, 2)
+      assert.equal(whiteBishopMoves[1]!.from, 16)
+      assert.equal(whiteBishopMoves[1]!.to, 9)
+      assert.equal(whiteBishopMoves[2]!.from, 16)
+      assert.equal(whiteBishopMoves[2]!.to, 25)
+      assert.equal(whiteBishopMoves[3]!.from, 16)
+      assert.equal(whiteBishopMoves[3]!.to, 34)
+      assert.equal(whiteBishopMoves[4]!.from, 26)
+      assert.equal(whiteBishopMoves[4]!.to, 33)
+      assert.equal(whiteBishopMoves[5]!.from, 26)
+      assert.equal(whiteBishopMoves[5]!.to, 35)
+      assert.equal(whiteBishopMoves[6]!.from, 26)
+      assert.equal(whiteBishopMoves[6]!.to, 40)
+      assert.equal(whiteBishopMoves[7]!.from, 26)
+      assert.equal(whiteBishopMoves[7]!.to, 44)
+      assert.equal(whiteBishopMoves[8]!.from, 26)
+      assert.equal(whiteBishopMoves[8]!.to, 53)
     })
 
     it('shows threats', function () {
@@ -441,7 +443,7 @@ describe('BishopBoard', function () {
 
       const whiteBishopMoves = boardWManyBishopAttacks.moves('B')
 
-      assert.equal(whiteBishopMoves[4].threat, true)
+      assert.equal(whiteBishopMoves[4]!.threat, true)
     })
 
     it('shows checks', function () {
@@ -450,7 +452,7 @@ describe('BishopBoard', function () {
 
       const whiteBishopMoves = boardWManyBishopAttacks.moves('B')
 
-      assert.equal(whiteBishopMoves[8].check, true)
+      assert.equal(whiteBishopMoves[8]!.check, true)
     })
   })
 })
@@ -463,26 +465,26 @@ describe('RookBoard', function () {
 
       const blackRookMoves = boardWManyRookAttacks.moves('r')
 
-      assert.equal(blackRookMoves[0].from, 43)
-      assert.equal(blackRookMoves[0].to, 11)
-      assert.equal(blackRookMoves[1].from, 43)
-      assert.equal(blackRookMoves[1].to, 19)
-      assert.equal(blackRookMoves[2].from, 43)
-      assert.equal(blackRookMoves[2].to, 27)
-      assert.equal(blackRookMoves[3].from, 43)
-      assert.equal(blackRookMoves[3].to, 35)
-      assert.equal(blackRookMoves[4].from, 43)
-      assert.equal(blackRookMoves[4].to, 44)
-      assert.equal(blackRookMoves[5].from, 45)
-      assert.equal(blackRookMoves[5].to, 21)
-      assert.equal(blackRookMoves[6].from, 45)
-      assert.equal(blackRookMoves[6].to, 29)
-      assert.equal(blackRookMoves[7].from, 45)
-      assert.equal(blackRookMoves[7].to, 37)
-      assert.equal(blackRookMoves[8].from, 45)
-      assert.equal(blackRookMoves[8].to, 44)
-      assert.equal(blackRookMoves[9].from, 45)
-      assert.equal(blackRookMoves[9].to, 46)
+      assert.equal(blackRookMoves[0]!.from, 43)
+      assert.equal(blackRookMoves[0]!.to, 11)
+      assert.equal(blackRookMoves[1]!.from, 43)
+      assert.equal(blackRookMoves[1]!.to, 19)
+      assert.equal(blackRookMoves[2]!.from, 43)
+      assert.equal(blackRookMoves[2]!.to, 27)
+      assert.equal(blackRookMoves[3]!.from, 43)
+      assert.equal(blackRookMoves[3]!.to, 35)
+      assert.equal(blackRookMoves[4]!.from, 43)
+      assert.equal(blackRookMoves[4]!.to, 44)
+      assert.equal(blackRookMoves[5]!.from, 45)
+      assert.equal(blackRookMoves[5]!.to, 21)
+      assert.equal(blackRookMoves[6]!.from, 45)
+      assert.equal(blackRookMoves[6]!.to, 29)
+      assert.equal(blackRookMoves[7]!.from, 45)
+      assert.equal(blackRookMoves[7]!.to, 37)
+      assert.equal(blackRookMoves[8]!.from, 45)
+      assert.equal(blackRookMoves[8]!.to, 44)
+      assert.equal(blackRookMoves[9]!.from, 45)
+      assert.equal(blackRookMoves[9]!.to, 46)
     })
 
     it('shows threats', function () {
@@ -491,7 +493,7 @@ describe('RookBoard', function () {
 
       const blackRookMoves = boardWManyRookAttacks.moves('r')
 
-      assert.equal(blackRookMoves[0].threat, true)
+      assert.equal(blackRookMoves[0]!.threat, true)
     })
 
     it('shows checks', function () {
@@ -500,7 +502,7 @@ describe('RookBoard', function () {
 
       const blackRookMoves = boardWManyRookAttacks.moves('r')
 
-      assert.equal(blackRookMoves[5].check, true)
+      assert.equal(blackRookMoves[5]!.check, true)
     })
   })
 })
@@ -513,26 +515,26 @@ describe('QueenBoard', function () {
 
       const whiteQueenMoves = boardWManyQueenAttacks.moves('Q')
 
-      assert.equal(whiteQueenMoves[0].from, 39)
-      assert.equal(whiteQueenMoves[0].to, 23)
-      assert.equal(whiteQueenMoves[1].from, 39)
-      assert.equal(whiteQueenMoves[1].to, 30)
-      assert.equal(whiteQueenMoves[2].from, 39)
-      assert.equal(whiteQueenMoves[2].to, 31)
-      assert.equal(whiteQueenMoves[3].from, 39)
-      assert.equal(whiteQueenMoves[3].to, 36)
-      assert.equal(whiteQueenMoves[4].from, 39)
-      assert.equal(whiteQueenMoves[4].to, 37)
-      assert.equal(whiteQueenMoves[5].from, 39)
-      assert.equal(whiteQueenMoves[5].to, 38)
-      assert.equal(whiteQueenMoves[6].from, 39)
-      assert.equal(whiteQueenMoves[6].to, 46)
-      assert.equal(whiteQueenMoves[7].from, 39)
-      assert.equal(whiteQueenMoves[7].to, 47)
-      assert.equal(whiteQueenMoves[8].from, 39)
-      assert.equal(whiteQueenMoves[8].to, 53)
-      assert.equal(whiteQueenMoves[9].from, 39)
-      assert.equal(whiteQueenMoves[9].to, 55)
+      assert.equal(whiteQueenMoves[0]!.from, 39)
+      assert.equal(whiteQueenMoves[0]!.to, 23)
+      assert.equal(whiteQueenMoves[1]!.from, 39)
+      assert.equal(whiteQueenMoves[1]!.to, 30)
+      assert.equal(whiteQueenMoves[2]!.from, 39)
+      assert.equal(whiteQueenMoves[2]!.to, 31)
+      assert.equal(whiteQueenMoves[3]!.from, 39)
+      assert.equal(whiteQueenMoves[3]!.to, 36)
+      assert.equal(whiteQueenMoves[4]!.from, 39)
+      assert.equal(whiteQueenMoves[4]!.to, 37)
+      assert.equal(whiteQueenMoves[5]!.from, 39)
+      assert.equal(whiteQueenMoves[5]!.to, 38)
+      assert.equal(whiteQueenMoves[6]!.from, 39)
+      assert.equal(whiteQueenMoves[6]!.to, 46)
+      assert.equal(whiteQueenMoves[7]!.from, 39)
+      assert.equal(whiteQueenMoves[7]!.to, 47)
+      assert.equal(whiteQueenMoves[8]!.from, 39)
+      assert.equal(whiteQueenMoves[8]!.to, 53)
+      assert.equal(whiteQueenMoves[9]!.from, 39)
+      assert.equal(whiteQueenMoves[9]!.to, 55)
     })
 
     it('shows checks', function () {
@@ -541,7 +543,7 @@ describe('QueenBoard', function () {
 
       const whiteQueenMoves = boardWManyQueenAttacks.moves('Q')
 
-      assert.equal(whiteQueenMoves[8].check, true)
+      assert.equal(whiteQueenMoves[8]!.check, true)
     })
   })
 })
@@ -554,16 +556,16 @@ describe('KingBoard', function () {
 
       const whiteKingMoves = boardWManyKingMoves.moves('K')
 
-      assert.equal(whiteKingMoves[0].from, 18)
-      assert.equal(whiteKingMoves[0].to, 9)
-      assert.equal(whiteKingMoves[1].from, 18)
-      assert.equal(whiteKingMoves[1].to, 17)
-      assert.equal(whiteKingMoves[2].from, 18)
-      assert.equal(whiteKingMoves[2].to, 19)
-      assert.equal(whiteKingMoves[3].from, 18)
-      assert.equal(whiteKingMoves[3].to, 25)
-      assert.equal(whiteKingMoves[4].from, 18)
-      assert.equal(whiteKingMoves[4].to, 27)
+      assert.equal(whiteKingMoves[0]!.from, 18)
+      assert.equal(whiteKingMoves[0]!.to, 9)
+      assert.equal(whiteKingMoves[1]!.from, 18)
+      assert.equal(whiteKingMoves[1]!.to, 17)
+      assert.equal(whiteKingMoves[2]!.from, 18)
+      assert.equal(whiteKingMoves[2]!.to, 19)
+      assert.equal(whiteKingMoves[3]!.from, 18)
+      assert.equal(whiteKingMoves[3]!.to, 25)
+      assert.equal(whiteKingMoves[4]!.from, 18)
+      assert.equal(whiteKingMoves[4]!.to, 27)
     })
 
     it('can castle', function () {
@@ -572,8 +574,8 @@ describe('KingBoard', function () {
 
       const whiteKingMoves = boardWCastles.moves('K')
 
-      assert.equal(whiteKingMoves[0].castle, true)
-      assert.equal(whiteKingMoves[3].castle, true)
+      assert.equal(whiteKingMoves[0]!.castle, true)
+      assert.equal(whiteKingMoves[3]!.castle, true)
     })
 
     it('cannot castle when in check', function () {
@@ -581,10 +583,10 @@ describe('KingBoard', function () {
       board.parseFenToBoard('r1bqk2r/pppp1ppp/2n1pn2/1B6/1b1PP3/5N2/PPP2PPP/RNBQK2R w KQkq - 5 5')
       const kingMoves = board.legalMoves()
 
-      assert.equal(kingMoves[0].from, 4)
-      assert.equal(kingMoves[0].to, 5)
-      assert.equal(kingMoves[1].from, 4)
-      assert.equal(kingMoves[1].to, 12)
+      assert.equal(kingMoves[0]!.from, 4)
+      assert.equal(kingMoves[0]!.to, 5)
+      assert.equal(kingMoves[1]!.from, 4)
+      assert.equal(kingMoves[1]!.to, 12)
     })
 
     it('cannot move to a square attacked by a rook', function () {
@@ -679,7 +681,7 @@ describe('Engine', function () {
       const originalBb = engine.board.bb
       const originalPosKey = engine.board.posKey
 
-      engine.make(moves[35])
+      engine.make(moves[35]!)
       assert.equal(engine.board.pieceBoardList.P.bb, 563499982005504n)
       assert.equal(engine.board.bb, 10751949189453067669n)
       assert.equal(engine.board.posKey, 1242188158515443456n)
@@ -698,7 +700,7 @@ describe('Engine', function () {
       const originalBb = engine.board.bb
       const originalPosKey = engine.board.posKey
 
-      engine.make(moves[10])
+      engine.make(moves[10]!)
       assert.equal(engine.board.pieceBoardList.p.bb, 10282976340344832n)
       assert.equal(engine.board.pieceBoardList.Q.bb, 8589934592n)
       assert.equal(engine.board.bb, 10751949189452933013n)
@@ -719,7 +721,7 @@ describe('Engine', function () {
       const originalPosKey = engine.board.posKey
       const originalCastleStatus = engine.board.castleStatus
 
-      engine.make(moves[1])
+      engine.make(moves[1]!)
       assert.equal(engine.board.pieceBoardList.K.bb, 32n)
       assert.equal(engine.board.bb, 10751949189452937125n)
       assert.equal(engine.board.posKey, 1377952623175419136n)
@@ -740,7 +742,7 @@ describe('Engine', function () {
       const originalPosKey = engine.board.posKey
       const originalCastleStatus = engine.board.castleStatus
 
-      engine.make(moves[12])
+      engine.make(moves[12]!)
       assert.equal(engine.board.pieceBoardList.R.bb, 33n)
       assert.equal(engine.board.bb, 10751949189452937013n)
       assert.equal(engine.board.posKey, 1518971743604585881n)
@@ -762,7 +764,7 @@ describe('Engine', function () {
       const originalPosKey = engine.board.posKey
       const originalCastleStatus = engine.board.castleStatus
 
-      engine.make(moves[2])
+      engine.make(moves[2]!)
       assert.equal(engine.board.pieceBoardList.K.bb, 64n)
       assert.equal(engine.board.pieceBoardList.R.bb, 33n)
       assert.equal(engine.board.bb, 10751949189452937061n)
@@ -785,7 +787,7 @@ describe('Engine', function () {
       const originalBb = engine.board.bb
       const originalPosKey = engine.board.posKey
 
-      engine.make(moves[37])
+      engine.make(moves[37]!)
       assert.equal(engine.board.pieceBoardList.P.bb, 633318970238720n)
       assert.equal(engine.board.pieceBoardList.p.bb, 10282710052372480n)
       assert.equal(engine.board.bb, 10752018733563393941n)
@@ -809,7 +811,7 @@ describe('Engine', function () {
       const originalEpSqBb = engineWEpOpps.board.epSqBb
       const originalEpCaptureBb = engineWEpOpps.board.epCaptureBb
 
-      engineWEpOpps.make(blackMoves[14])
+      engineWEpOpps.make(blackMoves[14]!)
       assert.equal(engineWEpOpps.board.pieceBoardList.p.bb, 62206115881943040n)
       assert.equal(engineWEpOpps.board.pieceBoardList.P.bb, 68719537920n)
       assert.equal(engineWEpOpps.board.bb, 18436892664273104895n)
@@ -827,9 +829,9 @@ describe('Engine', function () {
       assert.equal(engineWEpOpps.board.epSqBb, originalEpSqBb)
       assert.equal(engineWEpOpps.board.epCaptureBb, originalEpCaptureBb)
 
-      engineWEpOpps.make(blackMoves[14])
+      engineWEpOpps.make(blackMoves[14]!)
       const whiteMoves = engineWEpOpps.board.legalMoves()
-      engineWEpOpps.make(whiteMoves[29])
+      engineWEpOpps.make(whiteMoves[29]!)
       assert.equal(engineWEpOpps.board.pieceBoardList.p.bb, 62205978442989568n)
       assert.equal(engineWEpOpps.board.pieceBoardList.P.bb, 35184372150016n)
       assert.equal(engineWEpOpps.board.bb, 18436927642486763519n)
@@ -857,7 +859,7 @@ describe('Engine', function () {
       const originalBb = engine.board.bb
       const originalPosKey = engine.board.posKey
 
-      engine.make(moves[34])
+      engine.make(moves[34]!)
       assert.equal(engine.board.pieceBoardList.P.bb, 61184n)
       assert.equal(engine.board.pieceBoardList.Q.bb, 144115188075855880n)
       assert.equal(engine.board.bb, 13540393405806604221n)
@@ -873,8 +875,8 @@ describe('Engine', function () {
     it('should test full move number', function () {
       const engine = new Engine('r2qkb1r/pP1b1ppp/2n2n2/4p3/8/2N2N2/PPPP1PPP/R1BQKB1R w KQkq - 3 7')
       const originalCount = engine.board.fullMoveNo
-      engine.make(engine.board.legalMoves()[1])
-      engine.make(engine.board.legalMoves()[1])
+      engine.make(engine.board.legalMoves()[1]!)
+      engine.make(engine.board.legalMoves()[1]!)
       assert.equal(engine.board.fullMoveNo, 8)
 
       engine.unmake()
@@ -884,40 +886,40 @@ describe('Engine', function () {
 
     it('should test half-move clock', function () {
       const engine = new Engine('rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1')
-      engine.make(engine.board.legalMoves()[0])
+      engine.make(engine.board.legalMoves()[0]!)
       engine.unmake()
       assert.equal(engine.board.halfMoveClock, 0)
-      engine.make(engine.board.legalMoves()[0])
+      engine.make(engine.board.legalMoves()[0]!)
       assert.equal(engine.board.halfMoveClock, 1)
 
-      engine.make(engine.board.legalMoves()[4])
+      engine.make(engine.board.legalMoves()[4]!)
       engine.unmake()
       assert.equal(engine.board.halfMoveClock, 1)
-      engine.make(engine.board.legalMoves()[4])
+      engine.make(engine.board.legalMoves()[4]!)
       assert.equal(engine.board.halfMoveClock, 0)
 
-      engine.make(engine.board.legalMoves()[4])
+      engine.make(engine.board.legalMoves()[4]!)
       engine.unmake()
       assert.equal(engine.board.halfMoveClock, 0)
-      engine.make(engine.board.legalMoves()[4])
+      engine.make(engine.board.legalMoves()[4]!)
       assert.equal(engine.board.halfMoveClock, 1)
 
-      engine.make(engine.board.legalMoves()[7])
+      engine.make(engine.board.legalMoves()[7]!)
       engine.unmake()
       assert.equal(engine.board.halfMoveClock, 1)
-      engine.make(engine.board.legalMoves()[7])
+      engine.make(engine.board.legalMoves()[7]!)
       assert.equal(engine.board.halfMoveClock, 0)
 
-      engine.make(engine.board.legalMoves()[1])
+      engine.make(engine.board.legalMoves()[1]!)
       engine.unmake()
       assert.equal(engine.board.halfMoveClock, 0)
-      engine.make(engine.board.legalMoves()[1])
+      engine.make(engine.board.legalMoves()[1]!)
       assert.equal(engine.board.halfMoveClock, 1)
 
-      engine.make(engine.board.legalMoves()[10])
+      engine.make(engine.board.legalMoves()[10]!)
       engine.unmake()
       assert.equal(engine.board.halfMoveClock, 1)
-      engine.make(engine.board.legalMoves()[10])
+      engine.make(engine.board.legalMoves()[10]!)
       assert.equal(engine.board.halfMoveClock, 0)
     })
 
@@ -925,7 +927,7 @@ describe('Engine', function () {
       const engine = new Engine('3K4/8/8/8/8/2b5/1N6/3k4 b - - 0 1')
       const originalMoves = engine.board.legalMoves()
 
-      engine.make(originalMoves[1])
+      engine.make(originalMoves[1]!)
       engine.unmake()
 
       assert.equal(engine.board.legalMoves().length, originalMoves.length)
@@ -935,7 +937,7 @@ describe('Engine', function () {
       const engine = new Engine('3K4/8/8/3Q4/8/2b5/8/3k4 b - - 0 1')
       const originalMoves = engine.board.legalMoves()
 
-      engine.make(originalMoves[1])
+      engine.make(originalMoves[1]!)
       engine.unmake()
 
       assert.equal(engine.board.legalMoves().length, originalMoves.length)
@@ -945,7 +947,7 @@ describe('Engine', function () {
       const engine = new Engine('4k3/6N1/5b2/4R3/8/8/8/4K3 b - - 0 1')
       const originalMoves = engine.board.legalMoves()
 
-      engine.make(originalMoves[1])
+      engine.make(originalMoves[1]!)
       engine.unmake()
 
       assert.equal(engine.board.legalMoves().length, originalMoves.length)
@@ -955,7 +957,7 @@ describe('Engine', function () {
       const engine = new Engine('8/8/8/2k5/3Pp3/8/8/4K3 b - d3 0 1')
       const originalMoves = engine.board.legalMoves()
 
-      engine.make(originalMoves[1])
+      engine.make(originalMoves[1]!)
       engine.unmake()
 
       assert.equal(engine.board.legalMoves().length, originalMoves.length)
@@ -965,7 +967,7 @@ describe('Engine', function () {
       const engine = new Engine('4k3/8/4r3/8/8/4Q3/8/2K5 b - - 0 1')
       const originalMoves = engine.board.legalMoves()
 
-      engine.make(originalMoves[0])
+      engine.make(originalMoves[0]!)
       engine.unmake()
 
       assert.equal(engine.board.legalMoves().length, originalMoves.length)
@@ -975,7 +977,7 @@ describe('Engine', function () {
       const engine = new Engine('4k3/4p3/3P4/8/4Q3/8/8/2K5 b - - 0 1')
       const originalMoves = engine.board.legalMoves()
 
-      engine.make(originalMoves[0])
+      engine.make(originalMoves[0]!)
       engine.unmake()
 
       assert.equal(engine.board.legalMoves().length, originalMoves.length)
@@ -985,7 +987,7 @@ describe('Engine', function () {
       const engine = new Engine('R2rk3/8/8/8/8/8/8/2K5 b - - 0 1')
       const originalMoves = engine.board.legalMoves()
 
-      engine.make(originalMoves[0])
+      engine.make(originalMoves[0]!)
       engine.unmake()
 
       assert.equal(engine.board.legalMoves().length, originalMoves.length)
@@ -995,7 +997,7 @@ describe('Engine', function () {
       const engine = new Engine('8/1R2pk2/8/8/8/8/8/2K5 b - - 0 1')
       const originalMoves = engine.board.legalMoves()
 
-      engine.make(originalMoves[0])
+      engine.make(originalMoves[0]!)
       engine.unmake()
 
       assert.equal(engine.board.legalMoves().length, originalMoves.length)
@@ -1004,16 +1006,16 @@ describe('Engine', function () {
     it('should show threefold repetition', function () {
       const engine = new Engine('1kr5/1b3R2/1B2p3/4Pn1p/R7/2P3p1/1KP4r/8 w - - 0 1')
 
-      engine.make(engine.board.legalMoves()[35])
-      engine.make(engine.board.legalMoves()[0])
-      engine.make(engine.board.legalMoves()[32])
-      engine.make(engine.board.legalMoves()[0])
-      engine.make(engine.board.legalMoves()[35])
-      engine.make(engine.board.legalMoves()[0])
-      engine.make(engine.board.legalMoves()[32])
-      engine.make(engine.board.legalMoves()[0])
-      engine.make(engine.board.legalMoves()[35])
-      engine.make(engine.board.legalMoves()[0])
+      engine.make(engine.board.legalMoves()[35]!)
+      engine.make(engine.board.legalMoves()[0]!)
+      engine.make(engine.board.legalMoves()[32]!)
+      engine.make(engine.board.legalMoves()[0]!)
+      engine.make(engine.board.legalMoves()[35]!)
+      engine.make(engine.board.legalMoves()[0]!)
+      engine.make(engine.board.legalMoves()[32]!)
+      engine.make(engine.board.legalMoves()[0]!)
+      engine.make(engine.board.legalMoves()[35]!)
+      engine.make(engine.board.legalMoves()[0]!)
 
       assert.equal(engine.board.isThreeFoldRepetition, true)
     })
@@ -1043,13 +1045,13 @@ describe('Perft Tricky Positions', function () {
     const engine = new Engine('r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - ')
 
     const initialCastleStatus = engine.board.castleStatus
-    engine.make(engine.board.legalMoves()[13])
+    engine.make(engine.board.legalMoves()[13]!)
 
     const firstCastleStatus = engine.board.castleStatus
-    engine.make(engine.board.legalMoves()[0])
+    engine.make(engine.board.legalMoves()[0]!)
 
     const secondCastleStatus = engine.board.castleStatus
-    engine.make(engine.board.legalMoves()[2])
+    engine.make(engine.board.legalMoves()[2]!)
 
     engine.unmake()
     assert.equal(engine.board.castleStatus, secondCastleStatus)
@@ -1064,7 +1066,7 @@ describe('Perft Tricky Positions', function () {
   it('kiwipete 5 - make castle bug', function () {
     const engine = new Engine('r3k2r/p1ppqNb1/bn2pnp1/3P4/1p2P3/2N2Q2/PPPBBPpP/R3K2R w KQkq - 0 2')
 
-    engine.make(engine.board.legalMoves()[37])
+    engine.make(engine.board.legalMoves()[37]!)
 
     assert.equal(engine.board.legalMoves().length, 46)
   })
@@ -1072,7 +1074,7 @@ describe('Perft Tricky Positions', function () {
   it('kiwipete 6', function () {
     const engine = new Engine('1r2k2r/p1ppqpb1/bn2pnp1/1B1PN3/1p2P3/2N2Q1p/PPPB1PPP/R4K1R b k - 3 2')
 
-    engine.make(engine.board.legalMoves()[38])
+    engine.make(engine.board.legalMoves()[38]!)
 
     assert.equal(engine.board.legalMoves().length, 49)
   })
@@ -1080,7 +1082,7 @@ describe('Perft Tricky Positions', function () {
   it('maughan 1', function () {
     const engine = new Engine('8/3k4/8/4b3/1p1p1p2/8/1PPRP2K/8 w - -')
 
-    engine.make(engine.board.legalMoves()[11])
+    engine.make(engine.board.legalMoves()[11]!)
 
     assert.equal(engine.board.legalMoves().length, 18)
   })
@@ -1094,7 +1096,7 @@ describe('Perft Tricky Positions', function () {
   it('tc1 1 - pins', function () {
     const engine = new Engine('8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - ')
 
-    engine.make(engine.board.legalMoves()[11])
+    engine.make(engine.board.legalMoves()[11]!)
     assert.equal(engine.board.legalMoves().length, 16)
   })
 
@@ -1119,7 +1121,7 @@ describe('Perft Tricky Positions', function () {
   it('tc1 5 - pins w/ en passant', function () {
     const engine = new Engine('8/2p5/3p4/1P5r/KR3p1k/8/4P1P1/8 b - - 1 1')
 
-    engine.make(engine.board.legalMoves()[13])
+    engine.make(engine.board.legalMoves()[13]!)
 
     assert.equal(engine.board.legalMoves().length, 16)
   })
@@ -1127,7 +1129,7 @@ describe('Perft Tricky Positions', function () {
   it('tc1 6 - make en passant ', function () {
     const engine = new Engine('8/2p5/3p4/1P5r/KR3p2/6k1/4P1P1/8 w - - 2 2')
 
-    engine.make(engine.board.legalMoves()[11])
+    engine.make(engine.board.legalMoves()[11]!)
 
     assert.equal(engine.board.legalMoves().length, 23)
   })
@@ -1165,7 +1167,7 @@ describe('Perft Tricky Positions', function () {
   it('tc2 1 - pin w/ en passant', function () {
     const engine = new Engine('r3k2r/Pppp1ppp/1b3nbN/nP6/BBPPP3/q4N2/Pp4PP/R2Q1RK1 b kq - 0 1')
 
-    engine.make(engine.board.legalMoves()[38])
+    engine.make(engine.board.legalMoves()[38]!)
 
     assert.equal(engine.board.legalMoves().length, 39)
   })

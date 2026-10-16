@@ -1,7 +1,6 @@
-'use strict'
 /**
- * Finds the magic numbers in src/magic.js.
- * Run with: node scripts/find-magics.js > src/magic.js
+ * Finds the magic numbers in src/magic.ts.
+ * Run with: node scripts/find-magics.ts > src/magic.ts
  *
  * BigInt math is only fast in V8 when its result goes straight into a
  * BigUint64Array, so every 64-bit step below writes into a typed array.
@@ -11,36 +10,39 @@ const SCRATCH32 = new Int32Array(SCRATCH.buffer)
 const SQUARE_BB = new BigUint64Array(64)
 for (let sq = 0; sq < 64; sq++) { SQUARE_BB[sq] = 1n << BigInt(sq) }
 
-const ROOK_STEPS = [[1, 0], [-1, 0], [0, 1], [0, -1]]
-const BISHOP_STEPS = [[1, 1], [1, -1], [-1, 1], [-1, -1]]
+type Step = readonly [number, number]
+
+const ROOK_STEPS: readonly Step[] = [[1, 0], [-1, 0], [0, 1], [0, -1]]
+const BISHOP_STEPS: readonly Step[] = [[1, 1], [1, -1], [-1, 1], [-1, -1]]
 
 class MagicFinder {
-  static seed (value) {
+  static seed (value: bigint): void {
     SCRATCH[3] = value
   }
 
   // xorshift64*
-  static random () {
-    SCRATCH[3] = SCRATCH[3] ^ (SCRATCH[3] >> 12n)
+  static random (): bigint {
+    SCRATCH[3] = SCRATCH[3]! ^ (SCRATCH[3]! >> 12n)
     SCRATCH[3] = SCRATCH[3] ^ (SCRATCH[3] << 25n)
     SCRATCH[3] = SCRATCH[3] ^ (SCRATCH[3] >> 27n)
     SCRATCH[2] = SCRATCH[3] * 2685821657736338717n
     return SCRATCH[2]
   }
 
-  static sparseRandom (out, idx) {
+  static sparseRandom (out: BigUint64Array, idx: number): void {
     out[idx] = MagicFinder.random()
     out[idx] = out[idx] & MagicFinder.random()
     out[idx] = out[idx] & MagicFinder.random()
   }
 
-  static isOccupied (occ, idx, sq) {
-    SCRATCH[0] = occ[idx] & SQUARE_BB[sq]
-    return (SCRATCH32[0] | SCRATCH32[1]) !== 0
+  static isOccupied (occ: BigUint64Array, idx: number, sq: number): boolean {
+    SCRATCH[0] = occ[idx]! & SQUARE_BB[sq]!
+    return (SCRATCH32[0]! | SCRATCH32[1]!) !== 0
   }
 
   // all squares a slider sees from sq, stopping at the first blocker
-  static slide (out, idx, sq, steps, occ, occIdx, skipEdges) {
+  static slide (out: BigUint64Array, idx: number, sq: number, steps: readonly Step[],
+    occ: BigUint64Array | null, occIdx: number, skipEdges: boolean): void {
     out[idx] = 0n
     const rank = sq >> 3
     const file = sq & 7
@@ -50,7 +52,7 @@ class MagicFinder {
       while (r >= 0 && r < 8 && f >= 0 && f < 8) {
         if (skipEdges && (r + dRank < 0 || r + dRank > 7 || f + dFile < 0 || f + dFile > 7)) { break }
         const to = r * 8 + f
-        out[idx] = out[idx] | SQUARE_BB[to]
+        out[idx] = out[idx] | SQUARE_BB[to]!
         if (occ !== null && MagicFinder.isOccupied(occ, occIdx, to)) { break }
         r += dRank
         f += dFile
@@ -58,24 +60,24 @@ class MagicFinder {
     }
   }
 
-  static popCount (bbs, idx) {
-    SCRATCH[0] = bbs[idx]
-    let lo = SCRATCH32[0]
-    let hi = SCRATCH32[1]
+  static popCount (bbs: BigUint64Array, idx: number): number {
+    SCRATCH[0] = bbs[idx]!
+    let lo = SCRATCH32[0]!
+    let hi = SCRATCH32[1]!
     let count = 0
     while (lo !== 0) { lo &= lo - 1; count++ }
     while (hi !== 0) { hi &= hi - 1; count++ }
     return count
   }
 
-  static topByteBits (hi) {
+  static topByteBits (hi: number): number {
     let top = hi >>> 24
     let count = 0
     while (top !== 0) { top &= top - 1; count++ }
     return count
   }
 
-  static find (sq, steps) {
+  static find (sq: number, steps: readonly Step[]): { magic: bigint, bits: number } {
     const mask = new BigUint64Array(1)
     MagicFinder.slide(mask, 0, sq, steps, null, 0, true)
     const bits = MagicFinder.popCount(mask, 0)
@@ -86,7 +88,7 @@ class MagicFinder {
 
     // carry-rippler: walk every subset of the mask
     for (let i = 1; i < size; i++) {
-      occupancies[i] = (occupancies[i - 1] - mask[0]) & mask[0]
+      occupancies[i] = (occupancies[i - 1]! - mask[0]!) & mask[0]!
     }
     for (let i = 0; i < size; i++) {
       MagicFinder.slide(attacks, i, sq, steps, occupancies, i, false)
@@ -101,45 +103,45 @@ class MagicFinder {
 
     for (let attempt = 1; attempt < 100000000; attempt++) {
       MagicFinder.sparseRandom(magic, 0)
-      magic[1] = mask[0] * magic[0]
+      magic[1] = mask[0]! * magic[0]!
       // cheap filter: good magics spread the mask into the top byte
-      if (MagicFinder.topByteBits(magic32[3]) < 6) { continue }
+      if (MagicFinder.topByteBits(magic32[3]!) < 6) { continue }
       let ok = true
       for (let i = 0; i < size && ok; i++) {
-        SCRATCH[1] = occupancies[i] * magic[0]
-        const idx = SCRATCH32[3] >>> shift
+        SCRATCH[1] = occupancies[i]! * magic[0]!
+        const idx = SCRATCH32[3]! >>> shift
         if (epoch[idx] !== attempt) {
           epoch[idx] = attempt
-          used[idx] = attacks[i]
+          used[idx] = attacks[i]!
         } else if (used32[2 * idx] !== attacks32[2 * i] || used32[2 * idx + 1] !== attacks32[2 * i + 1]) {
           ok = false
         }
       }
-      if (ok) { return { magic: magic[0], bits } }
+      if (ok) { return { magic: magic[0]!, bits } }
     }
     throw new Error('no magic found for square ' + sq)
   }
 }
 
 MagicFinder.seed(0x9E3779B97F4A7C15n)
-const hex = (n) => '0x' + n.toString(16).toUpperCase().padStart(16, '0') + 'n'
-const rooks = []
-const bishops = []
+const hex = (n: bigint): string => '0x' + n.toString(16).toUpperCase().padStart(16, '0') + 'n'
+const rooks: Array<{ magic: bigint, bits: number }> = []
+const bishops: Array<{ magic: bigint, bits: number }> = []
 for (let sq = 0; sq < 64; sq++) { rooks.push(MagicFinder.find(sq, ROOK_STEPS)) }
 for (let sq = 0; sq < 64; sq++) { bishops.push(MagicFinder.find(sq, BISHOP_STEPS)) }
 
-const rows = (list) => list.map((m) => hex(m.magic))
+const rows = (list: Array<{ magic: bigint, bits: number }>): string => list.map((m) => hex(m.magic))
   .reduce((acc, m, i) => acc + (i % 4 === 0 ? '\n  ' : ' ') + m + ',', '')
   .replace(/,$/, '')
 
-console.log(`// Generated by scripts/find-magics.js. Do not edit by hand.
-const ROOK_MAGICS = [${rows(rooks)}
+console.log(`// Generated by scripts/find-magics.ts. Do not edit by hand.
+const ROOK_MAGICS: readonly bigint[] = [${rows(rooks)}
 ]
 
-const BISHOP_MAGICS = [${rows(bishops)}
+const BISHOP_MAGICS: readonly bigint[] = [${rows(bishops)}
 ]
 
-module.exports = {
-  ROOK_MAGICS: ROOK_MAGICS,
-  BISHOP_MAGICS: BISHOP_MAGICS
+export {
+  ROOK_MAGICS,
+  BISHOP_MAGICS
 }`)
